@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import yaml
 
@@ -92,6 +93,40 @@ class RenderCheatsheetTests(unittest.TestCase):
         )
         self.assertTrue(output_path.exists())
         self.assertTrue(any("contact card" in w for w in result.warnings))
+
+    def test_launches_with_channel_chromium_not_default_headless_shell(self):
+        # Regression: launch() must pin channel="chromium" so it always
+        # uses the full Chromium build `playwright install chromium`
+        # reliably installs, instead of silently preferring the separate
+        # chromium-headless-shell binary Playwright defaults to for
+        # headless runs since v1.45 -- some Playwright versions don't
+        # actually install that binary even when `playwright install
+        # chromium` (or `--with-deps chromium`) was run, which broke CI
+        # with `Executable doesn't exist at .../chromium_headless_shell-*`
+        # while the regular chromium sat there installed and unused. See
+        # CHANGELOG.md's entry on this fix. Mocked (no real browser launch)
+        # so this test isolates the launch() call itself, independent of
+        # the real-Chromium rendering already covered by the tests above.
+        output_path = Path(self.tmpdir.name) / "cheatsheet_channel_check.png"
+
+        fake_page = mock.MagicMock()
+        fake_page.evaluate.return_value = 100  # small scroll height, no overflow
+        fake_browser = mock.MagicMock()
+        fake_browser.new_page.return_value = fake_page
+        fake_pw = mock.MagicMock()
+        fake_pw.chromium.launch.return_value = fake_browser
+        fake_sync_playwright_cm = mock.MagicMock()
+        fake_sync_playwright_cm.__enter__.return_value = fake_pw
+        fake_sync_playwright_cm.__exit__.return_value = False
+
+        with mock.patch(
+            "src.rendering.render.sync_playwright", return_value=fake_sync_playwright_cm
+        ), mock.patch("src.rendering.render.read_png_size", return_value=(1080, 1350)):
+            render_cheatsheet(
+                load_sample_cheatsheet_json(), self.config, output_path, contact_card_path=None
+            )
+
+        fake_pw.chromium.launch.assert_called_once_with(channel="chromium")
 
     def test_long_content_is_flagged_as_overflow_not_crash_or_resize(self):
         cheatsheet = load_sample_cheatsheet_json()

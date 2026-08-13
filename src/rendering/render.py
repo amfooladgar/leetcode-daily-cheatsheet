@@ -131,7 +131,18 @@ def render_cheatsheet(
     overflow_px = 0
     with sync_playwright() as pw:
         try:
-            browser = pw.chromium.launch()
+            # channel="chromium" pins the full Chromium build Playwright has
+            # always installed via `playwright install chromium`. Without
+            # it, launch() silently prefers the separate
+            # "chromium-headless-shell" binary for headless runs (default
+            # since Playwright 1.45) -- which some Playwright versions
+            # don't actually install even when `playwright install chromium`
+            # (or `--with-deps chromium`) was run, breaking CI with
+            # `Executable doesn't exist at .../chromium_headless_shell-*`
+            # while the regular chromium build sits right there, installed
+            # and unused. See ARCHITECTURE.md "Why HTML/CSS instead of
+            # Pillow" for the renderer's Chromium dependency generally.
+            browser = pw.chromium.launch(channel="chromium")
         except PlaywrightError as exc:
             if "Executable doesn't exist" in str(exc):
                 raise RendererNotInstalledError(

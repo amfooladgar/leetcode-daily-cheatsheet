@@ -6,6 +6,20 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- With CI able to collect tests again, `pytest -q` then failed 10 tests
+  with `BrowserType.launch: Executable doesn't exist at .../chromium_
+  headless_shell-*/chrome-headless-shell` -- `pw.chromium.launch()` with no
+  `channel` silently prefers the separate "chromium-headless-shell" binary
+  for headless runs (Playwright's default since v1.45), which some
+  Playwright versions don't actually install even when `playwright install
+  chromium` (or `--with-deps chromium`, as `ci.yml` runs) was run, while
+  the regular chromium build sits there installed and unused. Reproduced
+  by hiding the headless-shell binary locally with the full chromium build
+  still present. `src/rendering/render.py` now passes `channel="chromium"`
+  to pin the full build, sidestepping the whole headless-shell
+  install-availability question. Added a mocked regression test
+  (`test_launches_with_channel_chromium_not_default_headless_shell`)
+  asserting `launch()` is always called with `channel="chromium"`.
 - `.github/workflows/ci.yml`'s `pytest -q` step failed every test module
   with `ModuleNotFoundError: No module named 'src'`, even though the exact
   same suite passes locally via `python -m unittest discover -s tests` (and
