@@ -25,6 +25,16 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Install Playwright's Chromium (renderer tests screenshot via headless Chromium)
+        run: playwright install --with-deps chromium
+
+      # `playwright install` has a documented failure mode where it exits 0
+      # without leaving a working browser behind (silent download
+      # corruption in CI -- see microsoft/playwright#36412). Fail fast
+      # here instead, with one automatic retry.
+      - name: Verify Chromium actually launches
+        run: python scripts/verify_playwright_chromium.py
+
       - name: Lint
         run: ruff check .
 
