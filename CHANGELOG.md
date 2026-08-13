@@ -6,6 +6,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- `.github/workflows/ci.yml`'s `pytest -q` step failed every test module
+  with `ModuleNotFoundError: No module named 'src'`, even though the exact
+  same suite passes locally via `python -m unittest discover -s tests` (and
+  `python -m pytest -q`). Root cause: `python -m <tool>` prepends the
+  current directory to `sys.path`, but invoking the `pytest` console script
+  directly (as CI does) does not -- so the repo root was never importable
+  as a package source, only in the invocation style nobody was testing.
+  Added `pythonpath = ["."]` to `pyproject.toml`'s `[tool.pytest.ini_options]`
+  (a native pytest>=7 ini option, no extra dependency) so every invocation
+  style — bare `pytest`, `python -m pytest`, an IDE's test runner — behaves
+  identically.
 - A real Drive upload failed with `GOOGLE_OAUTH_REFRESH_TOKEN not set` even
   after the value was added to `.env` -- nothing in the codebase actually
   loaded `.env` into `os.environ`; `README.md`'s `cp .env.example .env`
