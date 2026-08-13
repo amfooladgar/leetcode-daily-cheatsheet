@@ -84,6 +84,14 @@ drive:
   organize_by_year_month: true
   upload_markdown_summary: true
 
+telegram:
+  enabled: true
+  # {headline}/{number}/{title}/{difficulty}/{url} are filled in from the
+  # cheatsheet content + problem URL (see src/main.py's
+  # _telegram_caption()). Kept under Telegram's 1024-char caption cap by
+  # src/storage/telegram.py regardless of what's templated here.
+  caption_template: "{headline}\n\n#{number} {title} ({difficulty})\n{url}"
+
 state:
   manifest_path: "state/manifest.json"
 

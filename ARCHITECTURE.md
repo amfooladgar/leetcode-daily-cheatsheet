@@ -342,9 +342,14 @@ regardless of DST.
 | Example/edge-case tests   | Never publish; stop                                  |
 | Renderer / QA gate        | Stop (this is a bug, not a transient failure)        |
 | Google Drive upload       | Retry -> stop; manifest marks `drive: false`         |
+| Telegram send              | No retry -> continue; manifest marks `telegram: false` |
 
-There is no image-generation or notification stage in v1, so those rows
-from the original design were removed rather than left as dead policy.
+Drive and Telegram are independent, non-blocking delivery stages: either
+one failing marks its own manifest flag `false` and the run still exits
+non-zero (so CI surfaces it), but never discards the rendered artifact and
+never prevents the other stage from running. There is no image-generation
+stage in v1, so that row from the original design was removed rather than
+left as dead policy.
 
 ## Future: optional visual layer
 

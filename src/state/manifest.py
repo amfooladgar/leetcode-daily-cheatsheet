@@ -28,6 +28,8 @@ class ManifestEntry:
     image_filename: str | None = None
     drive: bool = False
     drive_file_id: str | None = None
+    telegram: bool = False
+    telegram_message_id: int | None = None
     failure_stage: str | None = None
     failure_reason: str | None = None
     prompt_version: str | None = None

@@ -134,6 +134,32 @@ authenticate headlessly, the same way an API key would.
    python -m src.main --problem-slug two-sum --force     # actually uploads
    ```
 
+## 3b. Telegram (Bot API — optional, no OAuth)
+
+Delivers the same PNG (plus problem + solution caption) to your own DMs or a
+channel. Much lighter than Drive: no OAuth, no service account, just a bot
+token as a bearer credential.
+
+1. Open a chat with [`@BotFather`](https://t.me/BotFather) on Telegram and
+   send `/newbot`. Follow the prompts (name, username); it replies with a
+   token that looks like `123456:ABC-...`. This is `TELEGRAM_BOT_TOKEN`.
+2. Get a chat ID:
+   - **Your own DMs**: send any message to your new bot, then visit
+     `https://api.telegram.org/bot<TOKEN>/getUpdates` in a browser and read
+     `result[0].message.chat.id` from the JSON.
+   - **A channel**: add the bot as an admin of the channel, post any
+     message, then hit the same `getUpdates` URL — the channel's ID looks
+     like `-1001234567890`.
+3. Test locally (put both values in `.env`, or `export` them):
+   ```bash
+   export TELEGRAM_BOT_TOKEN=<token from step 1>
+   export TELEGRAM_CHAT_ID=<chat id from step 2>
+   python -m src.main --problem-slug two-sum --force   # sends to Telegram too
+   ```
+4. Set `telegram.enabled: false` in `config/settings.yaml` if you only want
+   the Drive archive and not the Telegram send — a disabled Telegram stage
+   is a no-op, not a failure.
+
 ## 4. Contact card asset
 
 Already done — `assets/contact-card.png` is your LeetCode visit card and is
@@ -157,6 +183,8 @@ secret. Add:
 | `GOOGLE_OAUTH_CLIENT_SECRET` | from step 3.4 |
 | `GOOGLE_OAUTH_REFRESH_TOKEN` | printed by `scripts/authorize_google_drive.py` in step 3.6 |
 | `GOOGLE_DRIVE_FOLDER_ID` | the folder ID from step 3.5 |
+| `TELEGRAM_BOT_TOKEN` | from step 3b.1 |
+| `TELEGRAM_CHAT_ID` | from step 3b.2 |
 
 Never put any of these in `config/settings.yaml`, `CLAUDE.md`, `README.md`,
 or a committed `.env` — `.gitignore` already blocks `.env` and

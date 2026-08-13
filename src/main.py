@@ -33,6 +33,7 @@ from src.leetcode.client import LeetCodeClient, LeetCodeError, PremiumProblemErr
 from src.leetcode.parser import normalize
 from src.state import manifest as manifest_mod
 from src.storage.google_drive import DriveUploadError, upload_cheatsheet
+from src.storage.telegram import TelegramSendError, send_cheatsheet
 
 log = logging.getLogger("cheatsheet")
 
@@ -116,6 +117,18 @@ def _markdown_summary(cheatsheet: dict, problem_url: str) -> str:
         "",
     ]
     return "\n".join(lines)
+
+
+def _telegram_caption(cheatsheet: dict, problem_url: str, settings: dict) -> str:
+    p = cheatsheet["problem"]
+    template = settings["telegram"]["caption_template"]
+    return template.format(
+        headline=cheatsheet["headline"],
+        number=p["number"],
+        title=p["title"],
+        difficulty=p["difficulty"],
+        url=problem_url,
+    )
 
 
 # Optional, droppable sections tried in this order when a render overflows
@@ -432,6 +445,29 @@ def run(args: argparse.Namespace) -> int:
                 exc,
             )
 
+    # --- TELEGRAM (independent of Drive: a Telegram failure never blocks a
+    # successful Drive upload, and vice versa — see ARCHITECTURE.md
+    # "Failure policy") --------------------------------------------------
+    telegram_ok = False
+    telegram_failed = False
+    telegram_message_id = None
+    if not settings["telegram"]["enabled"]:
+        log.info("Skipping Telegram send (telegram.enabled=false in config/settings.yaml).")
+    else:
+        try:
+            caption = _telegram_caption(cheatsheet, problem.url, settings)
+            result = send_cheatsheet(image_path=image_path, caption=caption)
+            telegram_ok = True
+            telegram_message_id = result.message_id
+            log.info("TELEGRAM sent %s -> chat %s (message %s)", image_path.name, result.chat_id, result.message_id)
+        except TelegramSendError as exc:
+            telegram_failed = True
+            log.error(
+                "TELEGRAM send failed (artifact is still valid at %s): %s",
+                image_path,
+                exc,
+            )
+
     manifest.record(
         manifest_mod.ManifestEntry(
             date=date_str,
@@ -442,14 +478,17 @@ def run(args: argparse.Namespace) -> int:
             image_filename=image_path.name,
             drive=drive_ok,
             drive_file_id=drive_file_id,
+            telegram=telegram_ok,
+            telegram_message_id=telegram_message_id,
             prompt_version=prompt_version,
         )
     )
     manifest_mod.save(manifest, manifest_path)
 
-    # Exit non-zero only on a genuine Drive failure (--skip-drive is an
-    # intentional, successful partial run — see docs/OPERATIONS.md).
-    return 1 if drive_failed else 0
+    # Exit non-zero on a genuine Drive or Telegram failure (--skip-drive and
+    # telegram.enabled=false are intentional, successful partial runs — see
+    # docs/OPERATIONS.md).
+    return 1 if (drive_failed or telegram_failed) else 0
 
 
 def main(argv: list[str] | None = None) -> int:

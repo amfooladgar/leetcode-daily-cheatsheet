@@ -12,6 +12,7 @@ from pathlib import Path
 from unittest import mock
 
 from src.claude.runner import ClaudeResult
+from src.config import load_settings
 from src.leetcode.client import RawQuestion
 from tests.helpers import FIXTURES, load_sample_cheatsheet_json
 
@@ -136,10 +137,18 @@ class MainPipelineIntegrationTests(unittest.TestCase):
 
     def test_skip_drive_writes_manifest_with_drive_false(self):
         from src.main import main
+        from src.storage.telegram import SendResult
 
         upload_patch = mock.patch("src.main.upload_cheatsheet")
         mock_upload = upload_patch.start()
         self.addCleanup(upload_patch.stop)
+
+        telegram_patch = mock.patch(
+            "src.main.send_cheatsheet",
+            return_value=SendResult(message_id=1, chat_id="chat1"),
+        )
+        telegram_patch.start()
+        self.addCleanup(telegram_patch.stop)
 
         exit_code = main(["--problem-slug", "two-sum", "--skip-drive", "--force"])
 
@@ -152,6 +161,7 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         entry = manifest["2026-08-13:1"]
         self.assertEqual(entry["status"], "success")
         self.assertFalse(entry["drive"])
+        self.assertTrue(entry["telegram"])
 
     def test_second_run_without_force_is_a_noop(self):
         # Idempotency (already_published) requires a *completed Drive
@@ -160,10 +170,14 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         # test's first run uses a mocked, successful Drive upload.
         from src.main import main
         from src.storage.google_drive import UploadResult
+        from src.storage.telegram import SendResult
 
         with mock.patch(
             "src.main.upload_cheatsheet",
             return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
+        ), mock.patch(
+            "src.main.send_cheatsheet",
+            return_value=SendResult(message_id=1, chat_id="chat1"),
         ), mock.patch.dict("os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id"}):
             first = main(["--problem-slug", "two-sum", "--force"])
             self.assertEqual(first, 0)
@@ -180,6 +194,7 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         # var (e.g. a GitHub Actions secret in CI) must always win.
         from src.main import main
         from src.storage.google_drive import UploadResult
+        from src.storage.telegram import SendResult
 
         (self.tmpdir / ".env").write_text(
             "GOOGLE_DRIVE_FOLDER_ID=from-dotenv\nSOME_OTHER_VAR=from-dotenv\n"
@@ -188,7 +203,10 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         with mock.patch(
             "src.main.upload_cheatsheet",
             return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
-        ) as mock_upload, mock.patch.dict("os.environ", {"SOME_OTHER_VAR": "already-set"}):
+        ) as mock_upload, mock.patch(
+            "src.main.send_cheatsheet",
+            return_value=SendResult(message_id=1, chat_id="chat1"),
+        ), mock.patch.dict("os.environ", {"SOME_OTHER_VAR": "already-set"}):
             os.environ.pop("GOOGLE_DRIVE_FOLDER_ID", None)
             exit_code = main(["--problem-slug", "two-sum", "--force"])
 
@@ -196,6 +214,79 @@ class MainPipelineIntegrationTests(unittest.TestCase):
             mock_upload.assert_called_once()
             self.assertEqual(mock_upload.call_args.kwargs["root_folder_id"], "from-dotenv")
             self.assertEqual(os.environ["SOME_OTHER_VAR"], "already-set")  # .env did not override
+
+    def test_telegram_failure_does_not_block_successful_drive_upload(self):
+        # Drive and Telegram are independent delivery stages (see
+        # ARCHITECTURE.md "Failure policy") -- a Telegram send failure must
+        # still let a successful Drive upload land in the manifest as
+        # drive=true, while marking telegram=false and exiting non-zero so
+        # CI surfaces the problem.
+        from src.main import main
+        from src.storage.google_drive import UploadResult
+        from src.storage.telegram import TelegramSendError
+
+        with mock.patch(
+            "src.main.upload_cheatsheet",
+            return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
+        ), mock.patch(
+            "src.main.send_cheatsheet",
+            side_effect=TelegramSendError("TELEGRAM_BOT_TOKEN not set"),
+        ), mock.patch.dict("os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id"}):
+            exit_code = main(["--problem-slug", "two-sum", "--force"])
+
+        self.assertEqual(exit_code, 1)  # non-zero so CI surfaces the failure
+        manifest_path = self.tmpdir / "state" / "manifest.json"
+        entry = json.loads(manifest_path.read_text())["2026-08-13:1"]
+        self.assertEqual(entry["status"], "success")
+        self.assertTrue(entry["drive"])
+        self.assertFalse(entry["telegram"])
+
+    def test_drive_failure_does_not_block_successful_telegram_send(self):
+        # The reverse of the above: Drive failing must not prevent Telegram
+        # from still sending, and the manifest should record drive=false,
+        # telegram=true.
+        from src.main import main
+        from src.storage.google_drive import DriveUploadError
+        from src.storage.telegram import SendResult
+
+        with mock.patch(
+            "src.main.upload_cheatsheet",
+            side_effect=DriveUploadError("GOOGLE_OAUTH_REFRESH_TOKEN not set"),
+        ), mock.patch(
+            "src.main.send_cheatsheet",
+            return_value=SendResult(message_id=7, chat_id="chat1"),
+        ), mock.patch.dict("os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id"}):
+            exit_code = main(["--problem-slug", "two-sum", "--force"])
+
+        self.assertEqual(exit_code, 1)
+        manifest_path = self.tmpdir / "state" / "manifest.json"
+        entry = json.loads(manifest_path.read_text())["2026-08-13:1"]
+        self.assertEqual(entry["status"], "success")
+        self.assertFalse(entry["drive"])
+        self.assertTrue(entry["telegram"])
+        self.assertEqual(entry["telegram_message_id"], 7)
+
+    def test_telegram_disabled_in_settings_is_a_noop_not_a_failure(self):
+        from src.main import main
+        from src.storage.google_drive import UploadResult
+
+        with mock.patch(
+            "src.main.upload_cheatsheet",
+            return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
+        ), mock.patch("src.main.send_cheatsheet") as mock_send, mock.patch.dict(
+            "os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id"}
+        ):
+            settings = load_settings()
+            settings["telegram"]["enabled"] = False
+            with mock.patch("src.main.load_settings", return_value=settings):
+                exit_code = main(["--problem-slug", "two-sum", "--force"])
+
+        self.assertEqual(exit_code, 0)
+        mock_send.assert_not_called()
+        manifest_path = self.tmpdir / "state" / "manifest.json"
+        entry = json.loads(manifest_path.read_text())["2026-08-13:1"]
+        self.assertTrue(entry["drive"])
+        self.assertFalse(entry["telegram"])
 
 
 if __name__ == "__main__":
