@@ -6,6 +6,29 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- A real (non-dry-run) run on a Hard problem (#2213, "Longest Substring of
+  One Repeating Character") got all the way through solve/verify/compress
+  and then failed at the render step: `Content overflowed the canvas by
+  ~184px` -> `RENDERED failed: QA gate failed: ['no_overflow']`, exit 1,
+  nothing published. The compressed content was otherwise valid -- it was
+  just a few dozen pixels too tall for the fixed 1080x1350 canvas, most
+  likely because of the optional `reasoning_panel` / `diagrams` sections
+  (see the "Diagram component library" note in ARCHITECTURE.md: a dropped
+  diagram is already treated as an acceptable outcome, just not one the
+  renderer previously acted on automatically). Re-invoking `compress` to
+  ask Claude to shrink it further would cost another paid API call for a
+  purely mechanical problem. Added `_render_with_overflow_recovery()` in
+  `src/main.py`: after a render whose *only* failed QA check is
+  `no_overflow`, it drops `reasoning_panel`, then `diagrams`, one at a
+  time, and re-renders after each -- free and deterministic, no extra
+  Claude calls -- stopping as soon as it fits or nothing droppable is
+  left. Any other failed check (wrong dimensions, wrong format, missing
+  headline/code) is left alone and fails exactly as before. Added
+  `tests/test_overflow_recovery.py` (4 tests covering: drops
+  `reasoning_panel` and it fits; still overflows so `diagrams` is dropped
+  too; gives up cleanly with nothing left to drop; leaves a non-overflow
+  failure untouched) -- confirmed two of them fail against a deliberately
+  broken drop condition before confirming they pass against the real fix.
 - CI turned green, but manually triggering `daily.yml` via Actions ->
   "Run workflow" (following docs/SETUP.md step 6: `dry_run: true`, leaving
   `--force` and `--problem-slug` unset) produced no output files. The run

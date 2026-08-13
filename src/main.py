@@ -118,6 +118,52 @@ def _markdown_summary(cheatsheet: dict, problem_url: str) -> str:
     return "\n".join(lines)
 
 
+# Optional, droppable sections tried in this order when a render overflows
+# the fixed canvas -- reasoning_panel first since it's the more purely
+# decorative of the two (a closing "why this works" callout), diagrams
+# second since prompts/claude/v1/solve.md already treats a dropped diagram
+# as an acceptable outcome ("A wrong or forced diagram is worse than no
+# diagram" -- see ARCHITECTURE.md "Diagram component library").
+_OVERFLOW_FALLBACK_KEYS = ["reasoning_panel", "diagrams"]
+
+
+def _render_with_overflow_recovery(cheatsheet, settings, image_path, contact_card_path):
+    """Renders `cheatsheet`, and if the *only* failed QA check is
+    `no_overflow`, retries with optional decorative sections dropped one at
+    a time (see `_OVERFLOW_FALLBACK_KEYS`) before giving up. This is a
+    free, deterministic recovery -- no extra Claude calls, no re-compress
+    -- for otherwise-correct, well-compressed content that's a few dozen
+    pixels too tall for the fixed 1080x1350 canvas because of one optional
+    section. If content still overflows with everything droppable already
+    dropped, that's a genuine content-length problem (see
+    docs/OPERATIONS.md "When the renderer's QA gate fails") and this
+    returns the final, still-failing QAResult for the caller to handle as
+    before.
+
+    Returns (qa_result, dropped_keys) -- `dropped_keys` is empty unless a
+    recovery attempt actually happened, so callers can tell a clean pass
+    from a recovered one.
+    """
+    from src.rendering.render import render_cheatsheet  # deferred: needs Playwright
+
+    dropped: list[str] = []
+    qa = render_cheatsheet(cheatsheet, settings, image_path, contact_card_path=contact_card_path)
+
+    for key in _OVERFLOW_FALLBACK_KEYS:
+        if qa.passed or qa.failed_checks != ["no_overflow"] or key not in cheatsheet:
+            break
+        cheatsheet.pop(key, None)
+        dropped.append(key)
+        log.warning(
+            "Content overflowed the canvas; retrying with '%s' dropped "
+            "(deterministic, no extra API cost).",
+            key,
+        )
+        qa = render_cheatsheet(cheatsheet, settings, image_path, contact_card_path=contact_card_path)
+
+    return qa, dropped
+
+
 def run(args: argparse.Namespace) -> int:
     settings = load_settings()
     # --dry-run counts as a manual invocation too: it never uploads to
@@ -313,17 +359,21 @@ def run(args: argparse.Namespace) -> int:
     _write_json(stage_dir / "content.json", cheatsheet)
 
     # --- RENDERED + QA_PASSED --------------------------------------------
-    from src.rendering.render import render_cheatsheet  # deferred: needs Playwright
-
     filename_stem = settings["output"]["filename_pattern"].format(
         number=problem.number, slug=problem.slug, date=date_str
     )
     image_path = stage_dir / "cheatsheet.png"
     contact_card_path = REPO_ROOT / settings["contact_card"]["path"]
 
-    qa = render_cheatsheet(cheatsheet, settings, image_path, contact_card_path=contact_card_path)
+    qa, dropped_for_overflow = _render_with_overflow_recovery(
+        cheatsheet, settings, image_path, contact_card_path
+    )
     for warning in qa.warnings:
         log.warning(warning)
+    if dropped_for_overflow:
+        log.warning(
+            "Rendered successfully after dropping %s to fit the canvas.", dropped_for_overflow
+        )
 
     if not qa.passed:
         reason = f"QA gate failed: {qa.failed_checks}"
