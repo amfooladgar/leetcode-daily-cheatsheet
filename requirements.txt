@@ -1,0 +1,37 @@
+# Runtime dependencies for the LeetCode daily cheat-sheet pipeline.
+# Pinned to major.minor for reproducible CI runs; patch versions float.
+
+# HTTP for the LeetCode GraphQL adapter. Retries use a tiny stdlib-only
+# helper (src/utils/retry.py) instead of an extra dependency such as
+# tenacity, since the retry policy needed here is a plain capped backoff.
+requests>=2.32,<3
+beautifulsoup4>=4.12,<5
+
+# Config / schema validation
+PyYAML>=6.0,<7
+jsonschema>=4.23,<5
+pydantic>=2.9,<3
+
+# Deterministic HTML/CSS rendering, screenshotted to PNG by headless
+# Chromium. Jinja2 builds a fully self-contained HTML document (fonts and
+# the contact-card image embedded as base64 data URIs -- no network access
+# at render time); Playwright drives the browser. See ARCHITECTURE.md "Why
+# the renderer moved to HTML/CSS" for the rationale.
+Jinja2>=3.1,<4
+playwright>=1.47,<2
+
+# Google Drive upload (service account)
+google-api-python-client>=2.149,<3
+google-auth>=2.35,<3
+
+# Timezone-correct scheduling check (America/New_York, DST-safe)
+tzdata>=2024.2 ; sys_platform == "win32"
+
+# Dev / test dependencies
+# Tests are written as unittest.TestCase subclasses using stdlib
+# unittest.mock for HTTP mocking (no `responses` dependency needed), so the
+# suite runs identically via either of:
+#   python -m unittest discover -s tests -v
+#   pytest      (auto-discovers unittest.TestCase classes too)
+pytest>=8.3,<9
+ruff>=0.7,<1

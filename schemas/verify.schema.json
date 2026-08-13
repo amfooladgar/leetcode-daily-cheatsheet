@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "leetcode-daily-cheatsheet/verify.schema.json",
+  "title": "VerificationResult",
+  "description": "Output of prompts/claude/verify.md — the adversarial second pass over a solve.md result.",
+  "type": "object",
+  "required": ["valid", "issues", "time_complexity", "space_complexity"],
+  "additionalProperties": false,
+  "properties": {
+    "valid": { "type": "boolean" },
+    "issues": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "corrected_code": {
+      "type": ["string", "null"]
+    },
+    "time_complexity": { "type": "string" },
+    "space_complexity": { "type": "string" }
+  }
+}

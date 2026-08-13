@@ -1,0 +1,9 @@
+{% import "_macros.html.jinja2" as m %}
+{# A single labeled row of cells with optional pointers -- two pointers,
+   sliding window, prefix sums, string scanning. #}
+<div class="diagram diagram-array-pointers">
+  {% if diagram.title %}<div class="diagram-title">{{ diagram.title }}</div>{% endif %}
+  {{ m.cell_row(diagram.cells, diagram.pointers) }}
+  {% if diagram.caption %}<div class="diagram-caption">{{ diagram.caption }}</div>{% endif %}
+  {% if diagram.result %}<div class="diagram-result">&#x2192; {{ diagram.result }}</div>{% endif %}
+</div>

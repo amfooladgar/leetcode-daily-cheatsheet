@@ -1,0 +1,39 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# --- Secrets (never commit real credentials) ---
+.env
+*.env
+!*.env.example
+google-service-account*.json
+*credentials*.json
+!schemas/*.json
+!tests/fixtures/*.json
+
+# --- Runtime artifacts (regenerated every run; do not version) ---
+output/*
+!output/.gitkeep
+state/*.json
+!state/.gitkeep
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# --- Claude Code local state (never share session data) ---
+.claude/settings.local.json

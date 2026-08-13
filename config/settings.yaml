@@ -1,0 +1,84 @@
+# Central configuration for the pipeline. Nothing secret lives here -
+# secrets are always environment variables (see .env.example).
+
+schedule:
+  timezone: "America/New_York"
+  target_hour: 9          # local hour the run must match to actually publish
+  cron_utc:                # both crons fire; src/main.py no-ops outside target_hour
+    - "5 13 * * *"          # 09:05 ET during EDT (UTC-4)
+    - "5 14 * * *"          # 09:05 ET during EST (UTC-5)
+
+leetcode:
+  source: "graphql"
+  endpoint: "https://leetcode.com/graphql"
+  mode: "daily"             # "daily" | "slug" (slug set via --problem-slug)
+  premium_policy: "skip"    # never attempt to bypass a premium-only problem
+  request_timeout_seconds: 15
+  max_retries: 3
+
+claude:
+  # Any Claude Code model name (`claude --model <name>`), see prompts/claude/.
+  # Sonnet is the default balance of quality/cost; swap to a cheaper/faster
+  # model in prompts that don't need as much reasoning if you want to cut cost.
+  model_solve: "claude-sonnet-5"
+  model_verify: "claude-sonnet-5"
+  model_compress: "claude-sonnet-5"
+  max_turns: 4
+  allowed_tools: ""        # empty = pure reasoning, no Bash/file/network access
+  output_format: "json"
+
+image:
+  final_width: 1080
+  final_height: 1350
+  aspect_ratio: "4:5"
+  output_format: "PNG"
+  safe_margin_px: 60
+
+design:
+  mode: "light"
+  # The full palette (gradient headline, semantic diagram states, syntax
+  # highlighting) lives in src/rendering/templates/cheatsheet.html.jinja2
+  # as CSS custom properties (:root { --primary-1, --teal, --valid, ... }) --
+  # this section only carries the values the renderer needs as Python-side
+  # config (fonts) rather than duplicating every hex value in two places.
+  # Bundled in-repo (assets/fonts/) rather than relying on the CI runner's
+  # system fonts, so rendering is byte-for-byte reproducible regardless of
+  # which GitHub Actions image is in use. See assets/fonts/LICENSE-DEJAVU.txt.
+  font_heading: "assets/fonts/DejaVuSans-Bold.ttf"
+  font_body: "assets/fonts/DejaVuSans.ttf"
+  font_code: "assets/fonts/DejaVuSansMono.ttf"
+  font_code_bold: "assets/fonts/DejaVuSansMono-Bold.ttf"
+
+content:
+  show_problem_statement: true
+  show_intuition: true
+  show_approach: true
+  show_example: true
+  show_complexity: true
+  show_code: true
+  headline_max_words: 9
+  problem_summary_max_words: 45
+  intuition_max_words: 65
+  approach_max_steps: 5
+  approach_max_words_per_step: 18
+  example_max_states: 5
+  code_preferred_max_lines: 18
+  code_absolute_max_lines: 24
+
+contact_card:
+  path: "assets/contact-card.png"
+  position: "bottom-right"   # bottom-right | bottom-left
+  max_width_px: 210
+
+drive:
+  root_folder_name: "posts"
+  category_folder_name: "LeetCode"
+  organize_by_year_month: true
+  upload_markdown_summary: true
+
+state:
+  manifest_path: "state/manifest.json"
+
+output:
+  local_dir: "output"
+  filename_pattern: "{number}-{slug}-{date}"

@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "leetcode-daily-cheatsheet/cheatsheet.schema.json",
+  "title": "CheatsheetContent",
+  "description": "The canonical, schema-validated contract between the Claude reasoning stages (solve -> verify -> compress) and the deterministic renderer. Nothing outside this shape reaches src/rendering/.",
+  "type": "object",
+  "required": [
+    "problem",
+    "headline",
+    "key_insight",
+    "intuition",
+    "approach",
+    "example",
+    "complexity",
+    "code"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "problem": {
+      "type": "object",
+      "required": ["number", "title", "difficulty"],
+      "additionalProperties": false,
+      "properties": {
+        "number": { "type": "integer" },
+        "title": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
+        "topics": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "headline": {
+      "type": "string",
+      "description": "e.g. 'Never Forget This Sliding Window Trick'. Max words enforced by prompts/claude/compress.md and re-checked in src/claude/validator.py.",
+      "minLength": 1,
+      "maxLength": 90
+    },
+    "problem_summary": {
+      "type": "string",
+      "description": "Compressed problem statement for the top of the card.",
+      "maxLength": 400
+    },
+    "key_insight": { "type": "string", "minLength": 1 },
+    "intuition": { "type": "string", "minLength": 1, "maxLength": 600 },
+    "naive_approach": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "time": { "type": "string" },
+        "space": { "type": "string" }
+      }
+    },
+    "approach": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": { "type": "string", "maxLength": 160 }
+    },
+    "example": {
+      "type": "object",
+      "required": ["input", "output"],
+      "additionalProperties": false,
+      "properties": {
+        "input": { "type": "string" },
+        "states": {
+          "type": "array",
+          "maxItems": 6,
+          "items": { "type": "string" }
+        },
+        "output": { "type": "string" },
+        "explanation": { "type": "string" }
+      }
+    },
+    "correctness": {
+      "type": "string",
+      "description": "Short correctness argument from prompts/claude/solve.md, retained for output/*/content.json even though it is not rendered on the card."
+    },
+    "complexity": {
+      "type": "object",
+      "required": ["time", "space"],
+      "additionalProperties": false,
+      "properties": {
+        "time": { "type": "string", "minLength": 1 },
+        "space": { "type": "string", "minLength": 1 },
+        "explanation": { "type": "string" }
+      }
+    },
+    "code": {
+      "type": "string",
+      "description": "Final Python 3 solution. Validated separately by src/claude/validator.py against problem.examples before rendering.",
+      "minLength": 1
+    },
+    "diagrams": {
+      "type": "array",
+      "description": "0-2 diagram components from the library documented in src/rendering/diagrams/ and prompts/claude/v1/solve.md's 'Diagram library' section. Omit entirely (or leave empty) when the problem doesn't naturally visualize this way (e.g. pure math/DP-on-integers problems) — see ARCHITECTURE.md 'Diagram component library'. A wrong or forced diagram is worse than no diagram.",
+      "maxItems": 2,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/arrayPointersDiagram" },
+          { "$ref": "#/$defs/comparisonStatesDiagram" }
+        ]
+      }
+    },
+    "reasoning_panel": {
+      "type": ["object", "null"],
+      "description": "The 'why this works' callout panel (e.g. 'Why the final answer is n - start'). Optional — omit if the correctness argument doesn't compress well into a short bullet list.",
+      "additionalProperties": false,
+      "required": ["title", "bullets"],
+      "properties": {
+        "title": { "type": "string", "maxLength": 80 },
+        "bullets": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": { "type": "string", "maxLength": 120 }
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 260,
+          "description": "One highlighted closing sentence, rendered in the panel's starred/emphasized box."
+        }
+      }
+    },
+    "prompt_version": {
+      "type": "string",
+      "description": "Which prompts/claude/<version>/ produced this content, for reproducibility."
+    }
+  },
+  "$defs": {
+    "cell": {
+      "type": "object",
+      "description": "One array/string cell in a diagram.",
+      "required": ["value"],
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": "string", "maxLength": 12 },
+        "state": {
+          "type": "string",
+          "enum": ["neutral", "highlight", "invalid", "muted"],
+          "default": "neutral"
+        }
+      }
+    },
+    "pointerLabel": {
+      "type": "object",
+      "required": ["index", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "index": { "type": "integer", "minimum": 0 },
+        "label": { "type": "string", "maxLength": 16 }
+      }
+    },
+    "arrayPointersDiagram": {
+      "type": "object",
+      "required": ["component", "cells"],
+      "additionalProperties": false,
+      "properties": {
+        "component": { "const": "array_pointers" },
+        "title": { "type": "string", "maxLength": 60 },
+        "cells": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 14,
+          "items": { "$ref": "#/$defs/cell" }
+        },
+        "pointers": {
+          "type": "array",
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/pointerLabel" }
+        },
+        "caption": { "type": "string", "maxLength": 140 },
+        "result": { "type": "string", "maxLength": 100 }
+      }
+    },
+    "comparisonStatesDiagram": {
+      "type": "object",
+      "required": ["component", "cases"],
+      "additionalProperties": false,
+      "properties": {
+        "component": { "const": "comparison_states" },
+        "cases": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "required": ["verdict", "label", "cells"],
+            "additionalProperties": false,
+            "properties": {
+              "verdict": { "type": "string", "enum": ["valid", "invalid"] },
+              "label": { "type": "string", "maxLength": 60 },
+              "description": { "type": "string", "maxLength": 100 },
+              "cells": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 14,
+                "items": { "$ref": "#/$defs/cell" }
+              },
+              "pointers": {
+                "type": "array",
+                "maxItems": 4,
+                "items": { "$ref": "#/$defs/pointerLabel" }
+              },
+              "result": { "type": "string", "maxLength": 100 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

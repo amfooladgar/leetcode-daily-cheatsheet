@@ -1,0 +1,94 @@
+"""Minimal, dependency-free Python syntax highlighting for the code block.
+
+This is intentionally line-based regex highlighting, not a full tokenizer:
+the code passing through here is always a short (<=24 line), Claude-written,
+schema-validated, example-tested LeetCode solution (see
+prompts/claude/v1/compress.md's code line limits and
+src/claude/validator.py's run_examples), so the edge cases a general-purpose
+Python highlighter needs to handle (multi-line strings spanning the
+highlighter's per-line regex, f-string nesting, etc.) are out of scope. If a
+line doesn't match cleanly, it just renders in the default ink color —
+readable, just not colored, which is an acceptable degradation for a
+cheat-sheet code block.
+"""
+
+from __future__ import annotations
+
+import keyword
+import re
+
+from PIL import ImageDraw
+
+from src.rendering.typography import load_font
+
+_TOKEN_RE = re.compile(
+    r"""
+    (?P<comment>\#.*$)
+  | (?P<string>(\"[^\"]*\"|'[^']*'))
+  | (?P<number>\b\d+\.?\d*\b)
+  | (?P<name>\b[A-Za-z_][A-Za-z0-9_]*\b)
+    """,
+    re.VERBOSE,
+)
+
+_KEYWORDS = set(keyword.kwlist) | {"self"}
+
+
+def draw_code_block(
+    draw: ImageDraw.ImageDraw,
+    code: str,
+    origin: tuple[int, int],
+    font_path: str,
+    size: int,
+    colors: dict[str, str],
+    line_spacing: float = 1.35,
+) -> int:
+    """Draws `code` starting at `origin`, returns the total pixel height
+    used so the caller can lay out whatever comes after it.
+
+    `colors` keys: ink (default text), keyword, string, comment, number.
+    """
+    font = load_font(font_path, size)
+    ascent, descent = font.getmetrics()
+    line_height = int((ascent + descent) * line_spacing)
+
+    x0, y0 = origin
+    y = y0
+
+    for line in code.split("\n"):
+        x = x0
+        pos = 0
+        if not line.strip():
+            y += line_height
+            continue
+
+        for match in _TOKEN_RE.finditer(line):
+            # Draw any unmatched leading whitespace/punctuation verbatim.
+            if match.start() > pos:
+                gap = line[pos : match.start()]
+                draw.text((x, y), gap, font=font, fill=colors["ink"])
+                x += draw.textlength(gap, font=font)
+
+            text = match.group(0)
+            if match.lastgroup == "comment":
+                color = colors["comment"]
+            elif match.lastgroup == "string":
+                color = colors["string"]
+            elif match.lastgroup == "number":
+                color = colors["number"]
+            elif match.lastgroup == "name" and text in _KEYWORDS:
+                color = colors["keyword"]
+            else:
+                color = colors["ink"]
+
+            draw.text((x, y), text, font=font, fill=color)
+            x += draw.textlength(text, font=font)
+            pos = match.end()
+
+        if pos < len(line):
+            tail = line[pos:]
+            draw.text((x, y), tail, font=font, fill=colors["ink"])
+
+        y += line_height
+
+    return y - y0

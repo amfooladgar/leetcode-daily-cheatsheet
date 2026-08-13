@@ -1,0 +1,71 @@
+{
+  "problem": {"number": 2958, "title": "Length of Longest Subarray With at Most K Frequency", "difficulty": "Medium", "topics": ["Array", "Sliding Window", "Hash Table"]},
+  "headline": "Never Forget It: Non-Shrinking Sliding Window",
+  "problem_summary": "Given an integer array nums and an integer k, return the length of the longest contiguous subarray in which every value appears at most k times.",
+  "key_insight": "The window never needs to shrink back below its best-ever size: once invalid, advancing both pointers together keeps the length frozen instead of decreasing it, so the maintained length only ever grows.",
+  "intuition": "Grow the window by moving end right. If a value's count exceeds k, the window is invalid, so move start right once too instead of fully repairing it. The window may stay temporarily invalid, but its length never needs to shrink below the best length already found.",
+  "naive_approach": {"description": "Recompute frequency counts for every possible subarray.", "time": "O(n^2)", "space": "O(u)"},
+  "approach": [
+    "Add nums[end] to freq.",
+    "When its count becomes k + 1, increment violations.",
+    "If violations > 0, remove nums[start] and move start once.",
+    "If the removed count becomes k, decrement violations.",
+    "Return n - start."
+  ],
+  "example": {
+    "input": "nums = [1,2,3,1,2,3,1,2], k = 2",
+    "states": ["start=0", "end scans right", "violation on third 1 -> start advances once", "window length frozen, never shrinks further"],
+    "output": "6",
+    "explanation": "The longest window where every value appears at most twice has length 6."
+  },
+  "correctness": "The maintained window length only grows on valid iterations; on invalid iterations both pointers move so the length stays unchanged. Therefore the final maintained length equals the largest valid length ever reached.",
+  "complexity": {"time": "O(n)", "space": "O(u)", "explanation": "Each pointer moves at most n times; u is the number of unique values."},
+  "code": "from collections import Counter\n\ndef maxSubarrayLength(nums, k):\n    n = len(nums)\n    freq = Counter()\n    start = 0\n    violations = 0\n\n    for end in range(n):\n        freq[nums[end]] += 1\n\n        if freq[nums[end]] == k + 1:\n            violations += 1\n\n        if violations:\n            freq[nums[start]] -= 1\n            if freq[nums[start]] == k:\n                violations -= 1\n            start += 1\n\n    return n - start",
+  "diagrams": [
+    {
+      "component": "comparison_states",
+      "cases": [
+        {
+          "verdict": "valid",
+          "label": "Case 1 -- Valid",
+          "description": "end moves right; start stays",
+          "cells": [
+            {"value": "2", "state": "neutral"},
+            {"value": "1", "state": "highlight"},
+            {"value": "3", "state": "highlight"},
+            {"value": "2", "state": "highlight"},
+            {"value": "2", "state": "highlight"},
+            {"value": "4", "state": "highlight"}
+          ],
+          "pointers": [{"index": 1, "label": "start"}, {"index": 5, "label": "end"}],
+          "result": "length = end - start + 1, grows by 1"
+        },
+        {
+          "verdict": "invalid",
+          "label": "Case 2 -- Invalid",
+          "description": "end moves right; start also moves right once",
+          "cells": [
+            {"value": "2", "state": "muted"},
+            {"value": "1", "state": "invalid"},
+            {"value": "3", "state": "neutral"},
+            {"value": "2", "state": "neutral"},
+            {"value": "2", "state": "neutral"},
+            {"value": "2", "state": "invalid"}
+          ],
+          "pointers": [{"index": 1, "label": "start"}, {"index": 5, "label": "end"}],
+          "result": "length does not increase"
+        }
+      ]
+    }
+  ],
+  "reasoning_panel": {
+    "title": "Why the final answer is n - start",
+    "bullets": [
+      "Current length after processing end: end - start + 1",
+      "At the final iteration: end = n - 1",
+      "Final length: (n - 1) - start + 1 = n - start"
+    ],
+    "summary": "The maintained window length only grows on valid iterations, so the final length is exactly the largest valid length ever reached."
+  },
+  "prompt_version": "v1"
+}

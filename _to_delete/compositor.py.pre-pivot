@@ -1,0 +1,267 @@
+"""The deterministic layout engine: cheatsheet.json (schema-validated) in,
+a 1080x1350 PNG out. Every pixel is placed by this module — no AI-generated
+image content — see ARCHITECTURE.md "Why no AI image model".
+"""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from PIL import Image, ImageDraw
+
+from src.rendering.code_renderer import draw_code_block
+from src.rendering.typography import (
+    block_height,
+    fit_code_font_size,
+    fit_paragraph,
+    load_font,
+    wrap_text,
+)
+
+log = logging.getLogger(__name__)
+
+
+@dataclass
+class QAResult:
+    passed: bool
+    width: int
+    height: int
+    format: str
+    checks: dict[str, bool] = field(default_factory=dict)
+    warnings: list[str] = field(default_factory=list)
+
+    @property
+    def failed_checks(self) -> list[str]:
+        return [name for name, ok in self.checks.items() if not ok]
+
+
+def _section_label(draw, text, x, y, font_path, size, color) -> int:
+    font = load_font(font_path, size)
+    draw.text((x, y), text.upper(), font=font, fill=color)
+    return y + block_height(1, font, line_spacing=1.3)
+
+
+def _divider(draw, x0, x1, y, color) -> int:
+    draw.line([(x0, y), (x1, y)], fill=color, width=2)
+    return y + 14
+
+
+def render_cheatsheet(
+    cheatsheet: dict,
+    config: dict,
+    output_path: Path,
+    contact_card_path: Path | None = None,
+) -> QAResult:
+    img_cfg = config["image"]
+    design = config["design"]
+    contact_cfg = config["contact_card"]
+
+    width = img_cfg["final_width"]
+    height = img_cfg["final_height"]
+    margin = img_cfg["safe_margin_px"]
+
+    bg = design["background_hex"]
+    accent_primary, accent_secondary, ink = design["accent_hex"][:3]
+
+    font_heading = design["font_heading"]
+    font_body = design["font_body"]
+    font_code = design["font_code"]
+
+    content_width = width - 2 * margin
+
+    canvas = Image.new("RGB", (width, height), bg)
+    draw = ImageDraw.Draw(canvas)
+
+    warnings: list[str] = []
+    x = margin
+    y = margin
+
+    # --- Difficulty badge + problem number/title -------------------------
+    problem = cheatsheet["problem"]
+    meta_text = f"#{problem['number']}  {problem['title'].upper()}  •  {problem['difficulty'].upper()}"
+    meta_font = load_font(font_body, 22)
+    draw.text((x, y), meta_text, font=meta_font, fill=accent_primary)
+    y += block_height(1, meta_font, line_spacing=1.2)
+    y += 4
+
+    # --- Headline ----------------------------------------------------------
+    headline_font, headline_lines = fit_paragraph(
+        draw, cheatsheet["headline"], font_heading, content_width, max_height=140, max_size=48, min_size=30
+    )
+    for line in headline_lines:
+        draw.text((x, y), line, font=headline_font, fill=ink)
+        y += block_height(1, headline_font, line_spacing=1.1)
+    y += 8
+    y = _divider(draw, x, width - margin, y, accent_primary)
+
+    # --- Problem summary -----------------------------------------------
+    if cheatsheet.get("problem_summary"):
+        y = _section_label(draw, "Problem", x, y, font_body, 19, accent_secondary)
+        body_font, lines = fit_paragraph(
+            draw, cheatsheet["problem_summary"], font_body, content_width, max_height=95, max_size=24, min_size=16
+        )
+        for line in lines:
+            draw.text((x, y), line, font=body_font, fill=ink)
+            y += block_height(1, body_font, line_spacing=1.22)
+        y += 10
+
+    # --- Intuition -----------------------------------------------------
+    y = _section_label(draw, "Intuition", x, y, font_body, 19, accent_secondary)
+    body_font, lines = fit_paragraph(
+        draw, cheatsheet["intuition"], font_body, content_width, max_height=130, max_size=24, min_size=15
+    )
+    for line in lines:
+        draw.text((x, y), line, font=body_font, fill=ink)
+        y += block_height(1, body_font, line_spacing=1.22)
+    y += 10
+
+    # --- Approach --------------------------------------------------------
+    y = _section_label(draw, "Approach", x, y, font_body, 19, accent_secondary)
+    step_font = load_font(font_body, 21)
+    for i, step in enumerate(cheatsheet["approach"], start=1):
+        lines = wrap_text(draw, f"{i}. {step}", step_font, content_width)
+        for line in lines:
+            draw.text((x, y), line, font=step_font, fill=ink)
+            y += block_height(1, step_font, line_spacing=1.18)
+    y += 10
+
+    # --- Example -----------------------------------------------------------
+    example = cheatsheet.get("example") or {}
+    if example:
+        y = _section_label(draw, "Example", x, y, font_body, 19, accent_secondary)
+        ex_font = load_font(font_code, 19)
+        input_line = f"Input:  {example.get('input', '')}"
+        for line in wrap_text(draw, input_line, ex_font, content_width):
+            draw.text((x, y), line, font=ex_font, fill=ink)
+            y += block_height(1, ex_font, line_spacing=1.15)
+
+        states = example.get("states") or []
+        if states:
+            states_line = "  →  ".join(states)
+            for line in wrap_text(draw, states_line, ex_font, content_width):
+                draw.text((x, y), line, font=ex_font, fill=accent_primary)
+                y += block_height(1, ex_font, line_spacing=1.15)
+
+        output_line = f"Output: {example.get('output', '')}"
+        for line in wrap_text(draw, output_line, ex_font, content_width):
+            draw.text((x, y), line, font=ex_font, fill=ink)
+            y += block_height(1, ex_font, line_spacing=1.15)
+        y += 10
+
+    # --- Complexity ----------------------------------------------------
+    complexity = cheatsheet["complexity"]
+    y = _section_label(draw, "Complexity", x, y, font_body, 19, accent_secondary)
+    complexity_font = load_font(font_heading, 22)
+    complexity_text = f"Time {complexity['time']}      Space {complexity['space']}"
+    draw.text((x, y), complexity_text, font=complexity_font, fill=accent_primary)
+    y += block_height(1, complexity_font, line_spacing=1.2)
+    y += 6
+    y = _divider(draw, x, width - margin, y, accent_primary)
+
+    # --- Contact card reserved zone -------------------------------------
+    contact_reserved_height = 0
+    contact_img = None
+    if contact_card_path and Path(contact_card_path).exists():
+        contact_img = Image.open(contact_card_path).convert("RGBA")
+        scale = contact_cfg["max_width_px"] / contact_img.width
+        contact_img = contact_img.resize(
+            (contact_cfg["max_width_px"], int(contact_img.height * scale)), Image.LANCZOS
+        )
+        contact_reserved_height = contact_img.height + 24
+    else:
+        warnings.append(
+            f"No contact card found at {contact_card_path} — rendering without it. "
+            "See docs/SETUP.md step 4."
+        )
+
+    # --- Final code ------------------------------------------------------
+    y = _section_label(draw, "Final Code", x, y, font_body, 19, accent_secondary)
+    code = cheatsheet["code"]
+    code_max_height = height - margin - contact_reserved_height - y
+    code_min_size = 11
+    code_size = fit_code_font_size(
+        draw, code, font_code, content_width, max_size=21, min_size=code_min_size
+    )
+    # Also shrink for vertical fit (long solutions). Checks code_min_size
+    # itself (not just sizes above it) before giving up, so a genuinely
+    # long solution gets the smallest allowed size rather than silently
+    # stopping one step short of it.
+    num_lines = len(code.split("\n"))
+    for candidate in range(code_size, code_min_size - 1, -1):
+        font = load_font(font_code, candidate)
+        ascent, descent = font.getmetrics()
+        line_h = int((ascent + descent) * 1.35)
+        if line_h * num_lines <= code_max_height:
+            code_size = candidate
+            break
+        code_size = candidate
+
+    code_box_top = y
+    code_used_height = draw_code_block(
+        draw,
+        code,
+        origin=(x, y),
+        font_path=font_code,
+        size=code_size,
+        colors={
+            "ink": ink,
+            "keyword": accent_primary,
+            "string": accent_secondary,
+            "comment": "#8A8F98",
+            "number": accent_secondary,
+        },
+    )
+    y = code_box_top + code_used_height
+
+    overflow = y > (height - margin - contact_reserved_height)
+    if overflow:
+        warnings.append(
+            f"Rendered content ended at y={y}px, past the safe boundary "
+            f"({height - margin - contact_reserved_height}px) — compress.md "
+            "output may be too long for this canvas. See docs/OPERATIONS.md "
+            "'When the renderer's QA gate fails'."
+        )
+
+    # --- Contact card ------------------------------------------------------
+    if contact_img is not None:
+        position = contact_cfg["position"]
+        cx = (
+            width - margin - contact_img.width
+            if position == "bottom-right"
+            else margin
+        )
+        cy = height - margin - contact_img.height
+        canvas.paste(contact_img, (cx, cy), contact_img)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(output_path, format=img_cfg["output_format"])
+
+    # --- QA gate -------------------------------------------------------
+    with Image.open(output_path) as saved:
+        actual_width, actual_height = saved.size
+        actual_format = saved.format
+
+    checks = {
+        "exact_width": actual_width == width,
+        "exact_height": actual_height == height,
+        "correct_format": actual_format == img_cfg["output_format"],
+        "no_vertical_overflow": not overflow,
+        "headline_present": bool(cheatsheet.get("headline")),
+        "problem_present": bool(cheatsheet.get("problem_summary") or cheatsheet["problem"]),
+        "intuition_present": bool(cheatsheet.get("intuition")),
+        "approach_present": bool(cheatsheet.get("approach")),
+        "complexity_present": bool(complexity.get("time") and complexity.get("space")),
+        "code_present": bool(code.strip()),
+    }
+    passed = all(checks.values())
+
+    return QAResult(
+        passed=passed,
+        width=actual_width,
+        height=actual_height,
+        format=actual_format,
+        checks=checks,
+        warnings=warnings,
+    )

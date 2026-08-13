@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest*)",
+      "Bash(pytest*)",
+      "Bash(python -m unittest*)",
+      "Bash(ruff check*)",
+      "Bash(python -m src.main --dry-run*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{# Shared macros used by both the top-level array_pointers diagram and the
+   mini arrays nested inside each comparison_states case. #}
+
+{% macro cell_row(cells, pointers) %}
+<div class="cell-row">
+  {% for cell in cells %}
+  <div class="cell cell-{{ cell.state | default('neutral') }}">{{ cell.value }}</div>
+  {% endfor %}
+</div>
+{% if pointers %}
+<div class="pointer-row" style="--cell-count:{{ cells | length }}">
+  {% for p in pointers %}
+  <div class="pointer" style="--idx:{{ p.index }}">
+    <div class="pointer-arrow">&#x25B2;</div>
+    <div class="pointer-label">{{ p.label }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}

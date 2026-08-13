@@ -1,0 +1,21 @@
+{
+  "date": "2026-08-13",
+  "number": 1,
+  "title": "Two Sum",
+  "slug": "two-sum",
+  "difficulty": "Easy",
+  "url": "https://leetcode.com/problems/two-sum/",
+  "topics": ["Array", "Hash Table"],
+  "statement": "You are given an integer array nums and an integer target. Return indices of the two numbers such that they add up to target.",
+  "examples": [
+    {"input": "nums = [2,7,11,15], target = 9", "output": "[0,1]", "explanation": "Because nums[0] + nums[1] == 9, we return [0, 1]."},
+    {"input": "nums = [3,2,4], target = 6", "output": "[1,2]", "explanation": ""}
+  ],
+  "constraints": [
+    "2 <= nums.length <= 10^4",
+    "-10^9 <= nums[i] <= 10^9",
+    "Only one valid answer exists."
+  ],
+  "python_template": "class Solution:\n    def twoSum(self, nums: List[int], target: int) -> List[int]:\n        ",
+  "is_premium": false
+}

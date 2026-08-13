@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>cheatsheet</title>
+<style>
+  @font-face {
+    font-family: "DejaVu Sans";
+    src: url("{{ font_body_data_uri }}") format("truetype");
+    font-weight: 400;
+  }
+  @font-face {
+    font-family: "DejaVu Sans";
+    src: url("{{ font_heading_data_uri }}") format("truetype");
+    font-weight: 700;
+  }
+  @font-face {
+    font-family: "DejaVu Sans Mono";
+    src: url("{{ font_code_data_uri }}") format("truetype");
+    font-weight: 400;
+  }
+  @font-face {
+    font-family: "DejaVu Sans Mono";
+    src: url("{{ font_code_bold_data_uri }}") format("truetype");
+    font-weight: 700;
+  }
+
+  :root {
+    --bg: #F7F8FC;
+    --card-bg: #FFFFFF;
+    --ink: #1E2233;
+    --ink-soft: #545B72;
+    --border: #E4E7F1;
+    --primary-1: #4F46E5;
+    --primary-2: #7C3AED;
+    --teal: #14B8A6;
+    --teal-bg: #E6FBF7;
+    --valid: #10B981;
+    --valid-bg: #E9FBF3;
+    --invalid: #EF4444;
+    --invalid-bg: #FDEDEE;
+    --muted-bg: #EEF0F6;
+    --highlight-bg: #FDE68A;
+    --highlight-ink: #7C5A00;
+    --panel-bg: #F1EEFE;
+    --panel-text: #4C1D95;
+    --panel-accent: #7C3AED;
+    --code-bg: #0F172A;
+    --code-ink: #E2E8F0;
+    --code-keyword: #C4B5FD;
+    --code-string: #86EFAC;
+    --code-number: #FDBA74;
+    --code-comment: #64748B;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: {{ width }}px;
+    height: {{ height }}px;
+    background: var(--bg);
+    font-family: "DejaVu Sans", sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    width: {{ width }}px;
+    height: {{ height }}px;
+    padding: 38px 52px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    overflow: hidden;
+  }
+
+  /* ---------- header ---------- */
+  .header { text-align: center; }
+  .headline {
+    font-family: "DejaVu Sans", sans-serif;
+    font-weight: 700;
+    font-size: 33px;
+    line-height: 1.12;
+    margin: 0;
+    background: linear-gradient(90deg, var(--primary-1), var(--primary-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .dot-divider {
+    margin: 10px auto 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--border) 15%, var(--border) 85%, transparent);
+    position: relative;
+  }
+  .dot-divider::before, .dot-divider::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary-2);
+  }
+  .dot-divider::before { left: calc(50% - 40px); }
+  .dot-divider::after { left: calc(50% + 32px); }
+
+  /* ---------- cards ---------- */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 20px;
+    box-shadow: 0 2px 10px rgba(30, 34, 51, 0.05);
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .icon-circle {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .icon-circle.number-badge {
+    width: auto;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 9px;
+    border-radius: 15px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .icon-circle.teal { background: var(--teal); }
+  .icon-circle.indigo { background: var(--primary-1); }
+  .icon-circle.violet { background: var(--panel-accent); }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .card-body { font-size: 17px; line-height: 1.42; color: var(--ink); }
+  .meta-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .chip {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--muted-bg);
+    color: var(--ink-soft);
+  }
+  .chip.difficulty-easy { background: var(--valid-bg); color: var(--valid); }
+  .chip.difficulty-medium { background: #FEF3C7; color: #92610A; }
+  .chip.difficulty-hard { background: var(--invalid-bg); color: var(--invalid); }
+
+  /* ---------- two-column rows ---------- */
+  .row { display: flex; gap: 18px; flex: 0 0 auto; }
+  .row > .card { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
+  .row.single > .card { flex: 1 1 100%; }
+
+  /* ---------- diagrams ---------- */
+  .diagram { margin-top: 10px; }
+  .diagram-title { font-size: 13px; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; }
+  .cell-row { display: flex; gap: 6px; }
+  .cell {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-family: "DejaVu Sans Mono", monospace;
+    font-weight: 700;
+    font-size: 16px;
+    background: var(--muted-bg);
+    color: var(--ink-soft);
+    border: 1.5px solid transparent;
+  }
+  .cell-neutral { background: var(--muted-bg); color: var(--ink); }
+  .cell-highlight { background: var(--highlight-bg); color: var(--highlight-ink); border-color: #F59E0B; }
+  .cell-invalid { background: var(--invalid-bg); color: var(--invalid); border-color: var(--invalid); }
+  .cell-muted { background: var(--muted-bg); color: #A2A8BC; }
+  .pointer-row {
+    display: flex;
+    margin-top: 4px;
+    position: relative;
+    height: 30px;
+  }
+  .pointer {
+    position: absolute;
+    left: calc((100% / var(--cell-count)) * var(--idx) + (100% / var(--cell-count) / 2));
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .pointer-arrow { color: var(--primary-1); font-size: 12px; line-height: 1; }
+  .pointer-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary-1);
+    background: #EEF2FF;
+    padding: 1px 6px;
+    border-radius: 6px;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+  .diagram-caption { font-size: 13px; color: var(--ink-soft); margin-top: 8px; }
+  .diagram-result { font-size: 13px; font-weight: 700; color: var(--primary-1); margin-top: 4px; }
+
+  .diagram-comparison-states { display: flex; gap: 14px; }
+  .diagram-comparison-states .case {
+    flex: 1 1 0;
+    min-width: 0;
+    border-radius: 12px;
+    padding: 12px;
+    border: 1.5px solid var(--border);
+  }
+  .case-valid { background: var(--valid-bg); border-color: #A7F3D0; }
+  .case-invalid { background: var(--invalid-bg); border-color: #FECACA; }
+  .case-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .case-badge {
+    width: 18px; height: 18px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+  }
+  .case-valid .case-badge { background: var(--valid); }
+  .case-invalid .case-badge { background: var(--invalid); }
+  .case-label { font-size: 13px; font-weight: 700; }
+  .case-valid .case-label { color: #047857; }
+  .case-invalid .case-label { color: #B91C1C; }
+  .case-description { font-size: 12px; color: var(--ink-soft); margin-bottom: 6px; }
+  .case .cell { height: 32px; font-size: 13px; }
+  .case-result { font-size: 12px; font-weight: 700; margin-top: 6px; }
+  .case-valid .case-result { color: #047857; }
+  .case-invalid .case-result { color: #B91C1C; }
+
+  /* ---------- reasoning panel ---------- */
+  .reasoning-panel {
+    background: var(--panel-bg);
+    border-radius: 14px;
+    padding: 14px 16px;
+    height: 100%;
+  }
+  .reasoning-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--panel-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .reasoning-icon {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--panel-accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .reasoning-bullets { margin: 0 0 8px 0; padding-left: 18px; }
+  .reasoning-bullets li { font-size: 13px; color: var(--panel-text); line-height: 1.4; margin-bottom: 4px; }
+  .reasoning-summary {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--panel-text);
+    border-top: 1px solid rgba(124, 58, 237, 0.25);
+    padding-top: 8px;
+  }
+
+  /* ---------- approach ---------- */
+  .approach-list { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+  .approach-list li {
+    counter-increment: step;
+    display: flex;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.35;
+    margin-bottom: 9px;
+  }
+  .approach-list li::before {
+    content: counter(step);
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--primary-1);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ---------- code ---------- */
+  .code-block {
+    background: var(--code-bg);
+    border-radius: 12px;
+    padding: 11px 15px;
+    font-family: "DejaVu Sans Mono", monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--code-ink);
+    overflow: hidden;
+    flex: 1 1 auto;
+  }
+  .code-line { white-space: pre; }
+  .tok-keyword { color: var(--code-keyword); font-weight: 700; }
+  .tok-string { color: var(--code-string); }
+  .tok-number { color: var(--code-number); }
+  .tok-comment { color: var(--code-comment); font-style: italic; }
+
+  /* ---------- footer ---------- */
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: auto;
+    padding-top: 14px;
+  }
+  .stat-chips { display: flex; gap: 10px; }
+  .stat-chip {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat-chip-label { font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-soft); }
+  .stat-chip-value { font-size: 15px; font-weight: 700; color: var(--primary-1); font-family: "DejaVu Sans Mono", monospace; }
+  .contact-card img { display: block; max-width: {{ contact_card_max_width }}px; height: auto; border-radius: 10px; }
+
+  /* ---------- text-only fallback ---------- */
+  .example-line { font-size: 13px; color: var(--ink-soft); margin-top: 10px; }
+  .example-line strong { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <h1 class="headline">{{ cheatsheet.headline }}</h1>
+    <div class="dot-divider"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="icon-circle teal number-badge">#{{ cheatsheet.problem.number }}</div>
+      <div class="card-title">{{ cheatsheet.problem.title }}</div>
+    </div>
+    <div class="card-body">{{ cheatsheet.problem_summary }}</div>
+    <div class="meta-row">
+      <span class="chip difficulty-{{ cheatsheet.problem.difficulty | lower }}">{{ cheatsheet.problem.difficulty }}</span>
+      {% for topic in cheatsheet.problem.topics[:4] %}
+      <span class="chip">{{ topic }}</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="row {{ 'single' if not reasoning_panel }}">
+    <div class="card">
+      <div class="card-header">
+        <div class="icon-circle indigo">&#x1F4A1;</div>
+        <div class="card-title">Intuition</div>
+      </div>
+      <div class="card-body">{{ cheatsheet.intuition }}</div>
+      {% for diagram in diagrams %}
+        {% if diagram.component == "array_pointers" %}
+          {% include "_array_pointers.html.jinja2" %}
+        {% elif diagram.component == "comparison_states" %}
+          {% include "_comparison_states.html.jinja2" %}
+        {% endif %}
+      {% endfor %}
+      {% if not diagrams %}
+      <div class="example-line"><strong>Example:</strong> {{ cheatsheet.example.input }} &#x2192; {{ cheatsheet.example.output }}</div>
+      {% endif %}
+    </div>
+    {% if reasoning_panel %}
+    <div class="card">
+      {% include "_reasoning_panel.html.jinja2" with context %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <div class="card-header">
+        <div class="icon-circle indigo">&#x2713;</div>
+        <div class="card-title">Approach</div>
+      </div>
+      <ol class="approach-list">
+        {% for step in cheatsheet.approach %}
+        <li>{{ step }}</li>
+        {% endfor %}
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="icon-circle violet">&#x3C;/&#x3E;</div>
+        <div class="card-title">Code</div>
+      </div>
+      <div class="code-block">{{ code_html | safe }}</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="stat-chips">
+      <div class="stat-chip">
+        <span class="stat-chip-label">Time</span>
+        <span class="stat-chip-value">{{ cheatsheet.complexity.time }}</span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-chip-label">Space</span>
+        <span class="stat-chip-value">{{ cheatsheet.complexity.space }}</span>
+      </div>
+    </div>
+    {% if contact_card_data_uri %}
+    <div class="contact-card"><img src="{{ contact_card_data_uri }}" alt="contact"></div>
+    {% endif %}
+  </div>
+
+</div>
+</body>
+</html>

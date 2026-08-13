@@ -1,0 +1,15 @@
+{% import "_macros.html.jinja2" as m %}
+{# 2-3 side-by-side cases (valid vs invalid, before vs after). #}
+<div class="diagram diagram-comparison-states cases-{{ diagram.cases | length }}">
+  {% for case in diagram.cases %}
+  <div class="case case-{{ case.verdict }}">
+    <div class="case-header">
+      <span class="case-badge">{{ '✓' if case.verdict == 'valid' else '✗' }}</span>
+      <span class="case-label">{{ case.label }}</span>
+    </div>
+    {% if case.description %}<div class="case-description">{{ case.description }}</div>{% endif %}
+    {% if case.cells %}{{ m.cell_row(case.cells, case.pointers) }}{% endif %}
+    {% if case.result %}<div class="case-result">&#x2192; {{ case.result }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>

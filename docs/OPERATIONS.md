@@ -1,0 +1,109 @@
+# Operations runbook
+
+## Daily happy path
+
+09:05 or 10:05 UTC (whichever is currently 09:05 America/New_York) ->
+GitHub Actions runs `daily.yml` -> fetches today's Daily Challenge -> solves
+-> verifies -> renders -> uploads to Drive -> commits the updated
+`state/manifest.json` back to `main`. No action needed from you. Check your
+Drive `posts/LeetCode/<year>/<month>/` folder whenever you want.
+
+## Checking whether today's run succeeded
+
+Repo -> Actions -> "Daily LeetCode Cheat Sheet" -> most recent run. Each
+stage is a distinct step in the log (FETCHED, NORMALIZED, SOLVED, VERIFIED,
+TESTED, COMPRESSED, RENDERED, QA_PASSED, UPLOADED — see ARCHITECTURE.md).
+The failing step tells you exactly where it stopped; nothing after that
+step ran.
+
+## Re-running a specific day
+
+```bash
+# From your machine, or via Actions -> Run workflow -> set inputs
+python -m src.main --date 2026-08-12 --force
+```
+
+`--force` bypasses the `state/manifest.json` idempotency guard for that one
+date. Without `--force`, re-running a date that already succeeded is a
+no-op by design (prevents duplicate Drive uploads from a retried Action).
+
+## Testing against an old / specific problem (not today's daily)
+
+```bash
+python -m src.main --problem-slug two-sum --dry-run
+```
+
+`--dry-run` runs every stage through rendering but skips the Drive upload
+and the manifest write, so you can iterate on prompts or the renderer
+without touching Drive or state. Output lands in
+`output/<date>/<problem-number>/` regardless.
+
+## When Claude's verification fails
+
+The run stops before rendering (see ARCHITECTURE.md "Failure policy") and
+the log prints the `issues` array from `prompts/claude/verify.md`'s
+response. The intermediate `solve` and `verify` JSON are kept in
+`output/<date>/<problem-number>/` for inspection. Common causes: the
+problem's official examples changed (rare), or the solve step picked an
+approach that fails a boundary case verify.md caught — rerun with
+`--force` after nothing needs fixing on your end; Claude re-attempts the
+solve step fresh each run.
+
+## When the renderer's QA gate fails
+
+This means compressed content didn't fit the hard limits in
+`config/settings.yaml` (`content.*_max_words`, `code_absolute_max_lines`) —
+treat it as a bug in `prompts/claude/compress.md` or the limits themselves,
+not a transient failure. Check `output/<date>/<problem-number>/content.json`
+for what didn't fit, and `output/<date>/<problem-number>/cheatsheet.png` if
+it got far enough to render before failing QA (the QA gate runs after
+rendering, so a nearly-valid image is often already on disk).
+
+## When the Drive upload fails
+
+Manifest records `"drive": false` for that date but the render step
+succeeded, so nothing is lost — the PNG is in the workflow run's uploaded
+artifact (Actions -> the run -> Artifacts) even though it didn't reach
+Drive. Common cause: the service account's share on the Drive folder was
+removed, or `GOOGLE_DRIVE_FOLDER_ID` points at a folder the service account
+was never shared on (see docs/SETUP.md step 3.6). Fix the share, then:
+
+```bash
+python -m src.main --date <that-date> --force
+```
+
+## Rotating credentials
+
+- **Anthropic key**: create a new key in the Claude Console, update the
+  `ANTHROPIC_API_KEY` GitHub secret, delete the old key in the Console.
+  No code change needed.
+- **Google service account key**: Google Cloud Console -> the service
+  account -> Keys -> Add key (new) -> update the
+  `GOOGLE_SERVICE_ACCOUNT_JSON` secret with the new JSON -> Keys -> delete
+  the old key. Do this in that order so there's no window with zero valid
+  key.
+
+## Changing the schedule time
+
+Edit `schedule.target_hour` and `schedule.timezone` in
+`config/settings.yaml` (what the Python check enforces) **and** the two
+`cron:` lines in `.github/workflows/daily.yml` (what actually wakes the
+runner up — cron is UTC and does not know about `config/settings.yaml`).
+Keep both cron lines (the DST-straddling pair) unless you've picked a UTC
+offset that never crosses a DST boundary for your timezone.
+
+## Changing prompts
+
+Edit files under `prompts/claude/`. Because production runs `claude -p
+--bare` with the prompt file's contents passed explicitly, a prompt change
+takes effect on the very next run with no other deployment step. If you
+want reproducibility of *old* outputs, copy the prompt to
+`prompts/claude/v2/` etc. before editing rather than overwriting — see
+CLAUDE.md "Rules".
+
+## Cost monitoring
+
+`claude -p --output-format json` includes `total_cost_usd` per call — the
+pipeline logs this at the end of each Claude stage. Anthropic Console and
+Google Cloud billing are the sources of truth; Drive storage and API calls
+at this volume (one small PNG + one small JSON per day) are free-tier.

@@ -1,0 +1,39 @@
+{
+  "problem": {"number": 1, "title": "Two Sum", "difficulty": "Easy", "topics": ["Array", "Hash Table"]},
+  "headline": "Never Forget the One-Pass Hash Map Trick",
+  "problem_summary": "Given an array and a target, return the indices of the two numbers that add up to target. Exactly one solution exists.",
+  "key_insight": "For each number, the value needed to reach target is target - num; checking a hash map for that value turns an O(n^2) search into O(1) lookups.",
+  "intuition": "Walk the array once. For each number, ask a hash map whether its complement has already been seen. If yes, both indices are the answer. If no, record this number's index and keep going.",
+  "naive_approach": {"description": "Check every pair of indices with nested loops.", "time": "O(n^2)", "space": "O(1)"},
+  "approach": [
+    "Create an empty hash map from value to index.",
+    "For each index i, compute complement = target - nums[i].",
+    "If complement is already in the map, return [map[complement], i].",
+    "Otherwise store nums[i] -> i in the map and continue."
+  ],
+  "example": {
+    "input": "nums = [2,7,11,15], target = 9",
+    "states": ["seen={}", "i=0: need 7, not seen, store 2->0", "i=1: need 2, seen at 0 -> answer"],
+    "output": "[0,1]",
+    "explanation": "nums[0] + nums[1] == 9"
+  },
+  "correctness": "Every pair is checked exactly once, either as (complement, current) or (current, complement); the map guarantees the first matching pair found is returned.",
+  "complexity": {"time": "O(n)", "space": "O(n)", "explanation": "Single pass with O(1) average hash map operations."},
+  "code": "class Solution:\n    def twoSum(self, nums, target):\n        seen = {}\n        for i, num in enumerate(nums):\n            complement = target - num\n            if complement in seen:\n                return [seen[complement], i]\n            seen[num] = i\n        return []",
+  "diagrams": [
+    {
+      "component": "array_pointers",
+      "title": "Scanning with a hash map",
+      "cells": [
+        {"value": "2", "state": "muted"},
+        {"value": "7", "state": "muted"},
+        {"value": "11", "state": "neutral"},
+        {"value": "15", "state": "neutral"}
+      ],
+      "pointers": [{"index": 1, "label": "i"}],
+      "caption": "seen = {2: 0} before checking index 1",
+      "result": "9 - 7 = 2, already in seen -> return [0, 1]"
+    }
+  ],
+  "prompt_version": "v1"
+}

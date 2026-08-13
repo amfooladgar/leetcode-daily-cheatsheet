@@ -1,0 +1,14 @@
+{# Short "why this works" callout, distinct from the prose `correctness`
+   field -- a title, a short chain of bullets, and a closing summary. #}
+<div class="reasoning-panel">
+  <div class="reasoning-title">
+    <span class="reasoning-icon">&#x03A3;</span>
+    {{ reasoning_panel.title }}
+  </div>
+  <ul class="reasoning-bullets">
+    {% for bullet in reasoning_panel.bullets %}
+    <li>{{ bullet }}</li>
+    {% endfor %}
+  </ul>
+  {% if reasoning_panel.summary %}<div class="reasoning-summary">{{ reasoning_panel.summary }}</div>{% endif %}
+</div>

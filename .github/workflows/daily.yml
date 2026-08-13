@@ -1,0 +1,92 @@
+name: Daily LeetCode Cheat Sheet
+
+# Runs at both 13:05 and 14:05 UTC every day so one of the two legs always
+# lands at 09:05 America/New_York regardless of DST. src/main.py's
+# _schedule_gate() no-ops the leg that doesn't match the configured
+# target_hour. See ARCHITECTURE.md "Daylight saving time".
+on:
+  schedule:
+    - cron: "5 13 * * *"
+    - cron: "5 14 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (skip Drive upload + manifest write)"
+        type: boolean
+        default: false
+      force:
+        description: "Bypass the idempotency guard for today's date"
+        type: boolean
+        default: false
+      problem_slug:
+        description: "Optional: fetch a specific problem instead of today's Daily Challenge"
+        type: string
+        default: ""
+
+# Prevent two runs from racing (e.g. a manual dispatch during the scheduled
+# window) and each stepping on the other's Drive upload / manifest commit.
+concurrency:
+  group: daily-cheatsheet
+  cancel-in-progress: false
+
+permissions:
+  contents: write  # to commit state/manifest.json back to main
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Claude Code CLI
+        run: curl -fsSL https://claude.ai/install.sh | bash
+
+      - name: Add Claude Code to PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Claude Code is on PATH
+        run: claude --version
+
+      - name: Run pipeline
+        id: pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          if [ -n "${{ inputs.problem_slug }}" ]; then ARGS="$ARGS --problem-slug ${{ inputs.problem_slug }}"; fi
+          python -m src.main $ARGS -v
+
+      - name: Upload run artifacts (always, even on failure)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cheatsheet-output-${{ github.run_id }}
+          path: output/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Commit updated manifest
+        if: always()
+        run: |
+          if [ -n "$(git status --porcelain state/manifest.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add state/manifest.json
+            git commit -m "chore: update run manifest [skip ci]"
+            git push
+          else
+            echo "No manifest changes to commit."
+          fi

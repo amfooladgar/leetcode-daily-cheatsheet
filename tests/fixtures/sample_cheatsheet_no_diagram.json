@@ -1,0 +1,23 @@
+{
+  "problem": {"number": 70, "title": "Climbing Stairs", "difficulty": "Easy", "topics": ["Math", "Dynamic Programming"]},
+  "headline": "Never Forget This Fibonacci-Shaped DP",
+  "problem_summary": "You are climbing a staircase of n steps. Each time you can climb 1 or 2 steps. Return how many distinct ways you can climb to the top.",
+  "key_insight": "The number of ways to reach step n is the sum of the ways to reach step n-1 and step n-2, since those are the only two steps you could have jumped from.",
+  "intuition": "This is structurally identical to the Fibonacci recurrence: ways(n) = ways(n-1) + ways(n-2), because every path to step n arrives via a final 1-step or a final 2-step move.",
+  "naive_approach": {"description": "Plain recursion without memoization recomputes the same subproblems exponentially.", "time": "O(2^n)", "space": "O(n)"},
+  "approach": [
+    "Handle n <= 2 directly (1 or 2 ways).",
+    "Track only the last two values, a and b.",
+    "For each step from 3 to n, compute a + b and shift.",
+    "Return the final value."
+  ],
+  "example": {
+    "input": "n = 5",
+    "output": "8",
+    "explanation": "1+1+1+1+1, 1+1+1+2, 1+1+2+1, 1+2+1+1, 2+1+1+1, 1+2+2, 2+1+2, 2+2+1 -> 8 ways"
+  },
+  "correctness": "By induction: ways(1)=1 and ways(2)=2 are base cases; for n>2 every valid path's last move is either a 1-step from step n-1 or a 2-step from step n-2, and these two sets of paths are disjoint and exhaustive.",
+  "complexity": {"time": "O(n)", "space": "O(1)", "explanation": "Single pass keeping only two running values."},
+  "code": "class Solution:\n    def climbStairs(self, n):\n        if n <= 2:\n            return n\n        a, b = 1, 2\n        for _ in range(3, n + 1):\n            a, b = b, a + b\n        return b",
+  "prompt_version": "v1"
+}

@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "leetcode-daily-cheatsheet/solve.schema.json",
+  "title": "SolveResult",
+  "description": "Output of prompts/claude/v1/solve.md, before verification/compression. A subset of cheatsheet.schema.json's fields — it does not yet have 'headline' or 'problem_summary', which prompts/claude/v1/compress.md adds.",
+  "type": "object",
+  "required": [
+    "problem",
+    "key_insight",
+    "intuition",
+    "approach",
+    "example",
+    "correctness",
+    "complexity",
+    "code"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "problem": {
+      "type": "object",
+      "required": ["number", "title", "difficulty"],
+      "additionalProperties": false,
+      "properties": {
+        "number": { "type": "integer" },
+        "title": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
+        "topics": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "key_insight": { "type": "string", "minLength": 1 },
+    "intuition": { "type": "string", "minLength": 1 },
+    "naive_approach": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "time": { "type": "string" },
+        "space": { "type": "string" }
+      }
+    },
+    "approach": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "example": {
+      "type": "object",
+      "required": ["input", "output"],
+      "additionalProperties": false,
+      "properties": {
+        "input": { "type": "string" },
+        "states": { "type": "array", "items": { "type": "string" } },
+        "output": { "type": "string" },
+        "explanation": { "type": "string" }
+      }
+    },
+    "correctness": { "type": "string" },
+    "complexity": {
+      "type": "object",
+      "required": ["time", "space"],
+      "additionalProperties": false,
+      "properties": {
+        "time": { "type": "string" },
+        "space": { "type": "string" },
+        "explanation": { "type": "string" }
+      }
+    },
+    "code": { "type": "string", "minLength": 1 },
+    "diagrams": {
+      "type": "array",
+      "description": "0-2 diagram components from prompts/claude/v1/solve.md's 'Diagram library' section. Omit when no component genuinely fits the problem.",
+      "maxItems": 2,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/arrayPointersDiagram" },
+          { "$ref": "#/$defs/comparisonStatesDiagram" }
+        ]
+      }
+    },
+    "reasoning_panel": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["title", "bullets"],
+      "properties": {
+        "title": { "type": "string", "maxLength": 80 },
+        "bullets": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": { "type": "string", "maxLength": 120 }
+        },
+        "summary": { "type": "string", "maxLength": 260 }
+      }
+    }
+  },
+  "$defs": {
+    "cell": {
+      "type": "object",
+      "required": ["value"],
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": "string", "maxLength": 12 },
+        "state": {
+          "type": "string",
+          "enum": ["neutral", "highlight", "invalid", "muted"],
+          "default": "neutral"
+        }
+      }
+    },
+    "pointerLabel": {
+      "type": "object",
+      "required": ["index", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "index": { "type": "integer", "minimum": 0 },
+        "label": { "type": "string", "maxLength": 16 }
+      }
+    },
+    "arrayPointersDiagram": {
+      "type": "object",
+      "required": ["component", "cells"],
+      "additionalProperties": false,
+      "properties": {
+        "component": { "const": "array_pointers" },
+        "title": { "type": "string", "maxLength": 60 },
+        "cells": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 14,
+          "items": { "$ref": "#/$defs/cell" }
+        },
+        "pointers": {
+          "type": "array",
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/pointerLabel" }
+        },
+        "caption": { "type": "string", "maxLength": 140 },
+        "result": { "type": "string", "maxLength": 100 }
+      }
+    },
+    "comparisonStatesDiagram": {
+      "type": "object",
+      "required": ["component", "cases"],
+      "additionalProperties": false,
+      "properties": {
+        "component": { "const": "comparison_states" },
+        "cases": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "required": ["verdict", "label", "cells"],
+            "additionalProperties": false,
+            "properties": {
+              "verdict": { "type": "string", "enum": ["valid", "invalid"] },
+              "label": { "type": "string", "maxLength": 60 },
+              "description": { "type": "string", "maxLength": 100 },
+              "cells": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 14,
+                "items": { "$ref": "#/$defs/cell" }
+              },
+              "pointers": {
+                "type": "array",
+                "maxItems": 4,
+                "items": { "$ref": "#/$defs/pointerLabel" }
+              },
+              "result": { "type": "string", "maxLength": 100 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

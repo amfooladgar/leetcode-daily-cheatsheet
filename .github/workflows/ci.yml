@@ -1,0 +1,32 @@
+name: CI
+
+# Runs the test suite and linter on every push/PR. Deliberately does NOT
+# install the Claude Code CLI or require any API keys — the whole suite
+# mocks LeetCode, Claude, and Google Drive (see
+# tests/test_main_integration.py), so CI proves the pipeline's wiring and
+# logic without spending a single token or touching a real credential.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Test
+        run: pytest -q
