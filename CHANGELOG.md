@@ -6,6 +6,21 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- CI turned green, but manually triggering `daily.yml` via Actions ->
+  "Run workflow" (following docs/SETUP.md step 6: `dry_run: true`, leaving
+  `--force` and `--problem-slug` unset) produced no output files. The run
+  logged `Current America/New_York time is 08:35, not the configured
+  target hour 09:00 -- no-op` and exited 0. `manual_invocation` in
+  `src/main.py`'s `run()` only checked `args.date`/`args.problem_slug`/
+  `args.force` -- not `args.dry_run` -- so a plain dry run fell through to
+  `_schedule_gate()` and was silently skipped outside `target_hour`.
+  `--dry-run` never uploads to Drive or writes the manifest on its own, so
+  gating it by time of day protected nothing while defeating the exact
+  verification flow the docs point people at. Added `args.dry_run` to
+  `manual_invocation`; added a regression test that reproduces the bug
+  (confirmed it fails without the fix, passes with it) by mocking
+  `_schedule_gate` to return `False` and asserting `--dry-run` alone still
+  runs the pipeline.
 - After pinning `channel="chromium"`, CI failed *again* at the exact same
   spot, this time with `Executable doesn't exist at .../chromium-<rev>/
   chrome-linux64/chrome` -- the regular chromium build, not the shell

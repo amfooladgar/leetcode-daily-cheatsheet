@@ -111,6 +111,29 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         # Dry run must not write the manifest.
         self.assertFalse((self.tmpdir / "state" / "manifest.json").exists())
 
+    def test_dry_run_alone_bypasses_the_schedule_gate(self):
+        # Regression: docs/SETUP.md step 6 tells users to verify the
+        # pipeline is wired correctly via Actions -> "Run workflow" ->
+        # dry_run: true, leaving --force and --problem-slug unset (so
+        # today's real daily challenge gets fetched) -- "without waiting
+        # for tomorrow". But `manual_invocation` didn't check args.dry_run,
+        # so that exact flow hit the schedule gate and silently no-op'd
+        # (exit 0, zero files) unless it happened to run at exactly
+        # schedule.target_hour. --dry-run never uploads to Drive or writes
+        # the manifest on its own, so gating it by time of day protects
+        # nothing.
+        from src.main import main
+
+        with mock.patch("src.main._schedule_gate", return_value=False):
+            exit_code = main(["--dry-run"])
+
+        self.assertEqual(exit_code, 0)
+        content_path = self.tmpdir / "output" / "2026-08-13" / "1" / "content.json"
+        self.assertTrue(
+            content_path.exists(),
+            "dry-run alone must still run the pipeline, not defer to the schedule gate",
+        )
+
     def test_skip_drive_writes_manifest_with_drive_false(self):
         from src.main import main
 

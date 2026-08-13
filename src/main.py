@@ -60,8 +60,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def _schedule_gate(settings: dict) -> bool:
     """Returns True if this run should actually publish. Only applies to the
-    unattended daily invocation (no --date/--problem-slug/--force) — see
-    ARCHITECTURE.md 'Daylight saving time'."""
+    unattended daily invocation (no --date/--problem-slug/--force/
+    --dry-run) — see ARCHITECTURE.md 'Daylight saving time'."""
     tz = ZoneInfo(settings["schedule"]["timezone"])
     now = dt.datetime.now(tz)
     target_hour = settings["schedule"]["target_hour"]
@@ -120,7 +120,15 @@ def _markdown_summary(cheatsheet: dict, problem_url: str) -> str:
 
 def run(args: argparse.Namespace) -> int:
     settings = load_settings()
-    manual_invocation = bool(args.date or args.problem_slug or args.force)
+    # --dry-run counts as a manual invocation too: it never uploads to
+    # Drive or writes the manifest (see the `if args.dry_run:` return
+    # below), so there's nothing for the schedule gate to protect against.
+    # Without this, docs/SETUP.md step 6's documented way to verify wiring
+    # -- Actions -> "Run workflow" -> dry_run: true, no --force, no
+    # --problem-slug -- silently no-ops outside schedule.target_hour and
+    # produces no output files, which is exactly what it's meant to let
+    # you check without waiting for tomorrow.
+    manual_invocation = bool(args.date or args.problem_slug or args.force or args.dry_run)
 
     if not manual_invocation and not _schedule_gate(settings):
         return 0
