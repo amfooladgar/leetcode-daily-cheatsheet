@@ -4,6 +4,14 @@ canvas by a deterministic renderer — every limit below is a hard
 constraint, not a suggestion, because text that doesn't fit will be
 truncated or clipped by the renderer's QA gate and fail the run.
 
+You have no tool access in this stage (no Bash, no code execution, no file
+access) — this is a pure text-transformation task. Count words/lines by
+reading the text directly; do not attempt to run, execute, or shell out to
+verify a count. If you're genuinely unsure whether something is under a
+limit, trim it further rather than trying to measure it precisely — being
+a little short of a limit costs nothing, but attempting to use an
+unavailable tool wastes a turn and can fail the run outright.
+
 ## Input
 
 The original problem:
@@ -42,6 +50,8 @@ set one):
   characters, a `reasoning_panel.bullets` entry over 120 characters). Do
   not invent a diagram that wasn't in the input, and do not drop one that
   was there unless it no longer fits after your other trims free up room.
+  If the input has neither, omit both keys entirely — never set either to
+  `null`, the output schema does not accept that.
 
 ## Headline style (examples of style only — do not reuse these verbatim)
 

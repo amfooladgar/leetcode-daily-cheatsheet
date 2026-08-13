@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
 
 from src.rendering.code_highlight import highlight_python_html
@@ -36,6 +37,14 @@ _MIME_BY_SUFFIX = {
     ".png": "image/png",
     ".ttf": "font/ttf",
 }
+
+
+class RendererNotInstalledError(RuntimeError):
+    """Raised when Playwright's Chromium binary hasn't been downloaded yet.
+    `pip install -r requirements.txt` installs the `playwright` Python
+    package, but the browser binary itself is a separate, one-time
+    download -- `pip` has no way to trigger it automatically. See
+    docs/SETUP.md / README.md "Quick start"."""
 
 
 @dataclass
@@ -121,7 +130,17 @@ def render_cheatsheet(
 
     overflow_px = 0
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        try:
+            browser = pw.chromium.launch()
+        except PlaywrightError as exc:
+            if "Executable doesn't exist" in str(exc):
+                raise RendererNotInstalledError(
+                    "Playwright's Chromium browser isn't installed yet. This is a "
+                    "one-time setup step separate from `pip install` -- run:\n\n"
+                    "    playwright install chromium\n\n"
+                    "(with your virtualenv activated), then re-run the pipeline."
+                ) from exc
+            raise
         try:
             page = browser.new_page(viewport={"width": target_width, "height": target_height})
             page.set_content(html, wait_until="load")

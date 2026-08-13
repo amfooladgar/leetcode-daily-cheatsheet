@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "leetcode-daily-cheatsheet/solve.schema.json",
   "title": "SolveResult",
   "description": "Output of prompts/claude/v1/solve.md, before verification/compression. A subset of cheatsheet.schema.json's fields — it does not yet have 'headline' or 'problem_summary', which prompts/claude/v1/compress.md adds.",

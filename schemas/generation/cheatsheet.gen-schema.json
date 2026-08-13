@@ -1,0 +1,183 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "leetcode-daily-cheatsheet/generation/cheatsheet.gen-schema.json",
+  "title": "CheatsheetContentGeneration",
+  "description": "CLI-facing twin of ../cheatsheet.schema.json, used ONLY for the `claude --json-schema` flag that constrains prompts/claude/v1/compress.md's generation. See schemas/generation/solve.gen-schema.json's description for why this avoids $ref/$defs, oneOf, const, minLength/maxLength/minItems/maxItems, and nullable fields, and ARCHITECTURE.md 'Why two schema files per stage'. The full shape is enforced after generation by src/claude/validator.py's validate_schema() against ../cheatsheet.schema.json.",
+  "type": "object",
+  "required": [
+    "problem",
+    "headline",
+    "key_insight",
+    "intuition",
+    "approach",
+    "example",
+    "complexity",
+    "code"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "problem": {
+      "type": "object",
+      "required": ["number", "title", "difficulty"],
+      "additionalProperties": false,
+      "properties": {
+        "number": { "type": "integer" },
+        "title": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
+        "topics": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "headline": {
+      "type": "string",
+      "description": "e.g. 'Never Forget This Sliding Window Trick'. Max ~90 chars; word limit enforced by prompts/claude/v1/compress.md and re-checked by src/claude/validator.py."
+    },
+    "problem_summary": { "type": "string", "description": "Compressed problem statement for the top of the card. Max 400 chars." },
+    "key_insight": { "type": "string" },
+    "intuition": { "type": "string", "description": "Max 600 chars." },
+    "naive_approach": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "time": { "type": "string" },
+        "space": { "type": "string" }
+      }
+    },
+    "approach": {
+      "type": "array",
+      "description": "1-5 steps, each max 160 chars.",
+      "items": { "type": "string" }
+    },
+    "example": {
+      "type": "object",
+      "required": ["input", "output"],
+      "additionalProperties": false,
+      "properties": {
+        "input": { "type": "string" },
+        "states": {
+          "type": "array",
+          "description": "Up to 6 short state snapshots.",
+          "items": { "type": "string" }
+        },
+        "output": { "type": "string" },
+        "explanation": { "type": "string" }
+      }
+    },
+    "correctness": { "type": "string" },
+    "complexity": {
+      "type": "object",
+      "required": ["time", "space"],
+      "additionalProperties": false,
+      "properties": {
+        "time": { "type": "string" },
+        "space": { "type": "string" },
+        "explanation": { "type": "string" }
+      }
+    },
+    "code": { "type": "string", "description": "Final Python 3 solution, carried through from the verified solution." },
+    "diagrams": {
+      "type": "array",
+      "description": "0-2 items, carried through from the input as-is (trim individual strings only if they exceed the length guidance below). Each item is EITHER an array_pointers diagram (populate 'cells', and optionally 'title'/'pointers'/'caption'/'result' -- leave 'cases' unset) OR a comparison_states diagram (populate 'cases' -- leave 'title'/'cells'/'pointers'/'caption'/'result' at the top level of the item unset). Never mix fields from both shapes in the same item.",
+      "items": {
+        "type": "object",
+        "required": ["component"],
+        "additionalProperties": false,
+        "properties": {
+          "component": {
+            "enum": ["array_pointers", "comparison_states"],
+            "description": "Selects which of the two diagram shapes this item uses."
+          },
+          "title": { "type": "string", "description": "array_pointers only. Max 60 chars." },
+          "cells": {
+            "type": "array",
+            "description": "array_pointers only. 1-14 items, each {value, state}. state is one of neutral/highlight/invalid/muted (default neutral). value is max 12 chars.",
+            "items": {
+              "type": "object",
+              "required": ["value"],
+              "additionalProperties": false,
+              "properties": {
+                "value": { "type": "string" },
+                "state": { "type": "string", "enum": ["neutral", "highlight", "invalid", "muted"] }
+              }
+            }
+          },
+          "pointers": {
+            "type": "array",
+            "description": "array_pointers only. Up to 4 items, each {index, label}. label max 16 chars.",
+            "items": {
+              "type": "object",
+              "required": ["index", "label"],
+              "additionalProperties": false,
+              "properties": {
+                "index": { "type": "integer" },
+                "label": { "type": "string" }
+              }
+            }
+          },
+          "caption": { "type": "string", "description": "array_pointers only. Max 140 chars." },
+          "result": { "type": "string", "description": "array_pointers only. Max 100 chars." },
+          "cases": {
+            "type": "array",
+            "description": "comparison_states only. 2-3 items, each {verdict, label, description, cells, pointers, result}.",
+            "items": {
+              "type": "object",
+              "required": ["verdict", "label", "cells"],
+              "additionalProperties": false,
+              "properties": {
+                "verdict": { "type": "string", "enum": ["valid", "invalid"] },
+                "label": { "type": "string", "description": "Max 60 chars." },
+                "description": { "type": "string", "description": "Max 100 chars." },
+                "cells": {
+                  "type": "array",
+                  "description": "1-14 items, each {value, state}, same shape as array_pointers cells.",
+                  "items": {
+                    "type": "object",
+                    "required": ["value"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "value": { "type": "string" },
+                      "state": { "type": "string", "enum": ["neutral", "highlight", "invalid", "muted"] }
+                    }
+                  }
+                },
+                "pointers": {
+                  "type": "array",
+                  "description": "Up to 4 items, each {index, label}.",
+                  "items": {
+                    "type": "object",
+                    "required": ["index", "label"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "index": { "type": "integer" },
+                      "label": { "type": "string" }
+                    }
+                  }
+                },
+                "result": { "type": "string", "description": "Max 100 chars." }
+              }
+            }
+          }
+        }
+      }
+    },
+    "reasoning_panel": {
+      "type": "object",
+      "description": "Optional 'why this works' callout, carried through from the input as-is. Omit this key entirely (do not set it to null) when not using it.",
+      "required": ["title", "bullets"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string", "description": "Max 80 chars." },
+        "bullets": {
+          "type": "array",
+          "description": "1-5 short bullets, each max 120 chars.",
+          "items": { "type": "string" }
+        },
+        "summary": { "type": "string", "description": "One closing sentence, max 260 chars." }
+      }
+    },
+    "prompt_version": {
+      "type": "string",
+      "description": "Which prompts/claude/<version>/ produced this content, for reproducibility. Should be \"v1\"."
+    }
+  }
+}

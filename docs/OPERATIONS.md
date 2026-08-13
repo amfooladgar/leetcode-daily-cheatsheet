@@ -64,9 +64,12 @@ rendering, so a nearly-valid image is often already on disk).
 Manifest records `"drive": false` for that date but the render step
 succeeded, so nothing is lost — the PNG is in the workflow run's uploaded
 artifact (Actions -> the run -> Artifacts) even though it didn't reach
-Drive. Common cause: the service account's share on the Drive folder was
-removed, or `GOOGLE_DRIVE_FOLDER_ID` points at a folder the service account
-was never shared on (see docs/SETUP.md step 3.6). Fix the share, then:
+Drive. Common causes: `GOOGLE_DRIVE_FOLDER_ID` points at a folder your
+Google account (the one you authorized in docs/SETUP.md step 3.6) doesn't
+have access to, or the OAuth refresh token was revoked (Google Account ->
+Security -> Third-party access) — re-run
+`python scripts/authorize_google_drive.py` and update the
+`GOOGLE_OAUTH_REFRESH_TOKEN` secret if so. Once fixed:
 
 ```bash
 python -m src.main --date <that-date> --force
@@ -77,11 +80,13 @@ python -m src.main --date <that-date> --force
 - **Anthropic key**: create a new key in the Claude Console, update the
   `ANTHROPIC_API_KEY` GitHub secret, delete the old key in the Console.
   No code change needed.
-- **Google service account key**: Google Cloud Console -> the service
-  account -> Keys -> Add key (new) -> update the
-  `GOOGLE_SERVICE_ACCOUNT_JSON` secret with the new JSON -> Keys -> delete
-  the old key. Do this in that order so there's no window with zero valid
-  key.
+- **Google Drive OAuth**: the refresh token doesn't expire on its own, so
+  there's usually nothing to rotate. If you want to anyway (or it was
+  revoked): re-run `python scripts/authorize_google_drive.py` and update
+  the `GOOGLE_OAUTH_REFRESH_TOKEN` secret with the new value — the
+  `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET` pair only needs to
+  change if you regenerate the OAuth client itself in Google Cloud
+  Console.
 
 ## Changing the schedule time
 

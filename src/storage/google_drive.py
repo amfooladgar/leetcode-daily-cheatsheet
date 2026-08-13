@@ -1,5 +1,6 @@
-"""Google Drive upload via a service account (see docs/SETUP.md step 3 for
-why a service account rather than interactive OAuth).
+"""Google Drive upload via OAuth 2.0 user credentials (see docs/SETUP.md
+step 3 and ARCHITECTURE.md "Why OAuth instead of a service account" for why
+this is NOT a service account).
 
 Folder layout created/reused under the configured root folder ID:
 
@@ -14,7 +15,6 @@ Folder layout created/reused under the configured root folder ID:
 from __future__ import annotations
 
 import io
-import json
 import logging
 import os
 from dataclasses import dataclass
@@ -24,6 +24,9 @@ log = logging.getLogger(__name__)
 
 _DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
 _FOLDER_MIME = "application/vnd.google-apps.folder"
+_TOKEN_URI = "https://oauth2.googleapis.com/token"
+
+_OAUTH_ENV_VARS = ("GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "GOOGLE_OAUTH_REFRESH_TOKEN")
 
 
 class DriveUploadError(RuntimeError):
@@ -44,19 +47,29 @@ def _load_credentials():
     # Imported lazily so `python -m src.main --dry-run` and the test suite
     # never require google-api-python-client / google-auth to be installed
     # just to exercise stages that don't touch Drive.
-    from google.oauth2 import service_account
+    from google.oauth2.credentials import Credentials
 
-    raw = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
-    if not raw:
+    values = {name: os.environ.get(name) for name in _OAUTH_ENV_VARS}
+    missing = [name for name, value in values.items() if not value]
+    if missing:
         raise DriveUploadError(
-            "GOOGLE_SERVICE_ACCOUNT_JSON is not set. See docs/SETUP.md step 3."
+            f"{', '.join(missing)} not set. See docs/SETUP.md step 3 — run "
+            "scripts/authorize_google_drive.py once to obtain a refresh "
+            "token, then set these as env vars (locally) or GitHub Actions "
+            "secrets (CI)."
         )
 
-    # Accept either the raw JSON (as GitHub Actions secrets store it) or a
-    # local file path (convenient for `.env` during development).
-    info = json.loads(raw) if raw.strip().startswith("{") else json.loads(Path(raw).read_text())
-
-    return service_account.Credentials.from_service_account_info(info, scopes=_DRIVE_SCOPES)
+    # google-api-python-client refreshes the short-lived access token from
+    # this refresh_token automatically on first use and whenever it expires
+    # — nothing here needs to run interactively or re-authorize.
+    return Credentials(
+        token=None,
+        refresh_token=values["GOOGLE_OAUTH_REFRESH_TOKEN"],
+        token_uri=_TOKEN_URI,
+        client_id=values["GOOGLE_OAUTH_CLIENT_ID"],
+        client_secret=values["GOOGLE_OAUTH_CLIENT_SECRET"],
+        scopes=_DRIVE_SCOPES,
+    )
 
 
 def _build_service():

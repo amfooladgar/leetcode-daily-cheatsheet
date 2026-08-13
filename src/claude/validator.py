@@ -66,6 +66,118 @@ def validate_schema(data: dict, schema: dict) -> None:
         raise ValidationError(f"Schema validation failed at {path}: {exc.message}") from exc
 
 
+def clamp_to_schema(data: dict, schema: dict) -> int:
+    """Truncates in place any string in `data` that overshoots its schema's
+    `maxLength`, walking `$ref`/`$defs`/`oneOf` the same way the real schema
+    does. Returns the number of fields clamped (0 if `data` already fit).
+
+    Call this *before* `validate_schema()` on solve/compress output. Claude
+    has no tool access in those stages (see ARCHITECTURE.md "Why the
+    prompts explicitly say 'no tool access'") and cannot precisely count
+    characters against a hard limit like `reasoning_panel.bullets[i]`'s 120
+    -- a model landing a few characters over a length budget is expected,
+    recoverable drift, not a reasoning failure worth discarding an entire
+    (paid) generation over and re-running the whole stage. This applies the
+    same fix a human copy-editor would: trim to fit, don't regenerate.
+
+    Deliberately narrow in scope: only `maxLength` overshoot is repaired
+    this way. Every other constraint (`enum`, `const`, `required`,
+    `minLength`, item-count bounds) still reaches `validate_schema()`
+    untouched and fails normally, since those indicate a real shape or
+    reasoning problem rather than a length overshoot.
+    """
+    return _clamp_object(data, schema, root=schema)
+
+
+def _resolve_schema(node: dict, root: dict) -> dict:
+    if "$ref" in node:
+        def_name = node["$ref"].rsplit("/", 1)[-1]
+        return root.get("$defs", {})[def_name]
+    return node
+
+
+def _pick_one_of_branch(value: object, branches: list[dict], root: dict) -> dict | None:
+    """Diagram items are `oneOf` two shapes distinguished by a `const`
+    discriminator field (`component`). Picks the branch whose consts match
+    `value` so clamping can recurse into the right per-branch maxLengths;
+    returns None (no clamping attempted) if no branch matches, leaving the
+    mismatch for `validate_schema()` to report precisely."""
+    if not isinstance(value, dict):
+        return None
+    for branch in branches:
+        resolved = _resolve_schema(branch, root)
+        consts = {
+            key: prop["const"]
+            for key, prop in resolved.get("properties", {}).items()
+            if "const" in prop
+        }
+        if consts and all(value.get(key) == expected for key, expected in consts.items()):
+            return resolved
+    return None
+
+
+def _truncate_string(value: str, max_length: int) -> str:
+    ellipsis = "…"
+    if max_length <= len(ellipsis):
+        return value[:max_length]
+    return value[: max_length - len(ellipsis)].rstrip() + ellipsis
+
+
+def _clamp_object(obj: dict, schema: dict, root: dict) -> int:
+    if not isinstance(obj, dict):
+        return 0
+    clamped = 0
+    properties = schema.get("properties", {})
+    for key, value in obj.items():
+        prop_schema = properties.get(key)
+        if prop_schema is not None:
+            clamped += _clamp_value(obj, key, value, prop_schema, root)
+    return clamped
+
+
+def _clamp_array(arr: list, item_schema: dict, root: dict) -> int:
+    clamped = 0
+    for i, item in enumerate(arr):
+        clamped += _clamp_value(arr, i, item, item_schema, root)
+    return clamped
+
+
+def _clamp_value(container, key, value: object, schema: dict, root: dict) -> int:
+    schema = _resolve_schema(schema, root)
+
+    if "oneOf" in schema:
+        branch = _pick_one_of_branch(value, schema["oneOf"], root)
+        if branch is None:
+            return 0
+        schema = branch
+
+    schema_type = schema.get("type")
+
+    if isinstance(value, dict) and (schema_type == "object" or "properties" in schema):
+        return _clamp_object(value, schema, root)
+
+    if isinstance(value, list) and schema_type == "array" and "items" in schema:
+        return _clamp_array(value, schema["items"], root)
+
+    if isinstance(value, str):
+        max_length = schema.get("maxLength")
+        if max_length is not None and len(value) > max_length:
+            truncated = _truncate_string(value, max_length)
+            log.warning(
+                "Clamped an over-length string from %d to %d chars to fit the schema's "
+                "maxLength (model overshot a character budget it has no tool access to "
+                "precisely count): %r -> %r",
+                len(value),
+                max_length,
+                value,
+                truncated,
+            )
+            container[key] = truncated
+            return 1
+
+    return 0
+
+
 class _TimeoutGuard:
     """Best-effort per-example execution timeout using SIGALRM. Unix-only
     (fine for GitHub Actions' ubuntu-latest runners); on platforms without

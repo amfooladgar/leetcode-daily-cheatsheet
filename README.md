@@ -48,9 +48,9 @@ python -m src.main --dry-run
 ```
 
 See [docs/SETUP.md](docs/SETUP.md) for the full one-time setup (Anthropic
-key, Google service account, GitHub secrets, enabling the schedule) and
-[docs/OPERATIONS.md](docs/OPERATIONS.md) for how to operate it day to day
-(manual reruns, reading failures, rotating keys).
+key, Google Drive OAuth authorization, GitHub secrets, enabling the
+schedule) and [docs/OPERATIONS.md](docs/OPERATIONS.md) for how to operate
+it day to day (manual reruns, reading failures, rotating keys).
 
 ## Repository layout
 

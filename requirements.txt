@@ -12,6 +12,11 @@ PyYAML>=6.0,<7
 jsonschema>=4.23,<5
 pydantic>=2.9,<3
 
+# Loads .env into os.environ for local runs (see README.md's
+# "cp .env.example .env" step and src/main.py's main()). Never overrides a
+# real env var, so it's a no-op in CI, where secrets are already exported.
+python-dotenv>=1.0,<2
+
 # Deterministic HTML/CSS rendering, screenshotted to PNG by headless
 # Chromium. Jinja2 builds a fully self-contained HTML document (fonts and
 # the contact-card image embedded as base64 data URIs -- no network access
@@ -20,7 +25,10 @@ pydantic>=2.9,<3
 Jinja2>=3.1,<4
 playwright>=1.47,<2
 
-# Google Drive upload (service account)
+# Google Drive upload via OAuth 2.0 user credentials, not a service account
+# -- see ARCHITECTURE.md "Why OAuth instead of a service account" (a service
+# account has zero Drive storage quota and cannot upload file content into
+# a personal, non-Workspace Drive folder).
 google-api-python-client>=2.149,<3
 google-auth>=2.35,<3
 
@@ -35,3 +43,8 @@ tzdata>=2024.2 ; sys_platform == "win32"
 #   pytest      (auto-discovers unittest.TestCase classes too)
 pytest>=8.3,<9
 ruff>=0.7,<1
+
+# One-time setup only, NOT a runtime dependency of the pipeline itself:
+# scripts/authorize_google_drive.py uses this to run the interactive OAuth
+# consent flow once and print a refresh token. Safe to skip in CI.
+google-auth-oauthlib>=1.2,<2

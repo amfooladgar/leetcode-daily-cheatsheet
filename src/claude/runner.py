@@ -10,6 +10,15 @@ must not depend on anyone's local CLAUDE.md, hooks, or MCP servers. Every
 byte of the prompt comes from prompts/claude/<version>/<stage>.md, filled in
 by this module, so a run is fully reproducible from the files in this repo
 plus the ANTHROPIC_API_KEY environment variable.
+
+The `schema_filename` callers pass here (src/main.py) is deliberately the
+*simplified* generation schema under schemas/generation/, not the full
+schemas/<stage>.schema.json -- see ARCHITECTURE.md "Why two schema files
+per stage". `--json-schema` feeds into Claude's structured-output/tool
+mechanism, which does not support the full JSON Schema spec ($ref/$defs,
+oneOf/anyOf/allOf are unsupported or crash-prone); the full, precise shape
+is enforced separately, after generation, via src/claude/validator.py's
+validate_schema() against the real schema file.
 """
 
 from __future__ import annotations
@@ -114,9 +123,17 @@ def run_stage(
         ) from exc
 
     if proc.returncode != 0:
-        raise ClaudeStageError(
-            f"Stage '{stage}' exited {proc.returncode}. stderr:\n{proc.stderr.strip()}"
-        )
+        # Surface stdout too, not just stderr: some `claude` CLI failure
+        # modes (a crash inside its own --json-schema handling, for
+        # instance) exit non-zero with an empty stderr and put whatever
+        # diagnostic text exists on stdout instead. Showing only stderr in
+        # that case silently drops the one clue available for debugging.
+        stderr = proc.stderr.strip() or "(empty)"
+        stdout = proc.stdout.strip()
+        detail = f"Stage '{stage}' exited {proc.returncode}.\n--- stderr ---\n{stderr}"
+        if stdout:
+            detail += f"\n--- stdout (first 4000 chars) ---\n{stdout[:4000]}"
+        raise ClaudeStageError(detail)
 
     try:
         payload = json.loads(proc.stdout)

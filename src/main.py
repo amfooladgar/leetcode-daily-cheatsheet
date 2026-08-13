@@ -18,10 +18,13 @@ import sys
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from dotenv import load_dotenv
+
 from src.claude.runner import ClaudeStageError, run_stage
 from src.claude.validator import (
     ExampleExecutionError,
     ValidationError,
+    clamp_to_schema,
     run_examples,
     validate_schema,
 )
@@ -164,14 +167,20 @@ def run(args: argparse.Namespace) -> int:
     def _solve() -> dict:
         result = run_stage(
             stage="solve",
-            schema_filename="solve.schema.json",
+            # The CLI-facing schema is a simplified twin (no $ref/oneOf) --
+            # see schemas/generation/solve.gen-schema.json's description and
+            # ARCHITECTURE.md "Why two schema files per stage". The full,
+            # precise shape is still enforced below via validate_schema().
+            schema_filename="generation/solve.gen-schema.json",
             model=claude_cfg["model_solve"],
             max_turns=claude_cfg["max_turns"],
             allowed_tools=claude_cfg["allowed_tools"],
             prompt_version=prompt_version,
             problem_json=problem_json,
         )
-        validate_schema(result.structured_output, _load_schema("solve.schema.json"))
+        solve_schema = _load_schema("solve.schema.json")
+        clamp_to_schema(result.structured_output, solve_schema)
+        validate_schema(result.structured_output, solve_schema)
         return result.structured_output
 
     def _verify(solve_json: dict) -> dict:
@@ -185,7 +194,9 @@ def run(args: argparse.Namespace) -> int:
             problem_json=problem_json,
             solve_json=json.dumps(solve_json),
         )
-        validate_schema(result.structured_output, _load_schema("verify.schema.json"))
+        verify_schema = _load_schema("verify.schema.json")
+        clamp_to_schema(result.structured_output, verify_schema)
+        validate_schema(result.structured_output, verify_schema)
         return result.structured_output
 
     # --- SOLVED + VERIFIED (one regeneration attempt on invalid) --------
@@ -262,7 +273,10 @@ def run(args: argparse.Namespace) -> int:
     try:
         compress_result = run_stage(
             stage="compress",
-            schema_filename="cheatsheet.schema.json",
+            # See the matching comment on the solve() call above -- the CLI
+            # gets the simplified generation schema; validate_schema() below
+            # still enforces the full schemas/cheatsheet.schema.json shape.
+            schema_filename="generation/cheatsheet.gen-schema.json",
             model=claude_cfg["model_compress"],
             max_turns=claude_cfg["max_turns"],
             allowed_tools=claude_cfg["allowed_tools"],
@@ -279,7 +293,9 @@ def run(args: argparse.Namespace) -> int:
             code_absolute_max_lines=str(content_cfg["code_absolute_max_lines"]),
         )
         cheatsheet = compress_result.structured_output
-        validate_schema(cheatsheet, _load_schema("cheatsheet.schema.json"))
+        cheatsheet_schema = _load_schema("cheatsheet.schema.json")
+        clamp_to_schema(cheatsheet, cheatsheet_schema)
+        validate_schema(cheatsheet, cheatsheet_schema)
     except (ClaudeStageError, ValidationError) as exc:
         log.error("COMPRESSED failed: %s", exc)
         return 1
@@ -379,6 +395,16 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Local dev only: populates os.environ from .env at the repo root (see
+    # README.md's "cp .env.example .env" step) so ANTHROPIC_API_KEY /
+    # GOOGLE_OAUTH_* / GOOGLE_DRIVE_FOLDER_ID work without manually
+    # `export`-ing each one. `override=False` (python-dotenv's default)
+    # means a real env var -- e.g. a GitHub Actions secret in CI -- always
+    # wins over anything in .env, so this is a no-op in production. A
+    # missing .env (e.g. in CI, which doesn't have one) is also a silent
+    # no-op, not an error.
+    load_dotenv(REPO_ROOT / ".env")
+
     args = parse_args(argv)
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,

@@ -23,7 +23,15 @@ claude:
   model_solve: "claude-sonnet-5"
   model_verify: "claude-sonnet-5"
   model_compress: "claude-sonnet-5"
-  max_turns: 4
+  # allowed_tools is deliberately empty (see below), so every turn beyond
+  # the first is either extended thinking or a denied tool-use attempt the
+  # model has to recover from. 4 was too tight in practice -- compress hit
+  # "Reached maximum number of turns (4)" after the model twice tried Bash
+  # (denied, since allowed_tools is empty) to literally count code lines
+  # instead of just reading them. The prompts now say explicitly not to
+  # attempt tool use (see prompts/claude/v1/*.md), but this stays raised as
+  # a buffer against the same failure mode elsewhere.
+  max_turns: 8
   allowed_tools: ""        # empty = pure reasoning, no Bash/file/network access
   output_format: "json"
 

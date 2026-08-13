@@ -4,6 +4,7 @@ parsing, stage sequencing, schema validation, manifest writes) without any
 network access or API keys, matching CLAUDE.md's testing rule."""
 
 import json
+import os
 import shutil
 import tempfile
 import unittest
@@ -148,6 +149,30 @@ class MainPipelineIntegrationTests(unittest.TestCase):
                 second = main(["--problem-slug", "two-sum"])
                 self.assertEqual(second, 0)
                 mock_run_stage.assert_not_called()  # short-circuited by the manifest
+
+    def test_env_file_populates_missing_vars_without_overriding_existing(self):
+        # Regression test: main() must load .env (see README.md's "cp
+        # .env.example .env" step) so secrets work without the user having
+        # to `export` each one by hand -- but a real, already-exported env
+        # var (e.g. a GitHub Actions secret in CI) must always win.
+        from src.main import main
+        from src.storage.google_drive import UploadResult
+
+        (self.tmpdir / ".env").write_text(
+            "GOOGLE_DRIVE_FOLDER_ID=from-dotenv\nSOME_OTHER_VAR=from-dotenv\n"
+        )
+
+        with mock.patch(
+            "src.main.upload_cheatsheet",
+            return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
+        ) as mock_upload, mock.patch.dict("os.environ", {"SOME_OTHER_VAR": "already-set"}):
+            os.environ.pop("GOOGLE_DRIVE_FOLDER_ID", None)
+            exit_code = main(["--problem-slug", "two-sum", "--force"])
+
+            self.assertEqual(exit_code, 0)
+            mock_upload.assert_called_once()
+            self.assertEqual(mock_upload.call_args.kwargs["root_folder_id"], "from-dotenv")
+            self.assertEqual(os.environ["SOME_OTHER_VAR"], "already-set")  # .env did not override
 
 
 if __name__ == "__main__":

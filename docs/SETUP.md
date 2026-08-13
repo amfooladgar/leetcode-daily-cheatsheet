@@ -16,8 +16,9 @@ console clicking.
   After `pip install -r requirements.txt`, also run `playwright install
   chromium` once — the renderer screenshots the cheat sheet with headless
   Chromium (see ARCHITECTURE.md "Why HTML/CSS instead of Pillow").
-- A Google account you're willing to grant a service account access to
-  (for Drive uploads).
+- A Google account with a Drive folder you're willing to archive into (for
+  Drive uploads — you authorize the pipeline as yourself, no service
+  account involved; see step 3).
 
 ## 1. Create the repository
 
@@ -65,42 +66,72 @@ compress) against one problem statement — a few thousand tokens per run.
 This is the only recurring paid API in the whole pipeline (no image-model
 cost — see ARCHITECTURE.md).
 
-## 3. Google Drive (service account — required for unattended uploads)
+## 3. Google Drive (OAuth user credentials — required for unattended uploads)
 
-A **service account** is used instead of your personal OAuth login because
-GitHub Actions has no browser to complete an interactive OAuth consent
-screen, and a service account key can be scoped to exactly one shared
-folder.
+This pipeline authenticates to Drive as **you**, via OAuth 2.0, not via a
+service account. A service account has no Drive storage quota of its own
+and cannot upload file *content* into a personal (non-Google-Workspace)
+Drive folder — it can create empty folders, but any actual file upload
+fails with `storageQuotaExceeded`. See ARCHITECTURE.md "Why OAuth instead
+of a service account" for the full story if you're curious; the short
+version is this is the fix, not a workaround.
+
+The interactive OAuth consent screen only needs to happen **once**, on your
+own machine — after that, a long-lived refresh token lets GitHub Actions
+authenticate headlessly, the same way an API key would.
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/) and
    create a new project (or reuse one you already have) — e.g.
    `leetcode-cheatsheet`.
 2. Enable the **Google Drive API** for that project: APIs & Services ->
    Library -> search "Google Drive API" -> Enable.
-3. Create a service account: APIs & Services -> Credentials -> Create
-   Credentials -> Service account. Name it e.g. `cheatsheet-uploader`. You
-   don't need to grant it any project-level IAM role.
-4. Open the new service account -> Keys -> Add key -> Create new key ->
-   JSON. This downloads a JSON file — **treat it like a password**. Do not
-   commit it. Save it locally as e.g. `secrets/google-service-account.json`
-   (already gitignored).
+3. Configure the OAuth consent screen (APIs & Services -> OAuth consent
+   screen) if you haven't already for this project: User Type **External**,
+   fill in the required app name/support email, and add yourself as a
+   **test user** — this keeps the app unpublished/private, which is fine
+   since only you will ever authorize it.
+4. Create an OAuth Client ID: APIs & Services -> Credentials -> Create
+   Credentials -> OAuth client ID -> Application type **Desktop app**. Name
+   it e.g. `leetcode-cheatsheet-cli`. Copy the **Client ID** and **Client
+   secret** it shows you.
 5. In Google Drive, create the folder structure you want to archive into:
    `posts/LeetCode/`. Open the `LeetCode` folder (or `posts` if you prefer
    the pipeline to create the `LeetCode` subfolder itself — it will, if
    missing) and copy its folder ID from the URL:
    `https://drive.google.com/drive/folders/<THIS_IS_THE_FOLDER_ID>`.
-6. **Share that folder** with the service account's email address (looks
-   like `cheatsheet-uploader@leetcode-cheatsheet.iam.gserviceaccount.com`,
-   visible on the service account's detail page) — give it **Editor**
-   access. Without this share, uploads will fail with a 403 even though the
-   credentials are valid, because a service account has no Drive storage
-   or access of its own.
-7. Test locally:
+   No sharing step needed — you already own or have access to this folder,
+   which is exactly the point of using OAuth instead of a service account.
+6. Run the one-time authorization script locally. `GOOGLE_OAUTH_CLIENT_ID`
+   / `GOOGLE_OAUTH_CLIENT_SECRET` can either be `export`ed as shown, or (if
+   you've already run `cp .env.example .env` per step 0) just set in your
+   `.env` file — every entry point in this repo (`src/main.py`,
+   `scripts/authorize_google_drive.py`) loads `.env` automatically via
+   `python-dotenv`, so a real exported env var always takes priority but
+   `.env` is enough on its own:
    ```bash
-   export GOOGLE_SERVICE_ACCOUNT_JSON=./secrets/google-service-account.json
+   pip install google-auth-oauthlib   # one-time, this script only
+   export GOOGLE_OAUTH_CLIENT_ID=<client id from step 4>
+   export GOOGLE_OAUTH_CLIENT_SECRET=<client secret from step 4>
+   python scripts/authorize_google_drive.py
+   ```
+   A browser window opens; sign in as the Google account from step 5 and
+   approve access. The script prints a refresh token — treat it like a
+   password, do not commit it.
+7. Test locally. Simplest: put all four values into `.env` (client ID,
+   client secret, the refresh token step 6 printed, and the folder ID from
+   step 5), then just run:
+   ```bash
+   python -m src.main --problem-slug two-sum --dry-run   # skips Drive
+   python -m src.main --problem-slug two-sum --force     # actually uploads
+   ```
+   Equivalently, without touching `.env`:
+   ```bash
+   export GOOGLE_OAUTH_CLIENT_ID=<client id from step 4>
+   export GOOGLE_OAUTH_CLIENT_SECRET=<client secret from step 4>
+   export GOOGLE_OAUTH_REFRESH_TOKEN=<refresh token printed in step 6>
    export GOOGLE_DRIVE_FOLDER_ID=<the folder id from step 5>
    python -m src.main --problem-slug two-sum --dry-run   # skips Drive
-   python -m src.main --problem-slug two-sum --skip-drive=false --force
+   python -m src.main --problem-slug two-sum --force     # actually uploads
    ```
 
 ## 4. Contact card asset
@@ -122,7 +153,9 @@ secret. Add:
 | Secret name | Value |
 |---|---|
 | `ANTHROPIC_API_KEY` | from step 2 |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | paste the **entire contents** of the JSON key file from step 3.4 |
+| `GOOGLE_OAUTH_CLIENT_ID` | from step 3.4 |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | from step 3.4 |
+| `GOOGLE_OAUTH_REFRESH_TOKEN` | printed by `scripts/authorize_google_drive.py` in step 3.6 |
 | `GOOGLE_DRIVE_FOLDER_ID` | the folder ID from step 3.5 |
 
 Never put any of these in `config/settings.yaml`, `CLAUDE.md`, `README.md`,

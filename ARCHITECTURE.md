@@ -78,7 +78,45 @@ local login session. That means:
 CLAUDE.md still matters — it's what loads when you run interactive `claude`
 sessions in this repo for development (see docs/OPERATIONS.md).
 
-## Why no AI image model
+## Why the prompts explicitly say "no tool access"
+
+`allowed_tools: ""` in `config/settings.yaml` means every `run_stage()`
+call is pure reasoning — no Bash, no file access, no code execution. That
+is deliberate: correctness is enforced by dedicated deterministic stages
+(`src/claude/validator.py`'s `run_examples()` actually executes the
+verified solution against every official example; the render QA gate
+actually measures overflow), not by letting an LLM call out to check its
+own work mid-stage.
+
+In practice, `compress` hit "Reached maximum number of turns (4)" because
+the model tried to satisfy `prompts/claude/v1/compress.md`'s hard
+line-count limit precisely — twice attempting `Bash` to literally count
+lines with `wc -l` / a Python one-liner, both denied since no tools are
+allowed, burning through the turn budget on retries instead of just
+reading the code and estimating. `prompts/claude/v1/solve.md`,
+`verify.md`, and `compress.md` now all state up front that no tools are
+available and that counting/verification must happen by inspection, not
+execution — and `claude.max_turns` was raised from 4 to 8 as a buffer
+against the same failure mode recurring anywhere else, since a few
+recovered-from turns cost tokens but a hard stop at max-turns fails the
+whole run.
+
+The same root cause shows up in a second-order way: several schema fields
+carry a hard `maxLength` (e.g. `reasoning_panel.bullets[i]` at 120 chars,
+`headline` at 90) that Claude is expected to respect by estimation, exactly
+like the compress line-count limit above. Estimation occasionally overshoots
+by a handful of characters — a real solve run failed schema validation with
+`reasoning_panel -> bullets -> 1: '...' is too long` at 124/120 chars. Since
+there is no tool access to recount and self-correct, and discarding a whole
+(paid) generation over a 4-character overshoot is wasteful, `src/claude/
+validator.py`'s `clamp_to_schema()` runs between `run_stage()` and
+`validate_schema()` on solve/verify/compress output: it walks the same
+`$ref`/`$defs`/`oneOf` structure the real schema uses and truncates (with a
+trailing `…`) any string that overshoots its `maxLength`, logging a warning
+for each field it touches. Everything else — `enum`, `const`, `required`,
+`minLength`, item-count bounds — still reaches `validate_schema()`
+untouched, since those indicate a genuine shape/reasoning problem rather
+than a length overshoot and should still fail the run.
 
 The original design (see the ChatGPT conversation this repo grew out of)
 proposed using an OpenAI image model to generate the schematic illustration
@@ -158,6 +196,67 @@ template falls back to a single-column layout with a compact `Example:`
 line instead of leaving empty space or forcing a diagram to fit
 (`tests/fixtures/sample_cheatsheet_no_diagram.json` exercises this path).
 
+## Why two schema files per stage
+
+Each of `solve` and `compress` has two schema files: `schemas/solve.schema.json`
+/ `schemas/cheatsheet.schema.json` (the real, fully-expressive contract —
+`$ref`/`$defs` for the shared `cell`/`pointerLabel` shapes, `oneOf` +
+`const` to discriminate `array_pointers` vs. `comparison_states`, exact
+`minLength`/`maxLength`/`minItems`/`maxItems` bounds) and a second,
+deliberately simpler twin under `schemas/generation/` (`solve.gen-schema.json`
+/ `cheatsheet.gen-schema.json`).
+
+The split exists because these two files are consumed by two different
+things with different levels of JSON Schema support:
+
+- **`src/claude/runner.py`'s `--json-schema` flag** feeds the schema into
+  `claude`'s structured-output/tool-call mechanism, which only supports a
+  subset of JSON Schema (`type`, `properties`, `required`,
+  `additionalProperties`, `enum`, `const`, `items`, and `type` arrays for
+  nullable fields — the last two count toward a union-type complexity
+  budget). `oneOf`/`anyOf`/`allOf` are explicitly unsupported at the top
+  level of a tool's `input_schema` and are not documented as supported
+  anywhere else either; `$ref`/`$defs` aren't addressed in Anthropic's
+  structured-outputs docs at all. In practice, giving `--json-schema` the
+  full `oneOf` + `$ref`-heavy `cheatsheet.schema.json` made the `compress`
+  stage exit non-zero with an empty stderr after a real, ~60s API round
+  trip — the schema was accepted at parse time (unlike the earlier
+  `$schema: .../2020-12` mismatch, which failed instantly) but something in
+  validating the model's actual structured response against it crashed
+  silently. The official Anthropic SDKs work around exactly this by
+  stripping unsupported keywords from the wire schema and validating the
+  response against the original schema client-side afterward — the
+  `schemas/generation/` split does that same thing explicitly, since the
+  `claude` CLI doesn't do it for a caller-supplied `--json-schema`.
+- **`src/claude/validator.py`'s `validate_schema()`** runs *after*
+  generation, using the Python `jsonschema` library, which has no such
+  restrictions — it fully supports `$ref`/`$defs`/`oneOf`/`const`/length
+  and count bounds. This is what actually enforces the precise shape
+  (`main.py` always validates against the real `schemas/*.schema.json`,
+  never the generation twin).
+
+Practically: `schemas/generation/*.gen-schema.json` replaces `$ref`-shared
+definitions with duplicated inline objects, replaces the `oneOf`
+discriminated union with one permissive object schema plus an `enum`
+discriminator (`component`) and description text explaining which fields
+belong to which shape, and replaces every `minLength`/`maxLength`/
+`minItems`/`maxItems` with the same bound stated in a `description` instead
+— the model treats it as guidance either way, and the real backstops are
+`prompts/claude/v1/compress.md`'s hard limits and the render QA gate's
+overflow check, not schema-level string-length enforcement. `reasoning_panel`
+in the generation schemas is a plain `"type": "object"` (no `null`) for the
+same reason nullable `type` arrays are worth avoiding where they're not
+needed — the prompts instruct Claude to omit the key entirely rather than
+set it to `null` when a diagram or reasoning panel doesn't apply, which the
+`(...).get("diagrams") or []` / `.get("reasoning_panel")` call sites in
+`src/rendering/render.py` and `src/main.py` already handle identically to
+an explicit `null` — see `prompts/claude/v1/solve.md` and `compress.md`.
+
+If you add a field to `cheatsheet.schema.json` or `solve.schema.json`, add
+the matching (simplified) field to its `schemas/generation/` twin too, or
+`--json-schema` will silently reject/strip it via `additionalProperties:
+false` before the model ever gets a chance to populate it.
+
 ## Why GitHub Actions, not ChatGPT Scheduled Tasks or n8n
 
 - GitHub Actions gives version-controlled workflow definitions, encrypted
@@ -184,6 +283,44 @@ community tooling, and can change without notice. `src/leetcode/client.py`
 isolates every LeetCode-specific assumption behind a small adapter so a
 breaking change is a one-file fix, and the pipeline fails loudly (not
 silently) if the response shape changes.
+
+## Why OAuth instead of a service account
+
+`src/storage/google_drive.py` originally authenticated as a Google Cloud
+service account, on the reasoning that GitHub Actions has no browser to
+complete an interactive OAuth consent screen. That reasoning was correct
+but incomplete — it missed that a service account has **no Drive storage
+quota of its own**. It can create empty folders (metadata only, no bytes),
+but the moment it tries to upload actual file content — even into a folder
+a real person shared with it as Editor — Google rejects it:
+
+```
+403 storageQuotaExceeded: "Service Accounts do not have storage quota.
+Leverage shared drives, or use OAuth delegation instead."
+```
+
+Shared Drives (the API error's first suggestion) are a Google Workspace
+feature and aren't available on a personal/consumer Google account — the
+one this pipeline is designed around (see `.env.example`'s
+`GOOGLE_DRIVE_FOLDER_ID`, which points into someone's own "My Drive", not
+an org's Shared Drive). Domain-wide delegation (a workaround for the same
+underlying issue) is also Workspace-admin-only. That leaves OAuth
+delegation — authenticating as the actual human Drive account, the same
+one that owns the target folder — which works for any Google account and
+needs no paid Workspace plan, matching the "minimal cost" constraint this
+whole project was built under.
+
+The trade-off: OAuth needs one interactive consent step, which GitHub
+Actions genuinely can't do. `scripts/authorize_google_drive.py` runs that
+step locally, once, in your own browser (`google_auth_oauthlib`'s
+`InstalledAppFlow.run_local_server()`), and prints a refresh token.
+Refresh tokens for this OAuth flow don't expire on their own — only if
+explicitly revoked (Google Account -> Security -> Third-party access) or
+unused for 6+ months — so this is a true one-time step, not a recurring
+one, and `src/storage/google_drive.py`'s `_load_credentials()` uses it
+completely non-interactively from then on (`google-api-python-client`
+refreshes the short-lived access token automatically). See docs/SETUP.md
+step 3.
 
 ## Daylight saving time
 
