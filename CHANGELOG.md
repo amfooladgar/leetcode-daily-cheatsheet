@@ -6,6 +6,23 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- After pinning `channel="chromium"`, CI failed *again* at the exact same
+  spot, this time with `Executable doesn't exist at .../chromium-<rev>/
+  chrome-linux64/chrome` -- the regular chromium build, not the shell
+  variant this time. `.github/workflows/ci.yml`'s `playwright install
+  --with-deps chromium` step never reported a failure either time, which
+  matches a documented Playwright bug (microsoft/playwright#36412): the
+  install command can exit 0 without leaving a working browser behind
+  (silent download corruption in CI). Rather than keep chasing which
+  specific binary goes missing on which run, added
+  `scripts/verify_playwright_chromium.py` -- launches Chromium right after
+  the install step, in its own CI step, and retries once via `playwright
+  install --force` before failing loudly with a clear message instead of
+  a 10-test-deep pytest wall. Wired into both `ci.yml` and `daily.yml`
+  (the actual production run has the same exposure, and a silent failure
+  there means a missed day, not just a red check). Verified locally by
+  hiding both the chromium and chromium-headless-shell binaries and
+  confirming the script detects, retries, and fails clearly.
 - With CI able to collect tests again, `pytest -q` then failed 10 tests
   with `BrowserType.launch: Executable doesn't exist at .../chromium_
   headless_shell-*/chrome-headless-shell` -- `pw.chromium.launch()` with no
