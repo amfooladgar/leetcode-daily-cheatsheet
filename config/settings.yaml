@@ -86,12 +86,12 @@ image_generation:
   # different dimension/QA contract. Resolution order: --image-provider CLI
   # flag > IMAGE_GENERATION_PROVIDER env var > this value.
   enabled: true
-  provider: "existing"       # "existing" | "openai"
+  provider: "openai"       # "existing" | "openai"
   # If the openai provider fails (config, API, decode, or compositing) and
   # this is true, fall back to the existing renderer with a logged warning
   # instead of failing the run. Default false: an OpenAI failure should be
   # visible, not silently masked.
-  fallback_to_existing: false
+  fallback_to_existing: true
 
   existing:
     width: 1080
