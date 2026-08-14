@@ -18,18 +18,23 @@ LeetCode Daily Challenge
   -> Claude adversarial verification (prompts/claude/verify.md)
   -> executable tests against official examples
   -> Claude compresses content to fit the canvas (prompts/claude/compress.md)
-  -> deterministic HTML/CSS + Playwright renderer (src/rendering/) -> 1080x1350 PNG
+  -> image render: openai (default) with fallback to deterministic HTML/CSS
+     + Playwright (src/rendering/) -> PNG
   -> Google Drive (src/storage/google_drive.py)
   -> manifest write (src/state/manifest.py)
 
-The deterministic HTML/CSS renderer (`image_generation.provider: "existing"`
-in `config/settings.yaml`) is the production-safe default, kept at
-near-zero marginal cost with no source of rendered-text errors — see
-ARCHITECTURE.md "Why no AI image model" for the full rationale. An optional
-`openai` provider (`src/rendering/openai_provider.py`) also exists, off by
-default, for anyone who explicitly opts in via
-`image_generation.provider: "openai"` — see ARCHITECTURE.md "Optional
-OpenAI image renderer" before touching it.
+`image_generation.provider: "openai"` (`src/rendering/openai_provider.py`)
+is the default image renderer as of `config/settings.yaml`'s current
+setting — GPT Image generates the full visual cheat sheet. Because that
+model output is non-deterministic and can misrender text/code/formulas
+(see ARCHITECTURE.md "Why no AI image model" for the original reliability
+concerns, which still apply), `image_generation.fallback_to_existing` is
+`true` by default: any `openai` config or render failure falls back to the
+deterministic HTML/CSS renderer (`image_generation.provider: "existing"`)
+with a logged warning rather than failing the run. The fallback check
+happens both before the pipeline starts (invalid/missing config, e.g. no
+`OPENAI_API_KEY`) and around the actual render call — see ARCHITECTURE.md
+"Optional OpenAI image renderer" before touching either provider.
 
 # Rules
 
@@ -44,8 +49,11 @@ OpenAI image renderer" before touching it.
   (see .env.example for the full list). Fail fast with a clear error message
   if a required secret is missing — do not silently skip a stage.
   `OPENAI_API_KEY` is the one exception to "always required": it is read
-  only when `image_generation.provider` resolves to `"openai"`, and the
-  default `existing` provider must never require it.
+  only when `image_generation.provider` resolves to `"openai"`. Its
+  absence must never crash the run — with `image_generation.
+  fallback_to_existing: true` (the default), a missing/invalid key is
+  caught pre-flight and the run falls back to the `existing` renderer
+  with a logged warning instead.
 - All Claude-generated content (problem understanding, code, complexity
   claims) MUST pass `jsonschema` validation against `schemas/*.json` before
   it is allowed to reach the renderer. A schema failure is a pipeline
@@ -58,17 +66,19 @@ OpenAI image renderer" before touching it.
   `state/manifest.json`, keyed by problem number + date + content hash.
 - Image output dimensions are provider-specific, each enforced with an
   assertion in that provider's own QA gate, not just a config default:
-  - `existing` (the default, production-safe renderer): final image is
-    exactly 1080x1350 PNG. This is the recommended provider whenever exact
-    text, code, formulas, or byte-for-byte repeatability matter.
-  - `openai` (explicit, non-default opt-in — `image_generation.provider:
-    "openai"`): final image matches `image_generation.openai.{width,height}`
-    (1536x1024 by default), NOT the `existing` provider's 1080x1350 —
-    never apply that assertion to openai output. GPT Image output is
-    non-deterministic and can misrender text/code/formulas/layout;
-    selecting this provider means knowingly accepting that. The original
+  - `openai` (the default — `image_generation.provider: "openai"`): final
+    image matches `image_generation.openai.{width,height}` (1536x1024 by
+    default), NOT the `existing` provider's 1080x1350 — never apply that
+    assertion to openai output. GPT Image output is non-deterministic and
+    can misrender text/code/formulas/layout; this is why
+    `fallback_to_existing` defaults to `true`. The original
     `assets/contact-card.png` is always composited onto the generated
     background after generation — never sent to the model to redraw.
+  - `existing` (the deterministic HTML/CSS + Playwright fallback,
+    selectable directly via `image_generation.provider: "existing"`):
+    final image is exactly 1080x1350 PNG. This is the recommended
+    provider whenever exact text, code, formulas, or byte-for-byte
+    repeatability matter more than the GPT Image visual style.
 - Use at most three accent colors (see config/settings.yaml `design.accent_hex`).
 - The contact card (`assets/contact-card.png`) is an immutable source asset —
   never regenerate or resize the source file itself, only scale it on
@@ -95,9 +105,9 @@ python -m src.main --date 2026-08-12 --force
 # Run only up through rendering, skip Drive entirely
 python -m src.main --skip-drive
 
-# Try the optional OpenAI renderer instead of the default (requires
-# OPENAI_API_KEY -- see ARCHITECTURE.md "Optional OpenAI image renderer")
-python -m src.main --problem-slug two-sum --dry-run --image-provider openai
+# Force the deterministic HTML/CSS renderer instead of the openai default
+# (see ARCHITECTURE.md "Optional OpenAI image renderer")
+python -m src.main --problem-slug two-sum --dry-run --image-provider existing
 
 # Run the test suite (must be green before any change is considered done)
 pytest -q

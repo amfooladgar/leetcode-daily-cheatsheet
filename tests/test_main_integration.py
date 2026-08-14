@@ -280,7 +280,13 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         content_path = self.tmpdir / "output" / "2026-08-13" / "1" / "content.json"
         self.assertFalse(content_path.exists())
 
-    def test_existing_remains_the_default_provider(self):
+    def test_missing_openai_key_falls_back_to_existing_pre_flight(self):
+        # image_generation.provider defaults to "openai" with
+        # fallback_to_existing: true (config/settings.yaml). With no
+        # OPENAI_API_KEY in the environment (as in this test, and as in
+        # CI), the pre-flight config check in src/main.py must catch that
+        # and fall back to "existing" instead of failing the run -- see
+        # ARCHITECTURE.md "Optional OpenAI image renderer" / "Fallback".
         from src.main import main
 
         upload_patch = mock.patch("src.main.upload_cheatsheet")
@@ -301,9 +307,47 @@ class MainPipelineIntegrationTests(unittest.TestCase):
             )
             (self.tmpdir / "output" / "2026-08-13" / "1").mkdir(parents=True, exist_ok=True)
             (self.tmpdir / "output" / "2026-08-13" / "1" / "cheatsheet.png").write_bytes(b"fake-png")
-            main(["--problem-slug", "two-sum", "--dry-run"])
+            exit_code = main(["--problem-slug", "two-sum", "--dry-run"])
 
+        self.assertEqual(exit_code, 0)
         self.assertEqual(mock_render.call_args[0][0], "existing")
+        mock_upload.assert_not_called()
+
+    def test_openai_remains_the_default_provider_when_configured(self):
+        # Same as above but with a valid OPENAI_API_KEY present, so the
+        # pre-flight check passes -- the configured default
+        # (image_generation.provider: "openai") must actually be used,
+        # not silently downgraded to "existing" just because no
+        # --image-provider flag was passed.
+        from src.main import main
+
+        stage_dir = self.tmpdir / "output" / "2026-08-13" / "1"
+        stage_dir.mkdir(parents=True, exist_ok=True)
+        final_path = stage_dir / "cheatsheet-openai-final.png"
+        final_path.write_bytes(b"fake-final-png")
+
+        with mock.patch(
+            "src.main.render_cheatsheet_with_provider",
+            return_value=mock.MagicMock(
+                passed=True,
+                image_path=final_path,
+                width=1536,
+                height=1024,
+                format="PNG",
+                provider="openai",
+                warnings=[],
+                dropped_for_overflow=[],
+                failed_checks=[],
+            ),
+        ) as mock_render, mock.patch(
+            "src.main.upload_cheatsheet"
+        ) as mock_upload, mock.patch.dict(
+            "os.environ", {"OPENAI_API_KEY": "sk-test"}
+        ):
+            exit_code = main(["--problem-slug", "two-sum", "--dry-run"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(mock_render.call_args[0][0], "openai")
         mock_upload.assert_not_called()
 
     def test_openai_provider_success_records_openai_filename_in_manifest(self):

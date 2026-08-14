@@ -121,8 +121,7 @@ than a length overshoot and should still fail the run.
 The original design (see the ChatGPT conversation this repo grew out of)
 proposed using an OpenAI image model to generate the schematic illustration
 and only overlaying deterministic text/code on top. That stayed cut for v1,
-even after the visual redesign described below, for three reasons that are
-still why `existing` is the default and recommended provider today:
+even after the visual redesign described below, for three reasons:
 
 1. **Cost.** Every daily run would call a paid image API in addition to
    Claude. A fully deterministic renderer has zero marginal image-gen cost.
@@ -133,17 +132,21 @@ still why `existing` is the default and recommended provider today:
    for the same input every time, which matters for debugging and for
    `--force` re-runs.
 
-The richer, diagram-heavy visual style (array cells with pointer arrows,
-valid/invalid comparison panels, a "why this works" reasoning callout) is
-achieved without an image model — see "Diagram component library" below.
+These reasons made `existing` the original default, and it remains the
+recommended provider whenever exact text/code/formulas or byte-for-byte
+repeatability matter more than visual style. The richer, diagram-heavy
+visual style (array cells with pointer arrows, valid/invalid comparison
+panels, a "why this works" reasoning callout) is achieved without an image
+model — see "Diagram component library" below.
 
-An optional `openai` provider now exists behind
-`image_generation.provider: "openai"` (see "Optional OpenAI image renderer"
-below) for anyone who explicitly wants GPT Image's full-card generation
-instead. It's a deliberate, documented exception to reasons 2 and 3 above —
-selecting it means accepting non-deterministic, possibly-misrendered text
-in exchange for a different visual style — never the default, and never
-silently substituted for `existing`.
+The `openai` provider (see "Optional OpenAI image renderer" below) is now
+`image_generation.provider`'s configured *default*, for GPT Image's
+full-card generation. Selecting it means accepting non-deterministic,
+possibly-misrendered text in exchange for a different visual style — reasons
+2 and 3 above still apply and still matter, which is why
+`image_generation.fallback_to_existing` defaults to `true`: an `openai`
+config or render failure is silently (but loudly logged) substituted with
+the deterministic `existing` renderer rather than failing the run.
 
 ## Why HTML/CSS instead of Pillow
 
@@ -356,30 +359,33 @@ regardless of DST.
 Drive and Telegram are independent, non-blocking delivery stages: either
 one failing marks its own manifest flag `false` and the run still exits
 non-zero (so CI surfaces it), but never discards the rendered artifact and
-never prevents the other stage from running. There is no image-generation
-stage in v1's default path, so that row from the original design was
-removed rather than left as dead policy — the "Renderer / QA gate" row
+never prevents the other stage from running. The "Renderer / QA gate" row
 above covers the `existing` provider's overflow-recovery-then-stop
-behavior. The optional `openai` provider (see "Optional OpenAI image
-renderer" below) is the one exception: its failure stops the run and
-records `failure_stage: "render_openai"` in the manifest only when
-`image_generation.fallback_to_existing` is `false` (the default); when
-`true`, the factory falls back to the `existing` provider instead of
-stopping.
+behavior. The `openai` provider (see "Optional OpenAI image renderer"
+below, and now the configured default) is the one exception: a config or
+render failure stops the run and records `failure_stage: "render_openai"`
+in the manifest only when `image_generation.fallback_to_existing` is
+`false`; with the default `true`, the factory (and, for a bad/missing
+config caught before any stage runs, `src/main.py`'s pre-flight check)
+falls back to the `existing` provider instead of stopping.
 
 ## Optional OpenAI image renderer
 
-`image_generation.provider: "openai"` in `config/settings.yaml` (default:
-`"existing"`) switches image generation to GPT Image generating the
-*complete* visual cheat sheet, instead of the deterministic HTML/CSS
+`image_generation.provider: "openai"` in `config/settings.yaml` (currently
+the configured default) switches image generation to GPT Image generating
+the *complete* visual cheat sheet, instead of the deterministic HTML/CSS
 renderer. This is a deliberate, explicit exception to "Why no AI image
 model" above — unlike the smaller-scope idea `prompts/future/openai-diagram.md`
 originally sketched (an AI-generated illustration composited *underneath*
 deterministic text, kept as an unwired reference), this provider lets GPT
 Image render exact code, pseudocode, and complexity as pixels. It exists
 because it was explicitly requested as a full alternative renderer, not
-because the reliability concerns above stopped applying — they didn't.
-Selecting it is an informed trade-off, never the default.
+because the reliability concerns above stopped applying — they didn't,
+which is why `image_generation.fallback_to_existing` defaults to `true`:
+selecting `openai` as the default is an informed trade-off that leans on
+`existing` as its safety net, not a claim that the reliability concerns
+were resolved. Set `image_generation.provider: "existing"` directly (or
+pass `--image-provider existing`) to skip GPT Image entirely.
 
 **Provider factory (`src/rendering/factory.py`).** The only place that
 branches on `image_generation.provider`. `src/main.py` calls
@@ -476,12 +482,15 @@ tokens are spent, not just before the OpenAI request itself.
    If compositing fails, the background is kept for diagnosis and the
    final file is never written.
 
-**Fallback (`image_generation.fallback_to_existing`, default `false`).**
-Only the factory decides this. When `false` (default), an `openai` failure
-propagates and the run fails loudly with the reason recorded in
-`state/manifest.json`. When `true`, the factory logs a warning and falls
-back to the existing renderer — an `openai` failure never damages or
-blocks the existing renderer's own path either way.
+**Fallback (`image_generation.fallback_to_existing`, default `true`).**
+Two call sites check this flag, both logging a warning and falling back to
+the `existing` renderer rather than failing the run: `src/main.py`'s
+pre-flight check (`OpenAIConfigError` — missing/invalid config, e.g. no
+`OPENAI_API_KEY` — caught before any Anthropic tokens are spent) and the
+factory (`OpenAIRenderError` from the actual render/composite call). Set
+`false` to make either failure propagate and fail the run loudly instead,
+with the reason recorded in `state/manifest.json`. Either way, an `openai`
+failure never damages or blocks the `existing` renderer's own path.
 
 **Tests** (`tests/test_openai_renderer.py`, `tests/test_card_compositor.py`,
 `tests/test_image_provider_factory.py`) mock the OpenAI client entirely —

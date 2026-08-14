@@ -174,8 +174,16 @@ def run(args: argparse.Namespace) -> int:
             try:
                 validate_provider_config(settings)
             except OpenAIConfigError as exc:
-                log.error("Invalid OpenAI renderer configuration: %s", exc)
-                return 1
+                if settings["image_generation"].get("fallback_to_existing", False):
+                    log.warning(
+                        "Invalid OpenAI renderer configuration (%s) -- falling back to the "
+                        "existing renderer (image_generation.fallback_to_existing=true).",
+                        exc,
+                    )
+                    image_provider = "existing"
+                else:
+                    log.error("Invalid OpenAI renderer configuration: %s", exc)
+                    return 1
     except UnknownProviderError as exc:
         log.error(str(exc))
         return 1
