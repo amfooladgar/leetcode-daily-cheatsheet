@@ -2,6 +2,18 @@
 
 ## Daily happy path
 
+```mermaid
+flowchart LR
+    cron["Dual UTC cron triggers"] --> guard{"09:00 in configured timezone?"}
+    guard -->|no| noop["No-op"]
+    guard -->|yes| duplicate{"Already in manifest?"}
+    duplicate -->|yes, no --force| noop
+    duplicate -->|no or --force| pipeline["Run pipeline"]
+    pipeline --> artifact["Preserve local/workflow artifacts"]
+    artifact --> deliver["Drive + Telegram"]
+    deliver --> record["Commit updated manifest"]
+```
+
 09:05 or 10:05 UTC (whichever is currently 09:05 America/New_York) ->
 GitHub Actions runs `daily.yml` -> fetches today's Daily Challenge -> solves
 -> verifies -> renders -> uploads to Drive -> commits the updated
@@ -64,6 +76,17 @@ a compositing failure, for diagnosis) and `cheatsheet-openai-final.png`
 `state/manifest.json`'s `image_filename` will name for that run).
 
 ## When the OpenAI renderer fails
+
+```mermaid
+flowchart TD
+    failed["OpenAI renderer failed"] --> background{"Background PNG exists?"}
+    background -->|yes| composite["Generation worked;<br/>inspect blank-region/card compositing"]
+    background -->|no| logs["Inspect preflight, auth, API, or decode error"]
+    composite --> fallback{"fallback_to_existing true?"}
+    logs --> fallback
+    fallback -->|yes| continued["Existing renderer continues the run"]
+    fallback -->|no| stopped["Run stops; nothing is uploaded"]
+```
 
 Check the logged reason first — config problems (missing `OPENAI_API_KEY`,
 missing/invalid `assets/contact-card.png`, a bad `image_generation.openai`
@@ -165,4 +188,3 @@ ruff check .
 # Check formatting standards
 ruff format --check .
 ```
-

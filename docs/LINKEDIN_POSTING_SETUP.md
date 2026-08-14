@@ -28,6 +28,22 @@ even if someone adds a call to it later by mistake; the manual-only
 command stops it from firing even if `linkedin.enabled` is accidentally
 left `true`.
 
+```mermaid
+flowchart TD
+    rendered["Existing rendered cheat sheet"] --> invoke["User invokes /post-linkedin"]
+    invoke --> enabled{"linkedin.enabled?"}
+    enabled -->|false| stopDisabled["Stop: feature is inert"]
+    enabled -->|true| draft["Draft caption from local content"]
+    draft --> review{"User approves exact caption?"}
+    review -->|edit| draft
+    review -->|decline| stopDeclined["Stop: nothing published"]
+    review -->|approve| cli["post_to_linkedin.py re-checks kill switch"]
+    cli --> adapter["LinkedIn adapter<br/>register → upload → publish"]
+    adapter --> manifest["Record post URN only on success"]
+
+    unattended["src/main.py / GitHub Actions"] -. "intentionally no path" .-> adapter
+```
+
 ## How to build it
 
 1. `cd` into this repo and start an interactive Claude Code session

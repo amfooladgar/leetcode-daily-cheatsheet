@@ -2,51 +2,39 @@
 
 ## Pipeline overview
 
+```mermaid
+flowchart TD
+    fetched["FETCHED<br/>LeetCode GraphQL adapter"] --> normalized["NORMALIZED<br/>HTML → Problem model"]
+    normalized --> solved["SOLVED<br/>first-principles solution"]
+    solved --> verified{"VERIFIED?<br/>adversarial pass"}
+    verified -->|invalid, first time| regenerate["Regenerate once"]
+    regenerate --> verified
+    verified -->|invalid again| stopVerify["STOP<br/>no render or delivery"]
+    verified -->|valid| tested{"TESTED?<br/>official examples + edge cases"}
+    tested -->|fail| stopTest["STOP<br/>no render or delivery"]
+    tested -->|pass| compressed["COMPRESSED<br/>canvas content limits"]
+    compressed --> provider{"Renderer provider"}
+    provider -->|existing| html["HTML/CSS + Playwright"]
+    provider -->|openai| image["GPT Image + contact-card composite"]
+    image -. "render/config failure and fallback enabled" .-> html
+    html --> qa{"Provider-specific QA"}
+    image --> qa
+    qa -->|fail| stopQa["STOP<br/>keep debug artifacts"]
+    qa -->|pass| delivery["Drive and Telegram<br/>independent delivery"]
+    delivery --> manifest["MANIFEST WRITTEN<br/>date + problem + content hash"]
 ```
-FETCHED
-   |  src/leetcode/client.py — GraphQL call to leetcode.com/graphql
-   v
-NORMALIZED
-   |  src/leetcode/parser.py — strip HTML, produce Problem (pydantic model)
-   v
-SOLVED
-   |  src/claude/runner.py + prompts/claude/solve.md
-   |  Claude solves from first principles; NOT shown official/community
-   |  solutions (see "Why solve from scratch" below)
-   v
-VERIFIED
-   |  src/claude/runner.py + prompts/claude/verify.md
-   |  Adversarial second pass: correctness, edge cases, complexity re-check.
-   |  On failure: regenerate once, then verify again. Still invalid -> STOP.
-   v
-TESTED
-   |  src/claude/validator.py — run the solution against every official
-   |  example plus a few generated edge cases (empty input, single element,
-   |  max constraint boundary). A failing test is a pipeline failure.
-   v
-COMPRESSED
-   |  prompts/claude/compress.md — fit verified content into the hard word/
-   |  line limits in config/settings.yaml so the canvas never overflows.
-   v
-RENDERED
-   |  src/rendering/render.py — deterministic HTML/CSS layout (Jinja2
-   |  template + embedded CSS design system), screenshotted to PNG by
-   |  headless Chromium via Playwright: headline, problem statement,
-   |  intuition + diagram(s), reasoning panel, approach steps, code block,
-   |  complexity chips, contact card. No AI-generated pixels — see "Why
-   |  HTML/CSS instead of Pillow" and "Why no AI image model" below.
-   v
-QA_PASSED
-   |  src/rendering/render.py QA gate — exact 1080x1350, PNG, headline and
-   |  code non-empty, no content overflowing the fixed canvas.
-   v
-UPLOADED
-   |  src/storage/google_drive.py — posts/LeetCode/<year>/<month>/
-   v
-MANIFEST WRITTEN
-      src/state/manifest.py — state/manifest.json, keyed by
-      "<date>:<problem_number>" so a re-run is a no-op unless --force.
-```
+
+The diagram shows control flow; the stage implementations and contracts are:
+
+- `src/leetcode/client.py` and `parser.py` fetch and normalize into the
+  Pydantic `Problem` model.
+- `src/claude/runner.py`, the versioned prompts, and
+  `src/claude/validator.py` solve, verify, execute tests, compress, and
+  validate structured output.
+- `src/rendering/factory.py` selects the renderer. Each provider owns its
+  own dimensions and QA checks.
+- `src/storage/` owns external delivery shapes; `src/state/manifest.py`
+  makes successful runs idempotent unless `--force` is supplied.
 
 If a stage fails, its intermediate output (the last successfully produced
 JSON/image) is kept in `output/<date>/<problem-number>/` for debugging —
@@ -210,6 +198,21 @@ line instead of leaving empty space or forcing a diagram to fit
 
 ## Why two schema files per stage
 
+```mermaid
+flowchart LR
+    prompt["Versioned stage prompt"] --> cli["Claude CLI structured output"]
+    gen["schemas/generation/*.gen-schema.json<br/>supported subset + guidance"] --> cli
+    cli --> clamp["clamp_to_schema()<br/>maxLength overshoots only"]
+    real["schemas/*.schema.json<br/>full $ref / oneOf / bounds"] --> clamp
+    clamp --> validate{"validate_schema()<br/>full contract passes?"}
+    validate -->|yes| next["Next pipeline stage"]
+    validate -->|no| fail["Pipeline failure"]
+```
+
+The generation schema constrains what the model can emit; the full schema is
+the authoritative boundary between stages. It is never replaced by the
+simplified generation schema.
+
 Each of `solve` and `compress` has two schema files: `schemas/solve.schema.json`
 / `schemas/cheatsheet.schema.json` (the real, fully-expressive contract —
 `$ref`/`$defs` for the shared `cell`/`pointerLabel` shapes, `oneOf` +
@@ -370,6 +373,26 @@ config caught before any stage runs, `src/main.py`'s pre-flight check)
 falls back to the `existing` provider instead of stopping.
 
 ## Optional OpenAI image renderer
+
+```mermaid
+flowchart TD
+    resolve["Resolve provider<br/>CLI > environment > settings"] --> preflight{"Provider config valid?"}
+    preflight -->|no, fallback true| existing["Existing renderer"]
+    preflight -->|no, fallback false| stop["Stop before paid model calls"]
+    preflight -->|yes, existing| existing
+    preflight -->|yes, openai| generate["Generate background PNG"]
+    generate --> scan["Detect actual blank region"]
+    scan --> composite["Scale and composite immutable contact card"]
+    composite --> openaiQa{"OpenAI QA<br/>configured dimensions + PNG"}
+    generate -. "API/decode failure" .-> fallback{"Fallback enabled?"}
+    scan -. "insufficient safe space" .-> fallback
+    composite -. "composite failure" .-> fallback
+    fallback -->|yes| existing
+    fallback -->|no| stop
+    existing --> existingQa["Existing QA<br/>1080×1350 + no overflow"]
+    openaiQa --> result["RenderResult"]
+    existingQa --> result
+```
 
 `image_generation.provider: "openai"` in `config/settings.yaml` (currently
 the configured default) switches image generation to GPT Image generating

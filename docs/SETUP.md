@@ -68,6 +68,27 @@ cost — see ARCHITECTURE.md).
 
 ## 3. Google Drive (OAuth user credentials — required for unattended uploads)
 
+```mermaid
+sequenceDiagram
+    actor Owner as Repository owner
+    participant Cloud as Google Cloud
+    participant Helper as authorize_google_drive.py
+    participant Drive as Google Drive
+    participant Secrets as GitHub Actions secrets
+    participant Workflow as Daily workflow
+
+    Owner->>Cloud: Create OAuth desktop client
+    Owner->>Helper: Run once with client ID and secret
+    Helper->>Drive: Open browser consent as the owner
+    Drive-->>Helper: Return authorization code
+    Helper-->>Owner: Print refresh token
+    Owner->>Secrets: Store client credentials, refresh token, folder ID
+    Workflow->>Drive: Refresh access token and upload headlessly each day
+```
+
+Only the one-time authorization helper opens a browser. The scheduled workflow
+uses the stored refresh token and never needs interactive consent.
+
 This pipeline authenticates to Drive as **you**, via OAuth 2.0, not via a
 service account. A service account has no Drive storage quota of its own
 and cannot upload file *content* into a personal (non-Google-Workspace)
@@ -215,6 +236,21 @@ overwrite `assets/contact-card.png` — no code change needed — then run
 `output/<date>/<problem>/cheatsheet.png` to confirm the new one still fits.
 
 ## 5. GitHub repository secrets
+
+```mermaid
+flowchart LR
+    secrets["GitHub encrypted secrets"] --> workflow["daily.yml process environment"]
+    variables["Repository variable<br/>IMAGE_GENERATION_PROVIDER"] --> workflow
+    config["Committed settings.yaml<br/>non-secret defaults"] --> workflow
+    workflow --> anthropic["Claude solve/verify/compress"]
+    workflow --> drive["Google Drive adapter"]
+    workflow --> telegram["Telegram adapter"]
+    workflow --> openai["OpenAI renderer<br/>only when selected"]
+```
+
+Secrets supply credentials, the repository variable may select a renderer,
+and committed settings provide non-secret defaults. Credentials never flow
+back into tracked files.
 
 Repo -> Settings -> Secrets and variables -> Actions -> New repository
 secret. Add:

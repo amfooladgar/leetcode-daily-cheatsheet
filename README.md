@@ -11,38 +11,22 @@ An automated end-to-end pipeline that reads each morning's **LeetCode Daily Chal
 
 ## Visual Pipeline Overview
 
-```text
-               +-----------------------------+
-               |  LeetCode Daily Challenge   |
-               +--------------+--------------+
-                              |
-                              v (GraphQL Client)
-               +--------------+--------------+
-               |  GitHub Actions Schedule    |  (09:00 America/New_York)
-               +--------------+--------------+
-                              |
-                              v
-               +--------------+--------------+
-               |         Claude Code         |  (solves, adversarially verifies,
-               +--------------+--------------+   runs sandboxed tests, compresses)
-                              |
-                              v
-               +--------------+--------------+
-               |      cheatsheet.json        |  (JSON Schema Validated)
-               +--------------+--------------+
-                              |
-                              v
-               +--------------+--------------+
-               |     Image Rendering Engine  |  (Deterministic HTML/CSS + Playwright
-               +--------------+--------------+   OR Optional OpenAI GPT-Image)
-                              |
-              +---------------+---------------+
-              |                               |
-              v                               v
-+-------------+-------------+   +-------------+-------------+
-|    Google Drive Archive    |   |     Telegram Channel/DM     |
-| (posts/LeetCode/YYYY/MM/)  |   |    (Instant Notification)   |
-+---------------------------+   +---------------------------+
+```mermaid
+flowchart TD
+    schedule["GitHub Actions<br/>09:00 America/New_York"] --> fetch["LeetCode Daily Challenge<br/>GraphQL adapter"]
+    fetch --> reason["Claude Code<br/>solve → verify → compress"]
+    reason --> test["Sandboxed example and edge-case tests"]
+    test --> schema["JSON Schema-validated<br/>cheatsheet content"]
+    schema --> renderer{"Configured renderer"}
+    renderer -->|existing| deterministic["HTML/CSS + Playwright<br/>1080×1350 deterministic PNG"]
+    renderer -->|openai| generated["GPT Image + immutable<br/>contact-card composite"]
+    generated -. "failure with fallback enabled" .-> deterministic
+    deterministic --> qa["Provider-specific QA gate"]
+    generated --> qa
+    qa --> drive["Google Drive archive<br/>posts/LeetCode/YYYY/MM/"]
+    qa --> telegram["Telegram channel or DM"]
+    drive --> manifest["Idempotency manifest"]
+    telegram --> manifest
 ```
 
 ---
