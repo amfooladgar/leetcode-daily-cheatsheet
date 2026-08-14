@@ -24,7 +24,7 @@ import datetime as dt
 import logging
 import re
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
 
 from src.leetcode.client import RawQuestion
 from src.leetcode.models import Example, Problem
@@ -35,7 +35,20 @@ _EXAMPLE_HEADING_RE = re.compile(r"^\s*example\s*\d*\s*:?\s*$", re.IGNORECASE)
 _CONSTRAINTS_HEADING_RE = re.compile(r"^\s*constraints\s*:?\s*$", re.IGNORECASE)
 _INPUT_LINE_RE = re.compile(r"input\s*:\s*(.*)", re.IGNORECASE)
 _OUTPUT_LINE_RE = re.compile(r"output\s*:\s*(.*)", re.IGNORECASE)
-_EXPLANATION_LINE_RE = re.compile(r"explanation\s*:\s*(.*)", re.IGNORECASE)
+# DOTALL: newer LeetCode problems put the explanation's own text in a
+# separate node from the "Explanation:" label (see
+# _looks_like_example_container), so it lands on a later line once the
+# container is flattened to text -- the capture must be able to cross that
+# line break.
+_EXPLANATION_LINE_RE = re.compile(r"explanation\s*:\s*(.*)", re.IGNORECASE | re.DOTALL)
+
+# Inline tags LeetCode may use inside the intro statement. Newer problems
+# sometimes leave that statement as bare text mixed with these tags,
+# directly under the document root with no wrapping <p> -- see
+# _iter_top_level_blocks.
+_INLINE_NODE_NAMES = frozenset(
+    {"code", "strong", "em", "b", "i", "u", "span", "a", "sub", "sup", "br", "mark", "small", "font"}
+)
 
 
 def _mark_superscripts(soup: BeautifulSoup) -> None:
@@ -85,6 +98,93 @@ def _parse_example_block(pre_text: str) -> Example | None:
     )
 
 
+def _iter_top_level_blocks(soup: BeautifulSoup):
+    """Yields (kind, node) for each top-level block in document order.
+
+    `kind` is the tag name for genuine block tags (p, pre, ul, ol, div).
+    Bare text and inline tags (see _INLINE_NODE_NAMES) that sit directly
+    under the document root -- as newer LeetCode problems sometimes leave
+    the intro statement, with no wrapping <p> -- are merged into a run and
+    yielded as ("text", [nodes]), so callers can treat it like a paragraph.
+    """
+    buffer: list = []
+    for node in soup.contents:
+        if isinstance(node, NavigableString):
+            if node.strip():
+                buffer.append(node)
+            continue
+        if isinstance(node, Tag) and node.name in _INLINE_NODE_NAMES:
+            buffer.append(node)
+            continue
+        if buffer:
+            yield "text", buffer
+            buffer = []
+        if isinstance(node, Tag):
+            yield node.name, node
+    if buffer:
+        yield "text", buffer
+
+
+_WHITESPACE_RE = re.compile(r"\s+")
+
+
+def _text_from_nodes(nodes: list) -> str:
+    """Concatenates nodes with no inserted separator -- unlike
+    tag.get_text(" "), this doesn't split words that only look adjacent
+    because they cross a tag boundary (e.g. "bcbb<u>bcba</u>" must stay
+    "bcbbbcba", not "bcbb bcba"). Any real whitespace is already present in
+    the source text nodes, so this just normalizes runs of it afterward."""
+    raw = "".join(n.get_text() if isinstance(n, Tag) else str(n) for n in nodes)
+    return _WHITESPACE_RE.sub(" ", raw).strip()
+
+
+def _is_example_container(tag: Tag) -> bool:
+    """The classic shape is a <pre>Input: ...\\nOutput: ...</pre> block.
+    Newer LeetCode problems instead use a
+    <div class="example-block"><p><strong>Input:</strong> ...</p>...</div>
+    wrapper with per-field <p> tags."""
+    if tag.name == "pre":
+        return True
+    return tag.name == "div" and "example-block" in (tag.get("class") or [])
+
+
+def _example_container_text(tag: Tag) -> str:
+    """Flattens an example container to newline-joined field lines for
+    _parse_example_block. <pre> blocks are already preformatted text. A
+    <div class="example-block"> instead holds one <p> per field (Input,
+    Output, Explanation label) plus, often, the explanation's own body as
+    bare text/inline tags trailing the last <p> with no wrapper -- that
+    trailing run is merged with _text_from_nodes so it doesn't get torn
+    apart by a naive get_text("\\n")."""
+    if tag.name == "pre":
+        return tag.get_text("\n", strip=True)
+
+    lines: list[str] = []
+    trailing: list = []
+    for node in tag.contents:
+        if isinstance(node, Tag) and node.name == "p":
+            if trailing:
+                text = _text_from_nodes(trailing)
+                if text:
+                    lines.append(text)
+                trailing = []
+            text = node.get_text(" ", strip=True)
+            if text:
+                lines.append(text)
+            continue
+        if isinstance(node, NavigableString):
+            if node.strip():
+                trailing.append(node)
+            continue
+        if isinstance(node, Tag):
+            trailing.append(node)
+    if trailing:
+        text = _text_from_nodes(trailing)
+        if text:
+            lines.append(text)
+    return "\n".join(lines)
+
+
 def parse_statement_html(html: str) -> tuple[str, list[Example], list[str]]:
     """Returns (statement_text, examples, constraints)."""
     soup = BeautifulSoup(html or "", "html.parser")
@@ -95,7 +195,15 @@ def parse_statement_html(html: str) -> tuple[str, list[Example], list[str]]:
     constraints: list[str] = []
 
     mode = "statement"
-    for tag in soup.find_all(["p", "pre", "ul", "ol"], recursive=False):
+    for kind, node in _iter_top_level_blocks(soup):
+        if kind == "text":
+            if mode == "statement":
+                text = _tighten_exponents(_text_from_nodes(node))
+                if text:
+                    statement_parts.append(text)
+            continue
+
+        tag = node
         if tag.name == "p" and _looks_like_example_heading(tag):
             mode = "examples"
             continue
@@ -107,8 +215,8 @@ def parse_statement_html(html: str) -> tuple[str, list[Example], list[str]]:
             text = _tighten_exponents(tag.get_text(" ", strip=True))
             if text:
                 statement_parts.append(text)
-        elif mode == "examples" and tag.name == "pre":
-            example = _parse_example_block(tag.get_text("\n", strip=True))
+        elif mode == "examples" and _is_example_container(tag):
+            example = _parse_example_block(_example_container_text(tag))
             if example:
                 examples.append(example)
         elif mode == "constraints" and tag.name in ("ul", "ol"):

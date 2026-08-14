@@ -3,7 +3,7 @@ from unittest import mock
 
 from src.leetcode.client import LeetCodeClient, PremiumProblemError, RawQuestion
 from src.leetcode.parser import normalize, parse_statement_html
-from tests.helpers import load_sample_problem_html
+from tests.helpers import load_sample_problem_html, load_sample_problem_html_v2
 
 
 class ParseStatementHtmlTests(unittest.TestCase):
@@ -21,6 +21,26 @@ class ParseStatementHtmlTests(unittest.TestCase):
         self.assertEqual(len(constraints), 3)
         # superscript exponents must survive as '^', not silently vanish
         self.assertIn("10^4", constraints[0])
+
+
+class ParseStatementHtmlV2Tests(unittest.TestCase):
+    """Newer LeetCode shape: bare-text intro statement (no wrapping <p>)
+    plus <div class="example-block"> examples instead of <pre> blocks."""
+
+    def setUp(self):
+        self.html = load_sample_problem_html_v2()
+
+    def test_extracts_statement_examples_constraints(self):
+        statement, examples, constraints = parse_statement_html(self.html)
+
+        self.assertIn("maximum", statement)
+        self.assertIn("substring", statement)
+        self.assertEqual(len(examples), 2)
+        self.assertEqual(examples[0].input, 's = "bcbbbcba"')
+        self.assertEqual(examples[0].output, "4")
+        self.assertIn("bcbbbcba", examples[0].explanation)
+        self.assertEqual(len(constraints), 2)
+        self.assertIn("10^2", constraints[0])
 
 
 class NormalizeTests(unittest.TestCase):

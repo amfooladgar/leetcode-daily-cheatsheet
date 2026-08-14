@@ -14,6 +14,13 @@ def load_sample_problem_html() -> str:
     return (FIXTURES / "sample_problem_content.html").read_text()
 
 
+def load_sample_problem_html_v2() -> str:
+    """Newer LeetCode HTML shape: intro statement as bare text/inline tags
+    with no wrapping <p>, and <div class="example-block"> examples instead
+    of <pre> blocks (see src/leetcode/parser.py)."""
+    return (FIXTURES / "sample_problem_content_v2.html").read_text()
+
+
 def load_sample_problem_json() -> dict:
     return json.loads((FIXTURES / "sample_problem.json").read_text())
 
