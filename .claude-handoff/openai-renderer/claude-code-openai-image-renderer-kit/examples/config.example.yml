@@ -1,0 +1,19 @@
+# Adapt keys and location to the existing project's configuration conventions.
+image_generation:
+  enabled: true
+  provider: existing
+  fallback_to_existing: false
+  output_format: png
+  orientation: landscape
+  size: 1536x1024
+  quality: high
+
+  openai:
+    model: gpt-image-2-2026-04-21
+    prompt_template: prompts/openai-cheatsheet.txt
+    visual_reference: assets/examples/leetcode-2213-never-forget-landscape.png
+    visiting_card: assets/branding/AliFouladgar_VisitCard_leetcode.png
+    card_position: bottom-right
+    card_margin_right: 25
+    card_margin_bottom: 20
+

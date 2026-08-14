@@ -1,0 +1,38 @@
+{
+  "problem_number": "2213",
+  "problem_title": "Longest Substring of One Repeating Character",
+  "problem_statement": "After each query replaces one character in s, return the longest contiguous run of one repeated character.",
+  "memory_hook": "Segment Trees Connect Runs at Matching Boundaries!",
+  "intuition": "Only runs touching the updated position can change. A segment tree lets us recompute only the affected ancestors.",
+  "approach": "Each segment stores its length, boundary characters, uniform prefix and suffix lengths, and its best internal run. Merge the boundary runs only when their characters match.",
+  "node_fields": [
+    "length: number of positions in the segment",
+    "leftChar: first character",
+    "rightChar: last character",
+    "prefix: longest uniform run from the left",
+    "suffix: longest uniform run from the right",
+    "best: longest uniform run anywhere in the segment"
+  ],
+  "merge_rules": [
+    "same = L.rightChar == R.leftChar",
+    "best = max(L.best, R.best, L.suffix + R.prefix if same)",
+    "prefix extends into R only when L is uniform and same is true",
+    "suffix extends into L only when R is uniform and same is true"
+  ],
+  "update_steps": [
+    "Change one leaf",
+    "Recompute ancestors",
+    "Return root.best"
+  ],
+  "examples": [
+    "[2..2] contains only index 2, so len = 1",
+    "[3..4] contains indices 3 and 4, so len = 2",
+    "bbb | acc -> best = 3",
+    "bbb | ccc -> crossing run is blocked because b != c"
+  ],
+  "pseudocode": "merge(L, R):\n  N.len = L.len + R.len\n  N.prefix, N.suffix = L.prefix, R.suffix\n  N.best = max(L.best, R.best)\n\n  if L.rightChar == R.leftChar:\n    N.best = max(N.best, L.suffix + R.prefix)\n    if L.prefix == L.len:\n      N.prefix = L.len + R.prefix\n    if R.suffix == R.len:\n      N.suffix = R.len + L.suffix\n  return N\n\nupdate(i, char):\n  change leaf i\n  recompute ancestors\n  answer = root.best",
+  "code": "",
+  "time_complexity": "O(n + k log n)",
+  "space_complexity": "O(n)"
+}
+

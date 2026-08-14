@@ -1,0 +1,37 @@
+# Merge this into the existing workflow. Do not create a competing workflow
+# unless the repository architecture requires it.
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_provider:
+        description: Image-generation provider
+        required: true
+        default: existing
+        type: choice
+        options:
+          - existing
+          - openai
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Keep the repository's existing runtime and dependency setup steps.
+
+      - name: Run the existing workflow
+        env:
+          # For scheduled runs, adapt this to a repository variable with an
+          # explicit "existing" fallback. Manual inputs are not populated on
+          # every GitHub event type.
+          IMAGE_GENERATION_PROVIDER: ${{ inputs.image_provider || 'existing' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          # Replace this placeholder with the repository's existing command.
+          ./run-existing-workflow
+
+      # Keep the repository's existing upload or delivery steps. They must
+      # receive the selected renderer's final image path.
+
