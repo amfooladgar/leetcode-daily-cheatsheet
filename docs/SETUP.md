@@ -171,14 +171,23 @@ rendering) before enabling it.
 1. Create an API key at the [OpenAI Platform](https://platform.openai.com/api-keys).
    This is billed per image and is separate from any ChatGPT subscription —
    check current GPT Image pricing before enabling this for daily runs.
-2. Confirm it works locally:
+2. Confirm it works locally. Either run the full pipeline against a real
+   problem:
    ```bash
    export OPENAI_API_KEY=sk-...
    python -m src.main --problem-slug two-sum --dry-run --image-provider openai
    ```
-   Check `output/<date>/<problem>/cheatsheet-openai-background.png` and
-   `cheatsheet-openai-final.png` — the latter is the branded image that
-   would be uploaded/sent.
+   or, for a faster/cheaper single-image check that doesn't need
+   Anthropic credentials or a real LeetCode problem at all, use
+   `scripts/smoke_test_openai.py` (a small built-in fixture, `quality`
+   defaults to `medium`, makes exactly one billed request per run):
+   ```bash
+   export OPENAI_API_KEY=sk-...
+   python scripts/smoke_test_openai.py
+   ```
+   Either way, check `output/<date-or-smoke-test>/<problem>/
+   cheatsheet-openai-background.png` and `cheatsheet-openai-final.png` —
+   the latter is the branded image that would be uploaded/sent.
 3. Put `OPENAI_API_KEY=sk-...` in your local `.env` for day-to-day local
    use (see `.env.example`).
 4. To use it by default for every run instead of passing `--image-provider
