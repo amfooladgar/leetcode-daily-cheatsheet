@@ -78,6 +78,82 @@ contact_card:
   position: "bottom-right"   # bottom-right | bottom-left
   max_width_px: 210
 
+image_generation:
+  # Which renderer produces the published cheat sheet. "existing" (the
+  # deterministic HTML/CSS + Playwright renderer above) is the
+  # production-safe default -- see ARCHITECTURE.md "Optional OpenAI image
+  # renderer" for why "openai" is an explicit, non-default opt-in with a
+  # different dimension/QA contract. Resolution order: --image-provider CLI
+  # flag > IMAGE_GENERATION_PROVIDER env var > this value.
+  enabled: true
+  provider: "existing"       # "existing" | "openai"
+  # If the openai provider fails (config, API, decode, or compositing) and
+  # this is true, fall back to the existing renderer with a logged warning
+  # instead of failing the run. Default false: an OpenAI failure should be
+  # visible, not silently masked.
+  fallback_to_existing: false
+
+  existing:
+    width: 1080
+    height: 1350
+
+  openai:
+    model: "gpt-image-2-2026-04-21"
+    width: 1536
+    height: 1024
+    quality: "high"
+    output_format: "png"
+    # prompts/openai/<prompt_version>/cheatsheet.txt -- same versioning
+    # convention as claude.prompt_version (see prompts/openai/README.md).
+    # v2 reworded the branding-reservation instruction to ask for a
+    # minimum size rather than an exact one, pairing with
+    # card_reservation_safety_margin below.
+    prompt_version: "v2"
+    # The same immutable asset the existing renderer embeds -- never a
+    # separate copy (see CLAUDE.md "contact card" rule).
+    visiting_card: "assets/contact-card.png"
+    card_position: "bottom-right"   # bottom-right | bottom-left
+    # A live smoke test showed a decorative panel's rounded corner can
+    # reach close to a tight margin at the exact height a native-size card
+    # needs, marginally blocking blank-region detection even though ample
+    # real space exists just beyond the panel (see CHANGELOG.md). Wider
+    # margins give panel corners/borders more room to clear.
+    card_margin_right: 45
+    card_margin_bottom: 35
+    # A live smoke test (see CHANGELOG.md) showed GPT Image does not
+    # reliably honor an *exact* pixel reservation size -- it left a blank
+    # region shorter than requested, and the real card (placed at its
+    # true, unpadded size by the deterministic compositor) overlapped
+    # generated pseudocode. The prompt now requests a reservation this
+    # fraction larger than the card's actual composited size, as headroom
+    # against under-reservation; the compositor itself is unaffected and
+    # still places the card at its exact real size. 0.2 = 20% larger.
+    card_reservation_safety_margin: 0.2
+    # A padded prompt request alone wasn't enough (see above): the
+    # compositor also scans the generated background for the actual blank
+    # rectangle near the card's corner (src/rendering/card_compositor.py::
+    # detect_blank_region()) and sizes the card to fit *that*, capped at
+    # the padded reservation. If the detected space would force the card
+    # below this fraction of its native size, compositing fails loudly
+    # (background kept for diagnosis) instead of publishing a
+    # near-invisible or overlapping card.
+    card_min_detected_scale: 0.4
+    # Color the reserved card region is cleared to before compositing, in
+    # case the generated background isn't perfectly blank there.
+    card_clear_hex: "#FFFFFF"
+    # Kept as separate, predictable filenames in the same
+    # output/<date>/<problem>/ stage directory as the existing renderer's
+    # cheatsheet.png, so neither provider's output can collide with the
+    # other's (see ARCHITECTURE.md).
+    background_filename: "cheatsheet-openai-background.png"
+    final_filename: "cheatsheet-openai-final.png"
+    # Bounded exponential backoff (src/utils/retry.py, reused as-is) for
+    # retryable rate-limit/server errors only -- auth/validation errors
+    # never retry.
+    max_retries: 3
+    retry_base_delay_seconds: 1.0
+    retry_max_delay_seconds: 20.0
+
 drive:
   root_folder_name: "posts"
   category_folder_name: "LeetCode"

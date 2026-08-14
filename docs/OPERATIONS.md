@@ -38,6 +38,44 @@ and the manifest write, so you can iterate on prompts or the renderer
 without touching Drive or state. Output lands in
 `output/<date>/<problem-number>/` regardless.
 
+## Selecting the image-generation provider for a run
+
+The default `existing` renderer needs no extra flags. To try the optional
+OpenAI renderer for one run (see ARCHITECTURE.md "Optional OpenAI image
+renderer" and docs/SETUP.md step 3d for setup):
+
+```bash
+python -m src.main --problem-slug two-sum --dry-run --image-provider openai
+```
+
+Precedence: `--image-provider` CLI flag > `IMAGE_GENERATION_PROVIDER` env
+var > `image_generation.provider` in `config/settings.yaml`. In GitHub
+Actions, a manual `daily.yml` run lets you pick the provider from the
+`image_provider` dropdown; the scheduled run always uses the
+`IMAGE_GENERATION_PROVIDER` repository variable (Settings -> Secrets and
+variables -> Actions -> Variables), falling back to `existing` if that
+variable isn't set.
+
+`existing` writes `output/<date>/<problem>/cheatsheet.png`. `openai`
+writes two separate files in the same directory:
+`cheatsheet-openai-background.png` (the raw GPT Image output, kept even on
+a compositing failure, for diagnosis) and `cheatsheet-openai-final.png`
+(the branded image actually uploaded/sent — this is what
+`state/manifest.json`'s `image_filename` will name for that run).
+
+## When the OpenAI renderer fails
+
+Check the logged reason first — config problems (missing `OPENAI_API_KEY`,
+missing/invalid `assets/contact-card.png`, a bad `image_generation.openai`
+value) are caught before any paid request and are usually a one-line fix.
+An actual API/decode/compositing failure records
+`failure_stage: "render_openai"` in `state/manifest.json` and stops the run
+(nothing is uploaded) unless `image_generation.fallback_to_existing: true`,
+in which case the run logs a warning and continues with the `existing`
+renderer instead. If `cheatsheet-openai-background.png` exists but
+`cheatsheet-openai-final.png` doesn't, generation succeeded and compositing
+failed — the background is kept specifically so you can inspect it.
+
 ## When Claude's verification fails
 
 The run stops before rendering (see ARCHITECTURE.md "Failure policy") and

@@ -31,6 +31,7 @@ from src.claude.validator import (
 from src.config import load_settings
 from src.leetcode.client import LeetCodeClient, LeetCodeError, PremiumProblemError
 from src.leetcode.parser import normalize
+from src.rendering.factory import UnknownProviderError, render_cheatsheet_with_provider
 from src.state import manifest as manifest_mod
 from src.storage.google_drive import DriveUploadError, upload_cheatsheet
 from src.storage.telegram import TelegramSendError, send_cheatsheet
@@ -55,8 +56,28 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--problem-slug", type=str, default=None, help="Fetch a specific problem instead of today's daily")
     p.add_argument("--force", action="store_true", help="Bypass the manifest idempotency guard")
     p.add_argument("--skip-drive", action="store_true", help="Render but never upload to Drive")
+    p.add_argument(
+        "--image-provider",
+        choices=["existing", "openai"],
+        default=None,
+        help=(
+            "Image-generation provider (see config/settings.yaml "
+            "image_generation.provider). Overrides IMAGE_GENERATION_PROVIDER "
+            "and the config file default."
+        ),
+    )
     p.add_argument("-v", "--verbose", action="store_true")
     return p.parse_args(argv)
+
+
+def _resolve_image_provider(args: argparse.Namespace, settings: dict) -> str:
+    """CLI flag > IMAGE_GENERATION_PROVIDER env var > config/settings.yaml
+    default — see ARCHITECTURE.md 'Optional OpenAI image renderer'."""
+    return (
+        args.image_provider
+        or os.environ.get("IMAGE_GENERATION_PROVIDER")
+        or settings["image_generation"]["provider"]
+    )
 
 
 def _schedule_gate(settings: dict) -> bool:
@@ -131,54 +152,34 @@ def _telegram_caption(cheatsheet: dict, problem_url: str, settings: dict) -> str
     )
 
 
-# Optional, droppable sections tried in this order when a render overflows
-# the fixed canvas -- reasoning_panel first since it's the more purely
-# decorative of the two (a closing "why this works" callout), diagrams
-# second since prompts/claude/v1/solve.md already treats a dropped diagram
-# as an acceptable outcome ("A wrong or forced diagram is worse than no
-# diagram" -- see ARCHITECTURE.md "Diagram component library").
-_OVERFLOW_FALLBACK_KEYS = ["reasoning_panel", "diagrams"]
-
-
-def _render_with_overflow_recovery(cheatsheet, settings, image_path, contact_card_path):
-    """Renders `cheatsheet`, and if the *only* failed QA check is
-    `no_overflow`, retries with optional decorative sections dropped one at
-    a time (see `_OVERFLOW_FALLBACK_KEYS`) before giving up. This is a
-    free, deterministic recovery -- no extra Claude calls, no re-compress
-    -- for otherwise-correct, well-compressed content that's a few dozen
-    pixels too tall for the fixed 1080x1350 canvas because of one optional
-    section. If content still overflows with everything droppable already
-    dropped, that's a genuine content-length problem (see
-    docs/OPERATIONS.md "When the renderer's QA gate fails") and this
-    returns the final, still-failing QAResult for the caller to handle as
-    before.
-
-    Returns (qa_result, dropped_keys) -- `dropped_keys` is empty unless a
-    recovery attempt actually happened, so callers can tell a clean pass
-    from a recovered one.
-    """
-    from src.rendering.render import render_cheatsheet  # deferred: needs Playwright
-
-    dropped: list[str] = []
-    qa = render_cheatsheet(cheatsheet, settings, image_path, contact_card_path=contact_card_path)
-
-    for key in _OVERFLOW_FALLBACK_KEYS:
-        if qa.passed or qa.failed_checks != ["no_overflow"] or key not in cheatsheet:
-            break
-        cheatsheet.pop(key, None)
-        dropped.append(key)
-        log.warning(
-            "Content overflowed the canvas; retrying with '%s' dropped "
-            "(deterministic, no extra API cost).",
-            key,
-        )
-        qa = render_cheatsheet(cheatsheet, settings, image_path, contact_card_path=contact_card_path)
-
-    return qa, dropped
-
-
 def run(args: argparse.Namespace) -> int:
     settings = load_settings()
+
+    # Resolve + validate the image_generation provider before spending any
+    # Anthropic tokens on solve/verify/compress -- a broken openai config
+    # (missing key/template/card, invalid size/quality/model) should fail
+    # immediately, not after a paid Claude run (see ARCHITECTURE.md
+    # "Optional OpenAI image renderer").
+    image_provider = _resolve_image_provider(args, settings)
+    try:
+        from src.rendering.factory import validate_provider
+
+        validate_provider(image_provider)
+        if not settings["image_generation"].get("enabled", True):
+            log.info("image_generation.enabled=false -- using the existing renderer regardless of provider config.")
+            image_provider = "existing"
+        elif image_provider == "openai":
+            from src.rendering.openai_provider import OpenAIConfigError, validate_provider_config
+
+            try:
+                validate_provider_config(settings)
+            except OpenAIConfigError as exc:
+                log.error("Invalid OpenAI renderer configuration: %s", exc)
+                return 1
+    except UnknownProviderError as exc:
+        log.error(str(exc))
+        return 1
+
     # --dry-run counts as a manual invocation too: it never uploads to
     # Drive or writes the manifest (see the `if args.dry_run:` return
     # below), so there's nothing for the schedule gate to protect against.
@@ -378,14 +379,42 @@ def run(args: argparse.Namespace) -> int:
     image_path = stage_dir / "cheatsheet.png"
     contact_card_path = REPO_ROOT / settings["contact_card"]["path"]
 
-    qa, dropped_for_overflow = _render_with_overflow_recovery(
-        cheatsheet, settings, image_path, contact_card_path
-    )
+    from src.rendering.openai_provider import OpenAIRenderError
+
+    try:
+        qa = render_cheatsheet_with_provider(
+            image_provider,
+            cheatsheet,
+            settings,
+            image_path,
+            stage_dir,
+            contact_card_path=contact_card_path,
+            fallback_to_existing=settings["image_generation"]["fallback_to_existing"],
+        )
+    except (UnknownProviderError, OpenAIRenderError) as exc:
+        reason = f"{image_provider} renderer failed: {exc}"
+        manifest.record(
+            manifest_mod.ManifestEntry(
+                date=date_str,
+                problem_number=problem.number,
+                slug=problem.slug,
+                status="failed",
+                content_hash=content_hash,
+                failure_stage="render_openai" if image_provider == "openai" else "render_qa",
+                failure_reason=reason,
+                prompt_version=prompt_version,
+            )
+        )
+        manifest_mod.save(manifest, manifest_path)
+        log.error("RENDERED failed: %s", reason)
+        return 1
+
+    image_path = qa.image_path
     for warning in qa.warnings:
         log.warning(warning)
-    if dropped_for_overflow:
+    if qa.dropped_for_overflow:
         log.warning(
-            "Rendered successfully after dropping %s to fit the canvas.", dropped_for_overflow
+            "Rendered successfully after dropping %s to fit the canvas.", qa.dropped_for_overflow
         )
 
     if not qa.passed:
@@ -405,7 +434,7 @@ def run(args: argparse.Namespace) -> int:
         manifest_mod.save(manifest, manifest_path)
         log.error("RENDERED failed: %s", reason)
         return 1
-    log.info("QA_PASSED %s (%dx%d %s)", image_path, qa.width, qa.height, qa.format)
+    log.info("QA_PASSED %s (%dx%d %s, provider=%s)", image_path, qa.width, qa.height, qa.format, qa.provider)
 
     markdown_path = None
     if settings["drive"]["upload_markdown_summary"]:

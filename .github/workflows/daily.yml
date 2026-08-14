@@ -22,6 +22,13 @@ on:
         description: "Optional: fetch a specific problem instead of today's Daily Challenge"
         type: string
         default: ""
+      image_provider:
+        description: "Image-generation provider (see ARCHITECTURE.md 'Optional OpenAI image renderer')"
+        type: choice
+        default: "existing"
+        options:
+          - existing
+          - openai
 
 # Prevent two runs from racing (e.g. a manual dispatch during the scheduled
 # window) and each stepping on the other's Drive upload / manifest commit.
@@ -77,6 +84,17 @@ jobs:
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Manual runs pick the provider via the workflow_dispatch input
+          # above; scheduled runs (no `inputs` context) fall back to the
+          # repository variable Settings -> Secrets and variables -> Actions
+          # -> Variables -> IMAGE_GENERATION_PROVIDER, defaulting to
+          # "existing" if that variable isn't set either -- see
+          # ARCHITECTURE.md "Optional OpenAI image renderer". OPENAI_API_KEY
+          # is scoped to this one step (the only one that can reach the
+          # openai renderer) and is only ever read when that path actually
+          # runs.
+          IMAGE_GENERATION_PROVIDER: ${{ inputs.image_provider || vars.IMAGE_GENERATION_PROVIDER || 'existing' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi

@@ -22,9 +22,14 @@ LeetCode Daily Challenge
   -> Google Drive (src/storage/google_drive.py)
   -> manifest write (src/state/manifest.py)
 
-No OpenAI / image-model step. That was deliberately cut to keep this at
-near-zero marginal cost and to remove a source of rendered-text errors —
-see ARCHITECTURE.md "Why no AI image model" if you're tempted to add one back.
+The deterministic HTML/CSS renderer (`image_generation.provider: "existing"`
+in `config/settings.yaml`) is the production-safe default, kept at
+near-zero marginal cost with no source of rendered-text errors — see
+ARCHITECTURE.md "Why no AI image model" for the full rationale. An optional
+`openai` provider (`src/rendering/openai_provider.py`) also exists, off by
+default, for anyone who explicitly opts in via
+`image_generation.provider: "openai"` — see ARCHITECTURE.md "Optional
+OpenAI image renderer" before touching it.
 
 # Rules
 
@@ -38,6 +43,9 @@ see ARCHITECTURE.md "Why no AI image model" if you're tempted to add one back.
 - Never hard-code credentials. Read them only from environment variables
   (see .env.example for the full list). Fail fast with a clear error message
   if a required secret is missing — do not silently skip a stage.
+  `OPENAI_API_KEY` is the one exception to "always required": it is read
+  only when `image_generation.provider` resolves to `"openai"`, and the
+  default `existing` provider must never require it.
 - All Claude-generated content (problem understanding, code, complexity
   claims) MUST pass `jsonschema` validation against `schemas/*.json` before
   it is allowed to reach the renderer. A schema failure is a pipeline
@@ -48,8 +56,19 @@ see ARCHITECTURE.md "Why no AI image model" if you're tempted to add one back.
 - Every run must be idempotent: re-running the same date/problem must not
   create a duplicate Drive upload. Idempotency is enforced via
   `state/manifest.json`, keyed by problem number + date + content hash.
-- Final image is exactly 1080x1350 PNG. Enforce this with an assertion in
-  the renderer's QA gate, not just a config default.
+- Image output dimensions are provider-specific, each enforced with an
+  assertion in that provider's own QA gate, not just a config default:
+  - `existing` (the default, production-safe renderer): final image is
+    exactly 1080x1350 PNG. This is the recommended provider whenever exact
+    text, code, formulas, or byte-for-byte repeatability matter.
+  - `openai` (explicit, non-default opt-in — `image_generation.provider:
+    "openai"`): final image matches `image_generation.openai.{width,height}`
+    (1536x1024 by default), NOT the `existing` provider's 1080x1350 —
+    never apply that assertion to openai output. GPT Image output is
+    non-deterministic and can misrender text/code/formulas/layout;
+    selecting this provider means knowingly accepting that. The original
+    `assets/contact-card.png` is always composited onto the generated
+    background after generation — never sent to the model to redraw.
 - Use at most three accent colors (see config/settings.yaml `design.accent_hex`).
 - The contact card (`assets/contact-card.png`) is an immutable source asset —
   never regenerate or resize the source file itself, only scale it on
@@ -75,6 +94,10 @@ python -m src.main --date 2026-08-12 --force
 
 # Run only up through rendering, skip Drive entirely
 python -m src.main --skip-drive
+
+# Try the optional OpenAI renderer instead of the default (requires
+# OPENAI_API_KEY -- see ARCHITECTURE.md "Optional OpenAI image renderer")
+python -m src.main --problem-slug two-sum --dry-run --image-provider openai
 
 # Run the test suite (must be green before any change is considered done)
 pytest -q

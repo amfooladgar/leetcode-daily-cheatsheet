@@ -27,8 +27,12 @@ LeetCode Daily Challenge
 Claude owns correctness. The renderer owns text/code fidelity, and picks
 per-problem diagrams (array-pointer / valid-vs-invalid comparison panels)
 from a small deterministic component library — no AI image model is in the
-loop (see [ARCHITECTURE.md](ARCHITECTURE.md) for why, and for the diagram
-component library).
+loop by default (see [ARCHITECTURE.md](ARCHITECTURE.md) for why, and for
+the diagram component library). An optional GPT-Image-based renderer also
+exists (`image_generation.provider: "openai"` in `config/settings.yaml`,
+or `--image-provider openai`) for anyone who wants GPT Image's full-card
+generation instead — off by default; see ARCHITECTURE.md "Optional OpenAI
+image renderer" and `docs/SETUP.md` step 3d.
 
 ## Quick start
 
