@@ -1,4 +1,5 @@
-"""Tests for src.main._render_with_overflow_recovery -- the deterministic,
+"""Tests for src.rendering.existing_provider.render_with_overflow_recovery --
+the deterministic,
 zero-extra-API-cost fallback for a render that overflows the fixed
 1080x1350 canvas: drop reasoning_panel, then diagrams, and re-render,
 instead of re-invoking Claude to re-compress. See CHANGELOG.md and
@@ -40,9 +41,9 @@ class RenderWithOverflowRecoveryTests(unittest.TestCase):
         with mock.patch(
             "src.rendering.render.render_cheatsheet", side_effect=[overflow, fits]
         ) as mock_render:
-            from src.main import _render_with_overflow_recovery
+            from src.rendering.existing_provider import render_with_overflow_recovery
 
-            qa, dropped = _render_with_overflow_recovery(cheatsheet, {}, "img.png", None)
+            qa, dropped = render_with_overflow_recovery(cheatsheet, {}, "img.png", None)
 
         self.assertEqual(mock_render.call_count, 2)
         self.assertTrue(qa.passed)
@@ -61,9 +62,9 @@ class RenderWithOverflowRecoveryTests(unittest.TestCase):
             "src.rendering.render.render_cheatsheet",
             side_effect=[still_overflowing, still_overflowing, fits],
         ) as mock_render:
-            from src.main import _render_with_overflow_recovery
+            from src.rendering.existing_provider import render_with_overflow_recovery
 
-            qa, dropped = _render_with_overflow_recovery(cheatsheet, {}, "img.png", None)
+            qa, dropped = render_with_overflow_recovery(cheatsheet, {}, "img.png", None)
 
         self.assertEqual(mock_render.call_count, 3)
         self.assertTrue(qa.passed)
@@ -80,9 +81,9 @@ class RenderWithOverflowRecoveryTests(unittest.TestCase):
         with mock.patch(
             "src.rendering.render.render_cheatsheet", return_value=still_overflowing
         ) as mock_render:
-            from src.main import _render_with_overflow_recovery
+            from src.rendering.existing_provider import render_with_overflow_recovery
 
-            qa, dropped = _render_with_overflow_recovery(cheatsheet, {}, "img.png", None)
+            qa, dropped = render_with_overflow_recovery(cheatsheet, {}, "img.png", None)
 
         mock_render.assert_called_once()
         self.assertFalse(qa.passed)
@@ -97,9 +98,9 @@ class RenderWithOverflowRecoveryTests(unittest.TestCase):
         with mock.patch(
             "src.rendering.render.render_cheatsheet", return_value=wrong_size
         ) as mock_render:
-            from src.main import _render_with_overflow_recovery
+            from src.rendering.existing_provider import render_with_overflow_recovery
 
-            qa, dropped = _render_with_overflow_recovery(cheatsheet, {}, "img.png", None)
+            qa, dropped = render_with_overflow_recovery(cheatsheet, {}, "img.png", None)
 
         mock_render.assert_called_once()
         self.assertFalse(qa.passed)

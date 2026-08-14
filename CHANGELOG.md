@@ -5,7 +5,106 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Optional OpenAI (GPT Image) renderer as an alternative to the default
+  deterministic HTML/CSS renderer, selected via `image_generation.provider:
+  "openai"` in `config/settings.yaml`, `IMAGE_GENERATION_PROVIDER=openai`,
+  or `--image-provider openai` (CLI takes precedence, then env var, then
+  config). Off by default -- the deterministic renderer (`"existing"`)
+  remains the default and requires no `OPENAI_API_KEY`. New modules:
+  `src/rendering/factory.py` (the single centralized provider dispatch
+  point), `src/rendering/existing_provider.py` (the prior renderer,
+  unchanged, wrapped behind the same interface), `src/rendering/
+  openai_provider.py` (config validation, prompt build, retried API call,
+  base64 decode, atomic writes), `src/rendering/openai_prompt.py`
+  (XML-escaped prompt construction from `schemas/cheatsheet.schema.json`
+  content), `src/rendering/card_compositor.py` (Pillow-based overlay of
+  the existing `assets/contact-card.png` onto the generated background --
+  the model is never asked to draw the card). The `openai` provider's
+  output uses its own configured canvas (`1536x1024` by default) and its
+  own QA gate; it is not held to the `existing` provider's exact-1080x1350
+  assertion. `image_generation.fallback_to_existing` (default `false`)
+  controls whether an `openai` failure falls back to `existing` (logged
+  warning) or stops the run (default, recorded in `state/manifest.json` as
+  `failure_stage: "render_openai"`). See ARCHITECTURE.md "Optional OpenAI
+  image renderer" and docs/SETUP.md step 3d. Added `tests/
+  test_openai_renderer.py`, `tests/test_card_compositor.py`, and `tests/
+  test_image_provider_factory.py` -- the OpenAI client is always mocked,
+  no test spends real API credits.
+
 ### Fixed
+- A live smoke test of the new OpenAI renderer (LeetCode #2213 fixture,
+  `quality=medium`) showed GPT Image does not reliably honor an *exact*
+  pixel branding-reservation request: the raw background left a shorter
+  blank region than the `card_width`/`card_height` requested in the
+  prompt, so the real contact card -- composited afterward at its true,
+  unpadded size -- overlapped the generated pseudocode panel (its closing
+  `return n` line was covered). The card itself was unaltered and its
+  source hash was confirmed unchanged; only the underlying generated
+  content was encroached on. Added `image_generation.openai.
+  card_reservation_safety_margin` (default `0.2`) in
+  `config/settings.yaml` and `src/rendering/card_compositor.py::
+  compute_reserved_region()`, which pads the *requested* reservation size
+  by that fraction before it goes into the prompt -- the compositor's own
+  placement (`compute_card_box()`) is untouched, so the card's real size
+  and position never change. Added `prompts/openai/v2/cheatsheet.txt`
+  (now the default `prompt_version`), which rewords the branding-
+  reservation instruction to state the size as a minimum to keep clear
+  rather than an exact target; `prompts/openai/v1/cheatsheet.txt` is kept
+  for reference per the prompt-versioning convention. Added regression
+  tests in `tests/test_card_compositor.py` (`compute_reserved_region()`
+  padding/clamping) and `tests/test_openai_renderer.py` (`render()`
+  requests the padded, not exact, size).
+- A second live smoke test (same #2213 fixture) showed the padding above
+  was not sufficient on its own: GPT Image reserved roughly half of the
+  requested (already-padded) height, and the card still overlapped the
+  pseudocode panel's closing lines. Measuring pixels directly confirmed
+  real generated content inside the card's actual placement footprint.
+  Rather than trust any requested size, `src/rendering/card_compositor.py::
+  detect_blank_region()` now scans the *generated* background near the
+  configured corner for the real blank rectangle (multiple probe lines,
+  minimum extent taken across them so noise can only shrink the result,
+  capped at the padded reservation), and `composite_card()` gained
+  `available_width`/`available_height` params so the card is fit to that
+  *measured* space instead of the canvas-derived or requested size. Added
+  `image_generation.openai.card_min_detected_scale` (default `0.4`) in
+  `config/settings.yaml`: if the detected space would shrink the card
+  below that fraction of its native size, compositing now fails loudly
+  (background kept for diagnosis, final image never published) instead of
+  publishing an illegible or still-overlapping card. `detect_blank_region()`
+  compares against the configured `card_clear_hex`, not the corner pixel's
+  own color, since a corner covered by content would otherwise make that
+  content's color look "blank." Added `tests/test_card_compositor.py::
+  DetectBlankRegionTests` (fully deterministic, hand-constructed synthetic
+  backgrounds -- no OpenAI call) and two `tests/test_openai_renderer.py`
+  cases covering the detected-region compositing path and the min-scale
+  failure path.
+
+  A third live smoke test (reusing the second run's already-generated
+  background -- no new paid request needed for this part) surfaced two
+  more bugs in `detect_blank_region()` itself before it actually worked:
+  (1) a single hairline panel-border pixel ~17 units off white zeroed out
+  an entire probe line even though ample genuine blank space surrounded
+  it -- fixed by tolerating a short (`max_gap`, default 4px) non-blank
+  interruption if real blank space resumes right after it, since a card
+  can safely sit over a thin border line; (2) width was probed all the
+  way out to the *padded reservation* height regardless of how much
+  height was actually usable, so a panel positioned well beyond the
+  height the card would ever occupy could still zero out width for no
+  real reason -- fixed by bounding width probes to
+  `min(max_height, detected_height)` instead of `max_height`. Also widened
+  the default `card_margin_right`/`card_margin_bottom` (25/20 -> 45/35)
+  after the same live image showed a panel's rounded corner reaching close
+  to the original margin at the exact height a native-size card needs.
+  With all three fixes, re-running compositing against the real generated
+  background succeeded: card placed at 84% of native scale (well above
+  the 40% floor), zero content overlap on visual inspection, exact
+  1536x1024 output, card hash unchanged. Added
+  `tests/test_card_compositor.py::
+  DetectBlankRegionTests::test_thin_border_line_does_not_zero_out_detection`,
+  `::test_thick_content_band_still_stops_detection` (confirms real content
+  still isn't skipped), and
+  `::test_width_probes_are_bounded_to_the_detected_height_not_max_height`.
 - A real (non-dry-run) run on a Hard problem (#2213, "Longest Substring of
   One Repeating Character") got all the way through solve/verify/compress
   and then failed at the render step: `Content overflowed the canvas by

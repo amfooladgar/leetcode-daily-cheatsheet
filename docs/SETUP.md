@@ -160,6 +160,49 @@ token as a bearer credential.
    the Drive archive and not the Telegram send — a disabled Telegram stage
    is a no-op, not a failure.
 
+## 3d. OpenAI image renderer (optional, off by default)
+
+Skip this section unless you specifically want GPT Image to generate the
+whole cheat sheet instead of the default deterministic HTML/CSS renderer —
+see ARCHITECTURE.md "Optional OpenAI image renderer" for what that
+actually changes (different canvas size, non-deterministic text/code
+rendering) before enabling it.
+
+1. Create an API key at the [OpenAI Platform](https://platform.openai.com/api-keys).
+   This is billed per image and is separate from any ChatGPT subscription —
+   check current GPT Image pricing before enabling this for daily runs.
+2. Confirm it works locally. Either run the full pipeline against a real
+   problem:
+   ```bash
+   export OPENAI_API_KEY=sk-...
+   python -m src.main --problem-slug two-sum --dry-run --image-provider openai
+   ```
+   or, for a faster/cheaper single-image check that doesn't need
+   Anthropic credentials or a real LeetCode problem at all, use
+   `scripts/smoke_test_openai.py` (a small built-in fixture, `quality`
+   defaults to `medium`, makes exactly one billed request per run):
+   ```bash
+   export OPENAI_API_KEY=sk-...
+   python scripts/smoke_test_openai.py
+   ```
+   Either way, check `output/<date-or-smoke-test>/<problem>/
+   cheatsheet-openai-background.png` and `cheatsheet-openai-final.png` —
+   the latter is the branded image that would be uploaded/sent.
+3. Put `OPENAI_API_KEY=sk-...` in your local `.env` for day-to-day local
+   use (see `.env.example`).
+4. To use it by default for every run instead of passing `--image-provider
+   openai` each time, set `image_generation.provider: "openai"` in
+   `config/settings.yaml` — or leave the config on `"existing"` and just
+   pass `--image-provider openai` / set `IMAGE_GENERATION_PROVIDER=openai`
+   per invocation.
+5. For GitHub Actions: add `OPENAI_API_KEY` as a repository secret (see
+   step 5 below), then either pick "openai" in the `image_provider` input
+   when running `daily.yml` manually, or set the repository variable
+   `IMAGE_GENERATION_PROVIDER` (Settings -> Secrets and variables ->
+   Actions -> Variables) to `openai` if you want the *scheduled* run to use
+   it by default too. Leaving the variable unset keeps scheduled runs on
+   `existing`.
+
 ## 4. Contact card asset
 
 Already done — `assets/contact-card.png` is your LeetCode visit card and is
@@ -185,6 +228,7 @@ secret. Add:
 | `GOOGLE_DRIVE_FOLDER_ID` | the folder ID from step 3.5 |
 | `TELEGRAM_BOT_TOKEN` | from step 3b.1 |
 | `TELEGRAM_CHAT_ID` | from step 3b.2 |
+| `OPENAI_API_KEY` | from step 3d.1 — only needed if you use the optional OpenAI renderer |
 
 Never put any of these in `config/settings.yaml`, `CLAUDE.md`, `README.md`,
 or a committed `.env` — `.gitignore` already blocks `.env` and

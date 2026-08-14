@@ -266,6 +266,111 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         self.assertTrue(entry["telegram"])
         self.assertEqual(entry["telegram_message_id"], 7)
 
+    def test_unknown_image_provider_fails_fast_before_any_stage_work(self):
+        # Validated right after load_settings(), before FETCHED -- an
+        # unattended run must never spend Anthropic tokens (or reach
+        # Drive/Telegram) on a broken image_generation.provider value. See
+        # ARCHITECTURE.md "Optional OpenAI image renderer".
+        from src.main import main
+
+        with mock.patch.dict("os.environ", {"IMAGE_GENERATION_PROVIDER": "dalle"}):
+            exit_code = main(["--problem-slug", "two-sum", "--dry-run"])
+
+        self.assertEqual(exit_code, 1)
+        content_path = self.tmpdir / "output" / "2026-08-13" / "1" / "content.json"
+        self.assertFalse(content_path.exists())
+
+    def test_existing_remains_the_default_provider(self):
+        from src.main import main
+
+        upload_patch = mock.patch("src.main.upload_cheatsheet")
+        mock_upload = upload_patch.start()
+        self.addCleanup(upload_patch.stop)
+
+        with mock.patch("src.main.render_cheatsheet_with_provider") as mock_render:
+            mock_render.return_value = mock.MagicMock(
+                passed=True,
+                image_path=self.tmpdir / "output" / "2026-08-13" / "1" / "cheatsheet.png",
+                width=1080,
+                height=1350,
+                format="PNG",
+                provider="existing",
+                warnings=[],
+                dropped_for_overflow=[],
+                failed_checks=[],
+            )
+            (self.tmpdir / "output" / "2026-08-13" / "1").mkdir(parents=True, exist_ok=True)
+            (self.tmpdir / "output" / "2026-08-13" / "1" / "cheatsheet.png").write_bytes(b"fake-png")
+            main(["--problem-slug", "two-sum", "--dry-run"])
+
+        self.assertEqual(mock_render.call_args[0][0], "existing")
+        mock_upload.assert_not_called()
+
+    def test_openai_provider_success_records_openai_filename_in_manifest(self):
+        from src.main import main
+        from src.storage.google_drive import UploadResult
+        from src.storage.telegram import SendResult
+
+        stage_dir = self.tmpdir / "output" / "2026-08-13" / "1"
+        stage_dir.mkdir(parents=True, exist_ok=True)
+        final_path = stage_dir / "cheatsheet-openai-final.png"
+        final_path.write_bytes(b"fake-final-png")
+
+        with mock.patch(
+            "src.main.render_cheatsheet_with_provider",
+            return_value=mock.MagicMock(
+                passed=True,
+                image_path=final_path,
+                width=1536,
+                height=1024,
+                format="PNG",
+                provider="openai",
+                warnings=[],
+                dropped_for_overflow=[],
+                failed_checks=[],
+            ),
+        ) as mock_render, mock.patch(
+            "src.main.upload_cheatsheet",
+            return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
+        ) as mock_upload, mock.patch(
+            "src.main.send_cheatsheet", return_value=SendResult(message_id=1, chat_id="chat1")
+        ), mock.patch.dict(
+            "os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id", "OPENAI_API_KEY": "sk-test"}
+        ):
+            exit_code = main(["--problem-slug", "two-sum", "--image-provider", "openai", "--force"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(mock_render.call_args[0][0], "openai")
+        self.assertEqual(mock_upload.call_args.kwargs["image_path"], final_path)
+
+        manifest_path = self.tmpdir / "state" / "manifest.json"
+        entry = json.loads(manifest_path.read_text())["2026-08-13:1"]
+        self.assertEqual(entry["status"], "success")
+        self.assertEqual(entry["image_filename"], "cheatsheet-openai-final.png")
+
+    def test_openai_failure_without_fallback_records_failure_and_never_uploads(self):
+        from src.main import main
+        from src.rendering.openai_provider import OpenAIGenerationError
+
+        with mock.patch(
+            "src.main.render_cheatsheet_with_provider",
+            side_effect=OpenAIGenerationError("simulated API failure"),
+        ), mock.patch("src.main.upload_cheatsheet") as mock_upload, mock.patch(
+            "src.main.send_cheatsheet"
+        ) as mock_send, mock.patch.dict(
+            "os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id", "OPENAI_API_KEY": "sk-test"}
+        ):
+            exit_code = main(["--problem-slug", "two-sum", "--image-provider", "openai", "--force"])
+
+        self.assertEqual(exit_code, 1)
+        mock_upload.assert_not_called()
+        mock_send.assert_not_called()
+
+        manifest_path = self.tmpdir / "state" / "manifest.json"
+        entry = json.loads(manifest_path.read_text())["2026-08-13:1"]
+        self.assertEqual(entry["status"], "failed")
+        self.assertEqual(entry["failure_stage"], "render_openai")
+
     def test_telegram_disabled_in_settings_is_a_noop_not_a_failure(self):
         from src.main import main
         from src.storage.google_drive import UploadResult

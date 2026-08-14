@@ -35,6 +35,15 @@ google-auth>=2.35,<3
 # Timezone-correct scheduling check (America/New_York, DST-safe)
 tzdata>=2024.2 ; sys_platform == "win32"
 
+# Optional OpenAI image-generation renderer (image_generation.provider:
+# "openai" in config/settings.yaml -- see ARCHITECTURE.md "Optional OpenAI
+# image renderer"). Both are lazily imported inside src/rendering/
+# openai_provider.py / card_compositor.py, same rationale as
+# google-api-python-client above, so the default "existing" renderer never
+# requires either to be importable or OPENAI_API_KEY to be set.
+openai>=1.50,<2
+Pillow>=10.4,<11
+
 # Dev / test dependencies
 # Tests are written as unittest.TestCase subclasses using stdlib
 # unittest.mock for HTTP mocking (no `responses` dependency needed), so the
