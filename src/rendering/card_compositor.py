@@ -43,15 +43,21 @@ def validate_card(card_path: Path) -> None:
         with Image.open(card_path) as img:
             img.verify()
     except Exception as exc:  # noqa: BLE001 - re-raised with context below
-        raise CardCompositeError(f"Visiting card at {card_path} is not a valid image: {exc}") from exc
+        raise CardCompositeError(
+            f"Visiting card at {card_path} is not a valid image: {exc}"
+        ) from exc
 
 
-def _fit_box(width: int, height: int, available_width: int, available_height: int) -> tuple[int, int]:
+def _fit_box(
+    width: int, height: int, available_width: int, available_height: int
+) -> tuple[int, int]:
     """Shared proportional-fit core: native size when it already fits
     within (available_width, available_height), otherwise scaled down
     proportionally (never up, never non-proportionally, never cropped)."""
     if available_width <= 0 or available_height <= 0:
-        raise CardCompositeError(f"No room available to place the card ({available_width}x{available_height}px).")
+        raise CardCompositeError(
+            f"No room available to place the card ({available_width}x{available_height}px)."
+        )
     if width <= available_width and height <= available_height:
         return width, height
     scale = min(available_width / width, available_height / height)
@@ -229,9 +235,13 @@ def detect_blank_region(
     # Probe columns/rows include the anchor line itself plus several more
     # spread across the requested window, so a blank pocket that starts
     # exactly at the corner is measured too, not just its interior.
-    probe_xs = [anchor_x, *_sample_positions(anchor_x, x_step, max_width, probe_lines, canvas_width)]
+    probe_xs = [
+        anchor_x,
+        *_sample_positions(anchor_x, x_step, max_width, probe_lines, canvas_width),
+    ]
     detected_height = min(
-        blank_run(lambda y, px=px: image.getpixel((px, y)), anchor_y, -1, canvas_height) for px in probe_xs
+        blank_run(lambda y, px=px: image.getpixel((px, y)), anchor_y, -1, canvas_height)
+        for px in probe_xs
     )
 
     # Width is only probed within the height we've already confirmed is
@@ -241,9 +251,13 @@ def detect_blank_region(
     # max_height) otherwise zeroed out width for no real reason (see
     # CHANGELOG.md).
     width_probe_span = max(1, min(max_height, detected_height))
-    probe_ys = [anchor_y, *_sample_positions(anchor_y, -1, width_probe_span, probe_lines, canvas_height)]
+    probe_ys = [
+        anchor_y,
+        *_sample_positions(anchor_y, -1, width_probe_span, probe_lines, canvas_height),
+    ]
     detected_width = min(
-        blank_run(lambda x, py=py: image.getpixel((x, py)), anchor_x, x_step, canvas_width) for py in probe_ys
+        blank_run(lambda x, py=py: image.getpixel((x, py)), anchor_x, x_step, canvas_width)
+        for py in probe_ys
     )
 
     return min(detected_width, max_width), min(detected_height, max_height)

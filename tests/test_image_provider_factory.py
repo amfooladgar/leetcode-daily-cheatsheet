@@ -26,7 +26,12 @@ class ValidateProviderTests(unittest.TestCase):
 class RenderCheatsheetWithProviderTests(unittest.TestCase):
     def _existing_result(self):
         return RenderResult(
-            provider="existing", passed=True, width=1080, height=1350, format="PNG", image_path="cheatsheet.png"
+            provider="existing",
+            passed=True,
+            width=1080,
+            height=1350,
+            format="PNG",
+            image_path="cheatsheet.png",
         )
 
     def _openai_result(self):
@@ -70,9 +75,12 @@ class RenderCheatsheetWithProviderTests(unittest.TestCase):
         self.assertEqual(result.provider, "existing")
 
     def test_openai_provider_dispatches_to_openai_module(self):
-        with mock.patch(
-            "src.rendering.openai_provider.render", return_value=self._openai_result()
-        ) as mock_openai, mock.patch("src.rendering.existing_provider.render") as mock_existing:
+        with (
+            mock.patch(
+                "src.rendering.openai_provider.render", return_value=self._openai_result()
+            ) as mock_openai,
+            mock.patch("src.rendering.existing_provider.render") as mock_existing,
+        ):
             result = render_cheatsheet_with_provider(
                 "openai",
                 {},
@@ -89,9 +97,12 @@ class RenderCheatsheetWithProviderTests(unittest.TestCase):
     def test_openai_failure_without_fallback_propagates_and_never_calls_existing(self):
         from src.rendering.openai_provider import OpenAIGenerationError
 
-        with mock.patch(
-            "src.rendering.openai_provider.render", side_effect=OpenAIGenerationError("boom")
-        ), mock.patch("src.rendering.existing_provider.render") as mock_existing:
+        with (
+            mock.patch(
+                "src.rendering.openai_provider.render", side_effect=OpenAIGenerationError("boom")
+            ),
+            mock.patch("src.rendering.existing_provider.render") as mock_existing,
+        ):
             with self.assertRaises(OpenAIGenerationError):
                 render_cheatsheet_with_provider(
                     "openai",
@@ -107,11 +118,14 @@ class RenderCheatsheetWithProviderTests(unittest.TestCase):
     def test_openai_failure_with_fallback_enabled_falls_back_to_existing(self):
         from src.rendering.openai_provider import OpenAIGenerationError
 
-        with mock.patch(
-            "src.rendering.openai_provider.render", side_effect=OpenAIGenerationError("boom")
-        ), mock.patch(
-            "src.rendering.existing_provider.render", return_value=self._existing_result()
-        ) as mock_existing:
+        with (
+            mock.patch(
+                "src.rendering.openai_provider.render", side_effect=OpenAIGenerationError("boom")
+            ),
+            mock.patch(
+                "src.rendering.existing_provider.render", return_value=self._existing_result()
+            ) as mock_existing,
+        ):
             result = render_cheatsheet_with_provider(
                 "openai",
                 {},
@@ -129,9 +143,16 @@ class RenderCheatsheetWithProviderTests(unittest.TestCase):
         # is returned as a failed RenderResult, not an exception -- fallback
         # logic only ever applies to the openai branch.
         failed = RenderResult(
-            provider="existing", passed=False, width=1080, height=1350, format="PNG", image_path="cheatsheet.png"
+            provider="existing",
+            passed=False,
+            width=1080,
+            height=1350,
+            format="PNG",
+            image_path="cheatsheet.png",
         )
-        with mock.patch("src.rendering.existing_provider.render", return_value=failed) as mock_existing:
+        with mock.patch(
+            "src.rendering.existing_provider.render", return_value=failed
+        ) as mock_existing:
             result = render_cheatsheet_with_provider(
                 "existing",
                 {},

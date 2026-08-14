@@ -184,14 +184,18 @@ def _generate_background(
         openai_sdk.BadRequestError,
         openai_sdk.NotFoundError,
     ) as exc:
-        raise OpenAIGenerationError(f"OpenAI image request failed ({type(exc).__name__}): {exc}") from exc
+        raise OpenAIGenerationError(
+            f"OpenAI image request failed ({type(exc).__name__}): {exc}"
+        ) from exc
     except openai_sdk.OpenAIError as exc:
         raise OpenAIGenerationError(f"OpenAI image request failed after retries: {exc}") from exc
 
     return _decode_image_response(result)
 
 
-def render(cheatsheet: dict, settings: dict, stage_dir: Path, *, contact_card_path: Path | None = None) -> RenderResult:
+def render(
+    cheatsheet: dict, settings: dict, stage_dir: Path, *, contact_card_path: Path | None = None
+) -> RenderResult:
     """The openai provider's entry point for src/rendering/factory.py.
     `contact_card_path` is accepted for call-shape parity with
     existing_provider.render() but ignored -- the card path always comes

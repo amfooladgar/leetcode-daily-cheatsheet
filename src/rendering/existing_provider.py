@@ -60,7 +60,9 @@ def render_with_overflow_recovery(cheatsheet, settings, image_path, contact_card
             "(deterministic, no extra API cost).",
             key,
         )
-        qa = render_cheatsheet(cheatsheet, settings, image_path, contact_card_path=contact_card_path)
+        qa = render_cheatsheet(
+            cheatsheet, settings, image_path, contact_card_path=contact_card_path
+        )
 
     return qa, dropped
 

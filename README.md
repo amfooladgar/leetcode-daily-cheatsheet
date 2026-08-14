@@ -1,77 +1,173 @@
 # leetcode-daily-cheatsheet
 
-Every morning, this pipeline reads that day's LeetCode Daily Challenge,
-solves and verifies it with Claude Code, and produces a precise,
-"never-forget-it" cheat sheet — sized for a LinkedIn portrait post — that
-gets archived to Google Drive.
+[![CI](https://github.com/amfooladgar/leetcode-daily-cheatsheet/actions/workflows/ci.yml/badge.svg)](https://github.com/amfooladgar/leetcode-daily-cheatsheet/actions/workflows/ci.yml)
+[![Python Version](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
+[![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+An automated end-to-end pipeline that reads each morning's **LeetCode Daily Challenge**, solves and adversarially verifies it using **Claude Code (`claude -p --bare`)**, executes sandboxed example tests, and renders a precise, "never-forget-it" visual cheat sheet (sized for a LinkedIn portrait 4:5 post) archived directly to **Google Drive** and **Telegram**.
+
+---
+
+## Visual Pipeline Overview
+
+```text
+               +-----------------------------+
+               |  LeetCode Daily Challenge   |
+               +--------------+--------------+
+                              |
+                              v (GraphQL Client)
+               +--------------+--------------+
+               |  GitHub Actions Schedule    |  (09:00 America/New_York)
+               +--------------+--------------+
+                              |
+                              v
+               +--------------+--------------+
+               |         Claude Code         |  (solves, adversarially verifies,
+               +--------------+--------------+   runs sandboxed tests, compresses)
+                              |
+                              v
+               +--------------+--------------+
+               |      cheatsheet.json        |  (JSON Schema Validated)
+               +--------------+--------------+
+                              |
+                              v
+               +--------------+--------------+
+               |     Image Rendering Engine  |  (Deterministic HTML/CSS + Playwright
+               +--------------+--------------+   OR Optional OpenAI GPT-Image)
+                              |
+              +---------------+---------------+
+              |                               |
+              v                               v
++-------------+-------------+   +-------------+-------------+
+|    Google Drive Archive    |   |     Telegram Channel/DM     |
+| (posts/LeetCode/YYYY/MM/)  |   |    (Instant Notification)   |
++---------------------------+   +---------------------------+
 ```
-LeetCode Daily Challenge
-        |
-        v
-  GitHub Actions (09:00 America/New_York)
-        |
-        v
-  Claude Code  --- solves, adversarially verifies, tests, compresses
-        |
-        v
-  cheatsheet.json  (schema-validated structured content)
-        |
-        v
-  Deterministic HTML/CSS + Playwright renderer  --- 1080x1350 PNG, 4:5
-        |
-        v
-  Google Drive: posts/LeetCode/<year>/<month>/
-```
 
-Claude owns correctness. The renderer owns text/code fidelity, and picks
-per-problem diagrams (array-pointer / valid-vs-invalid comparison panels)
-from a small deterministic component library — no AI image model is in the
-loop by default (see [ARCHITECTURE.md](ARCHITECTURE.md) for why, and for
-the diagram component library). An optional GPT-Image-based renderer also
-exists (`image_generation.provider: "openai"` in `config/settings.yaml`,
-or `--image-provider openai`) for anyone who wants GPT Image's full-card
-generation instead — off by default; see ARCHITECTURE.md "Optional OpenAI
-image renderer" and `docs/SETUP.md` step 3d.
+---
 
-## Quick start
+## Core Features & Architecture
+
+- **First-Principles Problem Solving**: Generates solutions strictly from problem statements and constraints — never scrapes or paraphrases copyrighted solution write-ups.
+- **Adversarial Verification & Testing**: Performs a two-pass verification for edge cases and time/space complexity, running the generated Python code against official examples in a sandboxed execution context before publishing.
+- **Dual-Renderer Architecture**:
+  - **HTML/CSS + Playwright (Default & Recommended)**: Fully deterministic, offline-capable 1080x1350 PNG generator using Jinja2 templates, Pygments syntax highlighting, and responsive component diagrams (`array_pointers`, `comparison_states`).
+  - **OpenAI GPT-Image (Optional)**: AI-generated visual cards with automatic Pillow-based branding card compositing, blank region scanning (`detect_blank_region`), and non-blocking fallback to the HTML/CSS engine if rendering fails.
+- **Idempotency & DST Awareness**: Powered by `state/manifest.json` to prevent duplicate uploads, with dual-cron schedule triggers accommodating Daylight Saving Time (EDT/EST).
+- **Multi-Channel Delivery**: Archives formatted assets to Google Drive folders and broadcasts alerts with structured markdown captions to Telegram.
+
+---
+
+## Quick Start
+
+### Prerequisites
+- Python 3.12+
+- Node/Playwright Chromium dependencies
+
+### Installation & Execution
 
 ```bash
-git clone <your-fork-url> leetcode-daily-cheatsheet
+# 1. Clone the repository
+git clone https://github.com/amfooladgar/leetcode-daily-cheatsheet.git
 cd leetcode-daily-cheatsheet
-python3 -m venv .venv && source .venv/bin/activate
+
+# 2. Set up virtual environment and install dependencies
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-playwright install chromium   # one-time: the renderer screenshots via headless Chromium
-cp .env.example .env   # fill in ANTHROPIC_API_KEY etc. for local runs
 
-# assets/contact-card.png is already in place (your LeetCode visit card) —
-# swap it for a different image anytime by overwriting that file.
+# 3. Install Playwright Chromium browser (one-time)
+playwright install chromium
 
-# Try the whole pipeline end-to-end without uploading anything
+# 4. Configure environment variables
+cp .env.example .env
+# Edit .env with your credentials (ANTHROPIC_API_KEY, GOOGLE_*, etc.)
+
+# 5. Run local dry-run (executes pipeline without uploading)
 python -m src.main --dry-run
 ```
 
-See [docs/SETUP.md](docs/SETUP.md) for the full one-time setup (Anthropic
-key, Google Drive OAuth authorization, GitHub secrets, enabling the
-schedule) and [docs/OPERATIONS.md](docs/OPERATIONS.md) for how to operate
-it day to day (manual reruns, reading failures, rotating keys).
+---
 
-## Repository layout
+## CLI Usage Reference
 
+| Flag | Argument | Description |
+|---|---|---|
+| `--dry-run` | None | Runs complete pipeline through rendering, skipping Drive upload & manifest updates. |
+| `--date` | `YYYY-MM-DD` | Re-run or label pipeline execution for a specific historical date. |
+| `--problem-slug` | `SLUG` | Process a specific LeetCode problem (e.g. `two-sum`, `trapping-rain-water`). |
+| `--force` | None | Bypass the `state/manifest.json` idempotency guard to force a rerun. |
+| `--skip-drive` | None | Render cheat sheet locally but skip Google Drive upload. |
+| `--image-provider` | `existing` \| `openai` | Choose renderer provider (`existing` = HTML/CSS, `openai` = GPT Image). |
+| `-v`, `--verbose` | None | Enable verbose debug logging output. |
+
+### Command Examples
+
+```bash
+# Test a specific problem without uploading
+python -m src.main --problem-slug two-sum --dry-run
+
+# Force re-running today's challenge with the OpenAI renderer
+python -m src.main --image-provider openai --force
+
+# Run complete test suite and code quality checks
+pytest -q
+ruff check .
+ruff format --check .
 ```
-.github/workflows/   Scheduled + CI GitHub Actions
-.claude/commands/    Claude Code slash commands used during development
-assets/              Static assets (your contact card)
-config/settings.yaml Single source of runtime configuration (no secrets)
-prompts/claude/      Versioned prompts sent to Claude Code, one per stage
-schemas/             JSON Schemas that gate every stage's output
-src/                 Pipeline implementation (see ARCHITECTURE.md)
-tests/               Unit tests with mocked network calls
-docs/                SETUP.md and OPERATIONS.md
+
+---
+
+## Environment Variables Matrix
+
+| Variable | Required | Description |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | **Yes** | Anthropic API key used by `claude -p --bare` for solve, verify, & compress stages. |
+| `GOOGLE_OAUTH_CLIENT_ID` | Optional | Google OAuth 2.0 Client ID for Drive archival (see [docs/SETUP.md](docs/SETUP.md)). |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | Optional | Google OAuth 2.0 Client Secret for Drive archival. |
+| `GOOGLE_OAUTH_REFRESH_TOKEN` | Optional | Google OAuth refresh token generated by `scripts/authorize_google_drive.py`. |
+| `GOOGLE_DRIVE_FOLDER_ID` | Optional | Target Google Drive folder ID for storing monthly cheat sheet PNGs. |
+| `TELEGRAM_BOT_TOKEN` | Optional | Telegram Bot API token for notification delivery. |
+| `TELEGRAM_CHAT_ID` | Optional | Target Telegram Chat / Channel ID. |
+| `OPENAI_API_KEY` | Optional | Required only when `image_generation.provider: "openai"` is selected. |
+
+---
+
+## Repository Layout
+
+```text
+├── .github/workflows/   # CI/CD and daily scheduled GitHub Actions
+├── assets/              # Branding assets (contact card logo)
+├── config/              # Runtime settings (config/settings.yaml)
+├── docs/                # Operational and setup documentation
+│   ├── SETUP.md         # Step-by-step infrastructure & credentials setup
+│   ├── OPERATIONS.md    # Operating runbook, reruns, & troubleshooting
+│   └── LINKEDIN_POSTING_SETUP.md # Interactive LinkedIn posting feature spec
+├── prompts/             # Versioned Claude Code & OpenAI prompts
+├── schemas/             # JSON Schemas enforcing stage input/output shapes
+├── scripts/             # One-time authorization & smoke testing scripts
+├── src/                 # Main Python package implementation
+│   ├── claude/          # Claude Code runner, validator, & schema clamper
+│   ├── leetcode/        # GraphQL client & problem HTML parser
+│   ├── rendering/       # HTML/CSS & OpenAI rendering providers + compositor
+│   ├── state/           # Run manifest & idempotency tracking
+│   ├── storage/         # Google Drive & Telegram delivery adapters
+│   └── main.py          # Orchestration entrypoint
+└── tests/               # Unit and integration test suite (100% mocked offline)
 ```
 
-## Status
+---
 
-This is a personal automation project. See [CHANGELOG.md](CHANGELOG.md) for
-what shipped in each phase, and `state/manifest.json` (created at runtime)
-for the run history.
+## Documentation & References
+
+- [ARCHITECTURE.md](ARCHITECTURE.md): Deep-dive into design decisions, schema twins, HTML/CSS Jinja2 rendering, and card detection algorithms.
+- [docs/SETUP.md](docs/SETUP.md): One-time setup guide for Anthropic, Google Cloud OAuth, Telegram, and GitHub Secrets.
+- [docs/OPERATIONS.md](docs/OPERATIONS.md): Operational runbook for manual triggers, failure policies, and credential rotation.
+- [CHANGELOG.md](CHANGELOG.md): Complete project version history following Keep a Changelog standards.
+
+---
+
+## License
+
+This project is open-source under the [MIT License](LICENSE).

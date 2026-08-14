@@ -51,9 +51,18 @@ class PipelineFailure(RuntimeError):
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="LeetCode daily cheat-sheet pipeline")
-    p.add_argument("--dry-run", action="store_true", help="Run through rendering; skip Drive + manifest write")
-    p.add_argument("--date", type=str, default=None, help="YYYY-MM-DD; re-run/label a specific date")
-    p.add_argument("--problem-slug", type=str, default=None, help="Fetch a specific problem instead of today's daily")
+    p.add_argument(
+        "--dry-run", action="store_true", help="Run through rendering; skip Drive + manifest write"
+    )
+    p.add_argument(
+        "--date", type=str, default=None, help="YYYY-MM-DD; re-run/label a specific date"
+    )
+    p.add_argument(
+        "--problem-slug",
+        type=str,
+        default=None,
+        help="Fetch a specific problem instead of today's daily",
+    )
     p.add_argument("--force", action="store_true", help="Bypass the manifest idempotency guard")
     p.add_argument("--skip-drive", action="store_true", help="Render but never upload to Drive")
     p.add_argument(
@@ -166,7 +175,9 @@ def run(args: argparse.Namespace) -> int:
 
         validate_provider(image_provider)
         if not settings["image_generation"].get("enabled", True):
-            log.info("image_generation.enabled=false -- using the existing renderer regardless of provider config.")
+            log.info(
+                "image_generation.enabled=false -- using the existing renderer regardless of provider config."
+            )
             image_provider = "existing"
         elif image_provider == "openai":
             from src.rendering.openai_provider import OpenAIConfigError, validate_provider_config
@@ -233,7 +244,9 @@ def run(args: argparse.Namespace) -> int:
     log.info("NORMALIZED #%d %s (%s)", problem.number, problem.title, problem.difficulty)
 
     if not args.force and manifest.already_published(date_str, problem.number):
-        log.info("%s already published (see state/manifest.json) — no-op. Use --force to redo.", date_str)
+        log.info(
+            "%s already published (see state/manifest.json) — no-op. Use --force to redo.", date_str
+        )
         return 0
 
     claude_cfg = settings["claude"]
@@ -442,7 +455,14 @@ def run(args: argparse.Namespace) -> int:
         manifest_mod.save(manifest, manifest_path)
         log.error("RENDERED failed: %s", reason)
         return 1
-    log.info("QA_PASSED %s (%dx%d %s, provider=%s)", image_path, qa.width, qa.height, qa.format, qa.provider)
+    log.info(
+        "QA_PASSED %s (%dx%d %s, provider=%s)",
+        image_path,
+        qa.width,
+        qa.height,
+        qa.format,
+        qa.provider,
+    )
 
     markdown_path = None
     if settings["drive"]["upload_markdown_summary"]:
@@ -496,7 +516,12 @@ def run(args: argparse.Namespace) -> int:
             result = send_cheatsheet(image_path=image_path, caption=caption)
             telegram_ok = True
             telegram_message_id = result.message_id
-            log.info("TELEGRAM sent %s -> chat %s (message %s)", image_path.name, result.chat_id, result.message_id)
+            log.info(
+                "TELEGRAM sent %s -> chat %s (message %s)",
+                image_path.name,
+                result.chat_id,
+                result.message_id,
+            )
         except TelegramSendError as exc:
             telegram_failed = True
             log.error(

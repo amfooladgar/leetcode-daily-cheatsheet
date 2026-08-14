@@ -119,9 +119,12 @@ class RenderCheatsheetTests(unittest.TestCase):
         fake_sync_playwright_cm.__enter__.return_value = fake_pw
         fake_sync_playwright_cm.__exit__.return_value = False
 
-        with mock.patch(
-            "src.rendering.render.sync_playwright", return_value=fake_sync_playwright_cm
-        ), mock.patch("src.rendering.render.read_png_size", return_value=(1080, 1350)):
+        with (
+            mock.patch(
+                "src.rendering.render.sync_playwright", return_value=fake_sync_playwright_cm
+            ),
+            mock.patch("src.rendering.render.read_png_size", return_value=(1080, 1350)),
+        ):
             render_cheatsheet(
                 load_sample_cheatsheet_json(), self.config, output_path, contact_card_path=None
             )
@@ -131,8 +134,10 @@ class RenderCheatsheetTests(unittest.TestCase):
     def test_long_content_is_flagged_as_overflow_not_crash_or_resize(self):
         cheatsheet = load_sample_cheatsheet_json()
         cheatsheet["intuition"] = ("This is a very long intuition sentence. " * 30).strip()
-        cheatsheet["code"] = cheatsheet["code"] + "\n" + "\n".join(
-            f"    # padding comment line {i} to stress vertical fit" for i in range(60)
+        cheatsheet["code"] = (
+            cheatsheet["code"]
+            + "\n"
+            + "\n".join(f"    # padding comment line {i} to stress vertical fit" for i in range(60))
         )
         output_path = Path(self.tmpdir.name) / "cheatsheet_long.png"
         result = render_cheatsheet(cheatsheet, self.config, output_path, contact_card_path=None)

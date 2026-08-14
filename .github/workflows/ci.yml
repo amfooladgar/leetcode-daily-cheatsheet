@@ -35,8 +35,11 @@ jobs:
       - name: Verify Chromium actually launches
         run: python scripts/verify_playwright_chromium.py
 
-      - name: Lint
-        run: ruff check .
+      - name: Lint and Format Check
+        run: |
+          ruff check .
+          ruff format --check .
 
       - name: Test
         run: pytest -q
+

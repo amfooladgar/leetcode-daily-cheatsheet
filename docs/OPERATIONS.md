@@ -150,3 +150,19 @@ CLAUDE.md "Rules".
 pipeline logs this at the end of each Claude stage. Anthropic Console and
 Google Cloud billing are the sources of truth; Drive storage and API calls
 at this volume (one small PNG + one small JSON per day) are free-tier.
+
+## Local quality & CI validation
+
+Before pushing code modifications to `main`, run the complete test suite and code quality checks locally:
+
+```bash
+# Run unit and integration tests
+pytest -v
+
+# Run code linter
+ruff check .
+
+# Check formatting standards
+ruff format --check .
+```
+

@@ -26,7 +26,11 @@ _DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
 _FOLDER_MIME = "application/vnd.google-apps.folder"
 _TOKEN_URI = "https://oauth2.googleapis.com/token"
 
-_OAUTH_ENV_VARS = ("GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "GOOGLE_OAUTH_REFRESH_TOKEN")
+_OAUTH_ENV_VARS = (
+    "GOOGLE_OAUTH_CLIENT_ID",
+    "GOOGLE_OAUTH_CLIENT_SECRET",
+    "GOOGLE_OAUTH_REFRESH_TOKEN",
+)
 
 
 class DriveUploadError(RuntimeError):
@@ -101,9 +105,7 @@ def _upload_bytes(service, name: str, data: bytes, mime_type: str, parent_id: st
     media = MediaIoBaseUpload(io.BytesIO(data), mimetype=mime_type, resumable=False)
     metadata = {"name": name, "parents": [parent_id]}
     return (
-        service.files()
-        .create(body=metadata, media_body=media, fields="id, webViewLink")
-        .execute()
+        service.files().create(body=metadata, media_body=media, fields="id, webViewLink").execute()
     )
 
 

@@ -105,9 +105,7 @@ class RunExamplesTests(unittest.TestCase):
 
     def test_incorrect_solution_is_caught(self):
         broken_code = (
-            "class Solution:\n"
-            "    def twoSum(self, nums, target):\n"
-            "        return [0, 0]\n"
+            "class Solution:\n    def twoSum(self, nums, target):\n        return [0, 0]\n"
         )
         examples = [Example(input="nums = [2,7,11,15], target = 9", output="[0, 1]")]
         report = run_examples(broken_code, examples)

@@ -28,7 +28,10 @@ class TelegramSendTests(unittest.TestCase):
         self.addCleanup(env_patch.stop)
 
     def test_missing_credentials_raises(self):
-        with mock.patch.dict("os.environ", {}, clear=True), self.assertRaises(TelegramSendError) as ctx:
+        with (
+            mock.patch.dict("os.environ", {}, clear=True),
+            self.assertRaises(TelegramSendError) as ctx,
+        ):
             send_cheatsheet(image_path=_fake_png(self.tmpdir), caption="hi")
         self.assertIn("TELEGRAM_BOT_TOKEN", str(ctx.exception))
         self.assertIn("TELEGRAM_CHAT_ID", str(ctx.exception))
@@ -56,16 +59,20 @@ class TelegramSendTests(unittest.TestCase):
         fake_response = mock.Mock(ok=False, status_code=400, text='{"ok": false}')
         fake_response.json.return_value = {"ok": False, "description": "chat not found"}
 
-        with mock.patch("requests.post", return_value=fake_response), self.assertRaises(TelegramSendError) as ctx:
+        with (
+            mock.patch("requests.post", return_value=fake_response),
+            self.assertRaises(TelegramSendError) as ctx,
+        ):
             send_cheatsheet(image_path=_fake_png(self.tmpdir), caption="hi")
         self.assertIn("chat not found", str(ctx.exception))
 
     def test_network_failure_raises(self):
         import requests
 
-        with mock.patch(
-            "requests.post", side_effect=requests.ConnectionError("boom")
-        ), self.assertRaises(TelegramSendError) as ctx:
+        with (
+            mock.patch("requests.post", side_effect=requests.ConnectionError("boom")),
+            self.assertRaises(TelegramSendError) as ctx,
+        ):
             send_cheatsheet(image_path=_fake_png(self.tmpdir), caption="hi")
         self.assertIn("boom", str(ctx.exception))
 
@@ -73,7 +80,10 @@ class TelegramSendTests(unittest.TestCase):
         fake_response = mock.Mock(ok=True, status_code=200, text="<html>not json</html>")
         fake_response.json.side_effect = ValueError("no JSON object could be decoded")
 
-        with mock.patch("requests.post", return_value=fake_response), self.assertRaises(TelegramSendError):
+        with (
+            mock.patch("requests.post", return_value=fake_response),
+            self.assertRaises(TelegramSendError),
+        ):
             send_cheatsheet(image_path=_fake_png(self.tmpdir), caption="hi")
 
     def test_caption_is_truncated_to_1024_chars(self):

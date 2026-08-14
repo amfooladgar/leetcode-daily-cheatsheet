@@ -105,7 +105,9 @@ def run_stage(
     # Empty string is a valid, deliberate value: pure reasoning, no tool use.
     cmd += ["--allowedTools", allowed_tools]
 
-    log.info("Running Claude stage '%s' (model=%s, prompt_version=%s)", stage, model, prompt_version)
+    log.info(
+        "Running Claude stage '%s' (model=%s, prompt_version=%s)", stage, model, prompt_version
+    )
     try:
         proc = subprocess.run(
             cmd,
@@ -118,8 +120,7 @@ def run_stage(
         raise ClaudeStageError(f"Stage '{stage}' timed out after {timeout_seconds}s") from exc
     except FileNotFoundError as exc:
         raise ClaudeStageError(
-            f"'{claude_bin}' not found on PATH — install Claude Code first "
-            "(see docs/SETUP.md)."
+            f"'{claude_bin}' not found on PATH — install Claude Code first (see docs/SETUP.md)."
         ) from exc
 
     if proc.returncode != 0:

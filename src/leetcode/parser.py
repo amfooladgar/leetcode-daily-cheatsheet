@@ -47,7 +47,22 @@ _EXPLANATION_LINE_RE = re.compile(r"explanation\s*:\s*(.*)", re.IGNORECASE | re.
 # directly under the document root with no wrapping <p> -- see
 # _iter_top_level_blocks.
 _INLINE_NODE_NAMES = frozenset(
-    {"code", "strong", "em", "b", "i", "u", "span", "a", "sub", "sup", "br", "mark", "small", "font"}
+    {
+        "code",
+        "strong",
+        "em",
+        "b",
+        "i",
+        "u",
+        "span",
+        "a",
+        "sub",
+        "sup",
+        "br",
+        "mark",
+        "small",
+        "font",
+    }
 )
 
 

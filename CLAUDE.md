@@ -112,8 +112,9 @@ python -m src.main --problem-slug two-sum --dry-run --image-provider existing
 # Run the test suite (must be green before any change is considered done)
 pytest -q
 
-# Lint
+# Lint & Format
 ruff check .
+ruff format --check .
 ```
 
 # Testing

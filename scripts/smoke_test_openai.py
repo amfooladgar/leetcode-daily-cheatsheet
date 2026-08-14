@@ -98,7 +98,9 @@ _FIXTURE_2213 = {
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     p.add_argument(
         "--quality",
         default="medium",
@@ -134,8 +136,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not os.environ.get("OPENAI_API_KEY"):
         print(
-            "OPENAI_API_KEY not set (checked real env vars and .env) -- see "
-            "docs/SETUP.md step 3d.",
+            "OPENAI_API_KEY not set (checked real env vars and .env) -- see docs/SETUP.md step 3d.",
             file=sys.stderr,
         )
         return 1

@@ -94,8 +94,7 @@ class LeetCodeClient:
                 "Content-Type": "application/json",
                 "Referer": "https://leetcode.com",
                 "User-Agent": (
-                    "leetcode-daily-cheatsheet/0.1 "
-                    "(personal automation; https://github.com/)"
+                    "leetcode-daily-cheatsheet/0.1 (personal automation; https://github.com/)"
                 ),
             }
         )

@@ -172,13 +172,17 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         from src.storage.google_drive import UploadResult
         from src.storage.telegram import SendResult
 
-        with mock.patch(
-            "src.main.upload_cheatsheet",
-            return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
-        ), mock.patch(
-            "src.main.send_cheatsheet",
-            return_value=SendResult(message_id=1, chat_id="chat1"),
-        ), mock.patch.dict("os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id"}):
+        with (
+            mock.patch(
+                "src.main.upload_cheatsheet",
+                return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
+            ),
+            mock.patch(
+                "src.main.send_cheatsheet",
+                return_value=SendResult(message_id=1, chat_id="chat1"),
+            ),
+            mock.patch.dict("os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id"}),
+        ):
             first = main(["--problem-slug", "two-sum", "--force"])
             self.assertEqual(first, 0)
 
@@ -200,13 +204,17 @@ class MainPipelineIntegrationTests(unittest.TestCase):
             "GOOGLE_DRIVE_FOLDER_ID=from-dotenv\nSOME_OTHER_VAR=from-dotenv\n"
         )
 
-        with mock.patch(
-            "src.main.upload_cheatsheet",
-            return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
-        ) as mock_upload, mock.patch(
-            "src.main.send_cheatsheet",
-            return_value=SendResult(message_id=1, chat_id="chat1"),
-        ), mock.patch.dict("os.environ", {"SOME_OTHER_VAR": "already-set"}):
+        with (
+            mock.patch(
+                "src.main.upload_cheatsheet",
+                return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
+            ) as mock_upload,
+            mock.patch(
+                "src.main.send_cheatsheet",
+                return_value=SendResult(message_id=1, chat_id="chat1"),
+            ),
+            mock.patch.dict("os.environ", {"SOME_OTHER_VAR": "already-set"}),
+        ):
             os.environ.pop("GOOGLE_DRIVE_FOLDER_ID", None)
             exit_code = main(["--problem-slug", "two-sum", "--force"])
 
@@ -225,13 +233,17 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         from src.storage.google_drive import UploadResult
         from src.storage.telegram import TelegramSendError
 
-        with mock.patch(
-            "src.main.upload_cheatsheet",
-            return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
-        ), mock.patch(
-            "src.main.send_cheatsheet",
-            side_effect=TelegramSendError("TELEGRAM_BOT_TOKEN not set"),
-        ), mock.patch.dict("os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id"}):
+        with (
+            mock.patch(
+                "src.main.upload_cheatsheet",
+                return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
+            ),
+            mock.patch(
+                "src.main.send_cheatsheet",
+                side_effect=TelegramSendError("TELEGRAM_BOT_TOKEN not set"),
+            ),
+            mock.patch.dict("os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id"}),
+        ):
             exit_code = main(["--problem-slug", "two-sum", "--force"])
 
         self.assertEqual(exit_code, 1)  # non-zero so CI surfaces the failure
@@ -249,13 +261,17 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         from src.storage.google_drive import DriveUploadError
         from src.storage.telegram import SendResult
 
-        with mock.patch(
-            "src.main.upload_cheatsheet",
-            side_effect=DriveUploadError("GOOGLE_OAUTH_REFRESH_TOKEN not set"),
-        ), mock.patch(
-            "src.main.send_cheatsheet",
-            return_value=SendResult(message_id=7, chat_id="chat1"),
-        ), mock.patch.dict("os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id"}):
+        with (
+            mock.patch(
+                "src.main.upload_cheatsheet",
+                side_effect=DriveUploadError("GOOGLE_OAUTH_REFRESH_TOKEN not set"),
+            ),
+            mock.patch(
+                "src.main.send_cheatsheet",
+                return_value=SendResult(message_id=7, chat_id="chat1"),
+            ),
+            mock.patch.dict("os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id"}),
+        ):
             exit_code = main(["--problem-slug", "two-sum", "--force"])
 
         self.assertEqual(exit_code, 1)
@@ -306,7 +322,9 @@ class MainPipelineIntegrationTests(unittest.TestCase):
                 failed_checks=[],
             )
             (self.tmpdir / "output" / "2026-08-13" / "1").mkdir(parents=True, exist_ok=True)
-            (self.tmpdir / "output" / "2026-08-13" / "1" / "cheatsheet.png").write_bytes(b"fake-png")
+            (self.tmpdir / "output" / "2026-08-13" / "1" / "cheatsheet.png").write_bytes(
+                b"fake-png"
+            )
             exit_code = main(["--problem-slug", "two-sum", "--dry-run"])
 
         self.assertEqual(exit_code, 0)
@@ -326,23 +344,23 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         final_path = stage_dir / "cheatsheet-openai-final.png"
         final_path.write_bytes(b"fake-final-png")
 
-        with mock.patch(
-            "src.main.render_cheatsheet_with_provider",
-            return_value=mock.MagicMock(
-                passed=True,
-                image_path=final_path,
-                width=1536,
-                height=1024,
-                format="PNG",
-                provider="openai",
-                warnings=[],
-                dropped_for_overflow=[],
-                failed_checks=[],
-            ),
-        ) as mock_render, mock.patch(
-            "src.main.upload_cheatsheet"
-        ) as mock_upload, mock.patch.dict(
-            "os.environ", {"OPENAI_API_KEY": "sk-test"}
+        with (
+            mock.patch(
+                "src.main.render_cheatsheet_with_provider",
+                return_value=mock.MagicMock(
+                    passed=True,
+                    image_path=final_path,
+                    width=1536,
+                    height=1024,
+                    format="PNG",
+                    provider="openai",
+                    warnings=[],
+                    dropped_for_overflow=[],
+                    failed_checks=[],
+                ),
+            ) as mock_render,
+            mock.patch("src.main.upload_cheatsheet") as mock_upload,
+            mock.patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test"}),
         ):
             exit_code = main(["--problem-slug", "two-sum", "--dry-run"])
 
@@ -360,26 +378,32 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         final_path = stage_dir / "cheatsheet-openai-final.png"
         final_path.write_bytes(b"fake-final-png")
 
-        with mock.patch(
-            "src.main.render_cheatsheet_with_provider",
-            return_value=mock.MagicMock(
-                passed=True,
-                image_path=final_path,
-                width=1536,
-                height=1024,
-                format="PNG",
-                provider="openai",
-                warnings=[],
-                dropped_for_overflow=[],
-                failed_checks=[],
+        with (
+            mock.patch(
+                "src.main.render_cheatsheet_with_provider",
+                return_value=mock.MagicMock(
+                    passed=True,
+                    image_path=final_path,
+                    width=1536,
+                    height=1024,
+                    format="PNG",
+                    provider="openai",
+                    warnings=[],
+                    dropped_for_overflow=[],
+                    failed_checks=[],
+                ),
+            ) as mock_render,
+            mock.patch(
+                "src.main.upload_cheatsheet",
+                return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
+            ) as mock_upload,
+            mock.patch(
+                "src.main.send_cheatsheet", return_value=SendResult(message_id=1, chat_id="chat1")
             ),
-        ) as mock_render, mock.patch(
-            "src.main.upload_cheatsheet",
-            return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
-        ) as mock_upload, mock.patch(
-            "src.main.send_cheatsheet", return_value=SendResult(message_id=1, chat_id="chat1")
-        ), mock.patch.dict(
-            "os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id", "OPENAI_API_KEY": "sk-test"}
+            mock.patch.dict(
+                "os.environ",
+                {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id", "OPENAI_API_KEY": "sk-test"},
+            ),
         ):
             exit_code = main(["--problem-slug", "two-sum", "--image-provider", "openai", "--force"])
 
@@ -396,13 +420,17 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         from src.main import main
         from src.rendering.openai_provider import OpenAIGenerationError
 
-        with mock.patch(
-            "src.main.render_cheatsheet_with_provider",
-            side_effect=OpenAIGenerationError("simulated API failure"),
-        ), mock.patch("src.main.upload_cheatsheet") as mock_upload, mock.patch(
-            "src.main.send_cheatsheet"
-        ) as mock_send, mock.patch.dict(
-            "os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id", "OPENAI_API_KEY": "sk-test"}
+        with (
+            mock.patch(
+                "src.main.render_cheatsheet_with_provider",
+                side_effect=OpenAIGenerationError("simulated API failure"),
+            ),
+            mock.patch("src.main.upload_cheatsheet") as mock_upload,
+            mock.patch("src.main.send_cheatsheet") as mock_send,
+            mock.patch.dict(
+                "os.environ",
+                {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id", "OPENAI_API_KEY": "sk-test"},
+            ),
         ):
             exit_code = main(["--problem-slug", "two-sum", "--image-provider", "openai", "--force"])
 
@@ -419,11 +447,13 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         from src.main import main
         from src.storage.google_drive import UploadResult
 
-        with mock.patch(
-            "src.main.upload_cheatsheet",
-            return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
-        ), mock.patch("src.main.send_cheatsheet") as mock_send, mock.patch.dict(
-            "os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id"}
+        with (
+            mock.patch(
+                "src.main.upload_cheatsheet",
+                return_value=UploadResult(image_file_id="f1", image_web_link="https://x"),
+            ),
+            mock.patch("src.main.send_cheatsheet") as mock_send,
+            mock.patch.dict("os.environ", {"GOOGLE_DRIVE_FOLDER_ID": "fake-folder-id"}),
         ):
             settings = load_settings()
             settings["telegram"]["enabled"] = False

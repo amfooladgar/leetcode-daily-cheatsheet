@@ -103,10 +103,13 @@ def send_cheatsheet(*, image_path: Path, caption: str) -> SendResult:
 
     if not response.ok or not payload.get("ok"):
         description = payload.get("description", response.text[:500])
-        raise TelegramSendError(
-            f"sendPhoto failed (status {response.status_code}): {description}"
-        )
+        raise TelegramSendError(f"sendPhoto failed (status {response.status_code}): {description}")
 
     result = payload["result"]
-    log.info("Sent %s to Telegram chat %s (message_id=%s)", image_path.name, chat_id, result["message_id"])
+    log.info(
+        "Sent %s to Telegram chat %s (message_id=%s)",
+        image_path.name,
+        chat_id,
+        result["message_id"],
+    )
     return SendResult(message_id=result["message_id"], chat_id=chat_id)

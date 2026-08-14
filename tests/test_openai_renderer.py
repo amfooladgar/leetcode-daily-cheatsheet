@@ -40,7 +40,9 @@ def _png_bytes(width: int, height: int, color=(255, 255, 255, 255)) -> bytes:
 
 
 def _fake_response(status_code: int) -> httpx.Response:
-    return httpx.Response(status_code, request=httpx.Request("POST", "https://api.openai.com/v1/images/generations"))
+    return httpx.Response(
+        status_code, request=httpx.Request("POST", "https://api.openai.com/v1/images/generations")
+    )
 
 
 def _fake_image_result(b64: str | None):
@@ -205,9 +207,12 @@ class OpenAIRendererTests(unittest.TestCase):
         # self.card_path is 20x10; margins leave ample room, so
         # compute_card_box() returns the native size unscaled -- the padded
         # reservation should be exactly 20% larger: 24x12.
-        with mock.patch("openai.OpenAI", return_value=fake_client), mock.patch(
-            "src.rendering.openai_provider.build_prompt", wraps=build_prompt
-        ) as mock_build_prompt:
+        with (
+            mock.patch("openai.OpenAI", return_value=fake_client),
+            mock.patch(
+                "src.rendering.openai_provider.build_prompt", wraps=build_prompt
+            ) as mock_build_prompt,
+        ):
             render(self.cheatsheet, self.settings, self.stage_dir)
 
         self.assertEqual(mock_build_prompt.call_args.kwargs["card_width"], 24)
@@ -231,7 +236,9 @@ class OpenAIRendererTests(unittest.TestCase):
         self.assertEqual(result.height, 48)
         self.assertEqual(result.format, "PNG")
 
-        background_path = self.stage_dir / self.settings["image_generation"]["openai"]["background_filename"]
+        background_path = (
+            self.stage_dir / self.settings["image_generation"]["openai"]["background_filename"]
+        )
         final_path = self.stage_dir / self.settings["image_generation"]["openai"]["final_filename"]
         self.assertTrue(background_path.exists())
         self.assertTrue(final_path.exists())
@@ -258,11 +265,15 @@ class OpenAIRendererTests(unittest.TestCase):
         # detected (10, 8) shrinks the 20x10 card to scale 0.5 (>= the
         # default 0.4 min-scale floor), so compositing should still
         # succeed -- just at the detected, not requested, size.
-        with mock.patch("openai.OpenAI", return_value=fake_client), mock.patch(
-            "src.rendering.openai_provider.detect_blank_region", return_value=(10, 8)
-        ) as mock_detect, mock.patch(
-            "src.rendering.openai_provider.composite_card", wraps=real_composite_card
-        ) as mock_composite:
+        with (
+            mock.patch("openai.OpenAI", return_value=fake_client),
+            mock.patch(
+                "src.rendering.openai_provider.detect_blank_region", return_value=(10, 8)
+            ) as mock_detect,
+            mock.patch(
+                "src.rendering.openai_provider.composite_card", wraps=real_composite_card
+            ) as mock_composite,
+        ):
             result = render(self.cheatsheet, self.settings, self.stage_dir)
 
         mock_detect.assert_called_once()
@@ -279,12 +290,16 @@ class OpenAIRendererTests(unittest.TestCase):
         fake_client = mock.MagicMock()
         fake_client.images.generate.return_value = _fake_image_result(b64)
 
-        with mock.patch("openai.OpenAI", return_value=fake_client), mock.patch(
-            "src.rendering.openai_provider.detect_blank_region", return_value=(2, 2)
-        ), self.assertRaises(OpenAICompositeError):
+        with (
+            mock.patch("openai.OpenAI", return_value=fake_client),
+            mock.patch("src.rendering.openai_provider.detect_blank_region", return_value=(2, 2)),
+            self.assertRaises(OpenAICompositeError),
+        ):
             render(self.cheatsheet, self.settings, self.stage_dir)
 
-        background_path = self.stage_dir / self.settings["image_generation"]["openai"]["background_filename"]
+        background_path = (
+            self.stage_dir / self.settings["image_generation"]["openai"]["background_filename"]
+        )
         final_path = self.stage_dir / self.settings["image_generation"]["openai"]["final_filename"]
         self.assertTrue(background_path.exists(), "background must be kept for diagnosis")
         self.assertFalse(final_path.exists(), "final image must never be published on failure")
@@ -292,7 +307,10 @@ class OpenAIRendererTests(unittest.TestCase):
     def test_missing_data_in_response_fails_clearly(self):
         fake_client = mock.MagicMock()
         fake_client.images.generate.return_value = _fake_image_result(None)
-        with mock.patch("openai.OpenAI", return_value=fake_client), self.assertRaises(OpenAIGenerationError):
+        with (
+            mock.patch("openai.OpenAI", return_value=fake_client),
+            self.assertRaises(OpenAIGenerationError),
+        ):
             render(self.cheatsheet, self.settings, self.stage_dir)
         # No final file should exist on a generation failure.
         final_path = self.stage_dir / self.settings["image_generation"]["openai"]["final_filename"]
@@ -301,7 +319,10 @@ class OpenAIRendererTests(unittest.TestCase):
     def test_invalid_base64_fails_clearly(self):
         fake_client = mock.MagicMock()
         fake_client.images.generate.return_value = _fake_image_result("not-valid-base64!!!")
-        with mock.patch("openai.OpenAI", return_value=fake_client), self.assertRaises(OpenAIGenerationError):
+        with (
+            mock.patch("openai.OpenAI", return_value=fake_client),
+            self.assertRaises(OpenAIGenerationError),
+        ):
             render(self.cheatsheet, self.settings, self.stage_dir)
 
     def test_wrong_shape_background_keeps_background_but_not_final(self):
@@ -311,10 +332,15 @@ class OpenAIRendererTests(unittest.TestCase):
         b64 = base64.b64encode(png_bytes).decode()
         fake_client = mock.MagicMock()
         fake_client.images.generate.return_value = _fake_image_result(b64)
-        with mock.patch("openai.OpenAI", return_value=fake_client), self.assertRaises(OpenAICompositeError):
+        with (
+            mock.patch("openai.OpenAI", return_value=fake_client),
+            self.assertRaises(OpenAICompositeError),
+        ):
             render(self.cheatsheet, self.settings, self.stage_dir)
 
-        background_path = self.stage_dir / self.settings["image_generation"]["openai"]["background_filename"]
+        background_path = (
+            self.stage_dir / self.settings["image_generation"]["openai"]["background_filename"]
+        )
         final_path = self.stage_dir / self.settings["image_generation"]["openai"]["final_filename"]
         self.assertTrue(background_path.exists(), "background must be kept for diagnosis")
         self.assertFalse(final_path.exists(), "final image must never be published on failure")
@@ -340,7 +366,10 @@ class OpenAIRendererTests(unittest.TestCase):
         fake_client.images.generate.side_effect = openai.AuthenticationError(
             "bad key", response=_fake_response(401), body=None
         )
-        with mock.patch("openai.OpenAI", return_value=fake_client), self.assertRaises(OpenAIGenerationError):
+        with (
+            mock.patch("openai.OpenAI", return_value=fake_client),
+            self.assertRaises(OpenAIGenerationError),
+        ):
             render(self.cheatsheet, self.settings, self.stage_dir)
         fake_client.images.generate.assert_called_once()
 
@@ -349,7 +378,10 @@ class OpenAIRendererTests(unittest.TestCase):
         fake_client.images.generate.side_effect = openai.BadRequestError(
             "bad request", response=_fake_response(400), body=None
         )
-        with mock.patch("openai.OpenAI", return_value=fake_client), self.assertRaises(OpenAIGenerationError):
+        with (
+            mock.patch("openai.OpenAI", return_value=fake_client),
+            self.assertRaises(OpenAIGenerationError),
+        ):
             render(self.cheatsheet, self.settings, self.stage_dir)
         fake_client.images.generate.assert_called_once()
 

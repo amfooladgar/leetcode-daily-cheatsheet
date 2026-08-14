@@ -30,24 +30,32 @@ def _hash(path: Path) -> str:
 
 class ComputeCardBoxTests(unittest.TestCase):
     def test_native_size_kept_when_it_fits(self):
-        box = compute_card_box(100, 50, canvas_width=1000, canvas_height=800, margin_right=20, margin_bottom=20)
+        box = compute_card_box(
+            100, 50, canvas_width=1000, canvas_height=800, margin_right=20, margin_bottom=20
+        )
         self.assertEqual(box, (100, 50))
 
     def test_scales_down_proportionally_when_too_wide(self):
-        box = compute_card_box(2000, 500, canvas_width=1000, canvas_height=800, margin_right=20, margin_bottom=20)
+        box = compute_card_box(
+            2000, 500, canvas_width=1000, canvas_height=800, margin_right=20, margin_bottom=20
+        )
         # available width = 980, scale = 980/2000 = 0.49
         self.assertEqual(box, (980, 245))
         self.assertAlmostEqual(box[0] / box[1], 2000 / 500, places=2)
 
     def test_scales_down_proportionally_when_too_tall(self):
-        box = compute_card_box(500, 2000, canvas_width=1000, canvas_height=800, margin_right=20, margin_bottom=20)
+        box = compute_card_box(
+            500, 2000, canvas_width=1000, canvas_height=800, margin_right=20, margin_bottom=20
+        )
         available_height = 780
         scale = available_height / 2000
         self.assertEqual(box, (round(500 * scale), round(2000 * scale)))
 
     def test_raises_when_margins_leave_no_room(self):
         with self.assertRaises(CardCompositeError):
-            compute_card_box(100, 50, canvas_width=100, canvas_height=100, margin_right=150, margin_bottom=10)
+            compute_card_box(
+                100, 50, canvas_width=100, canvas_height=100, margin_right=150, margin_bottom=10
+            )
 
 
 class ComputeReservedRegionTests(unittest.TestCase):
@@ -61,7 +69,13 @@ class ComputeReservedRegionTests(unittest.TestCase):
 
     def test_padding_never_shrinks_the_reservation(self):
         width, height = compute_reserved_region(
-            100, 50, canvas_width=1000, canvas_height=800, margin_right=20, margin_bottom=20, safety_margin=0
+            100,
+            50,
+            canvas_width=1000,
+            canvas_height=800,
+            margin_right=20,
+            margin_bottom=20,
+            safety_margin=0,
         )
         self.assertEqual((width, height), (100, 50))
 
@@ -81,7 +95,13 @@ class ComputeReservedRegionTests(unittest.TestCase):
             5000, 2000, canvas_width=1000, canvas_height=800, margin_right=20, margin_bottom=20
         )
         width, height = compute_reserved_region(
-            5000, 2000, canvas_width=1000, canvas_height=800, margin_right=20, margin_bottom=20, safety_margin=0
+            5000,
+            2000,
+            canvas_width=1000,
+            canvas_height=800,
+            margin_right=20,
+            margin_bottom=20,
+            safety_margin=0,
         )
         self.assertEqual((width, height), expected_box)
 
