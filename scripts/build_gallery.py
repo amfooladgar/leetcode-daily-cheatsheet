@@ -161,7 +161,9 @@ def build_gallery(
     for card in cards:
         shutil.copy2(images_dir / card.image_filename, site_images_dir / card.image_filename)
 
-    html = render_site(cards, site_title, site_url=f"https://{custom_domain}" if custom_domain else "")
+    html = render_site(
+        cards, site_title, site_url=f"https://{custom_domain}" if custom_domain else ""
+    )
     (site_dir / "index.html").write_text(html)
 
     if custom_domain:
