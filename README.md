@@ -59,7 +59,7 @@ flowchart TD
   - **OpenAI GPT-Image (Optional)**: AI-generated visual cards with automatic Pillow-based branding card compositing, blank region scanning (`detect_blank_region`), and non-blocking fallback to the HTML/CSS engine if rendering fails.
 - **Idempotency & DST Awareness**: Powered by `state/manifest.json` to prevent duplicate uploads, with dual-cron schedule triggers accommodating Daylight Saving Time (EDT/EST).
 - **Multi-Channel Delivery**: Archives formatted assets to Google Drive folders and broadcasts alerts with structured markdown captions to Telegram.
-- **LinkedIn posting** — after each cheat sheet, Telegram asks whether to post now or save for later (`/post-linkedin` in Claude Code any time). Off by default (`linkedin.enabled: false`).
+- **LinkedIn posting** — after each cheat sheet, Telegram asks whether to post now or save for later (`/post-linkedin` in Claude Code any time). Enabled (`linkedin.enabled: true`, `linkedin.telegram_prompt.enabled: true`); requires `LINKEDIN_ACCESS_TOKEN`/`LINKEDIN_PERSON_URN` (see [docs/LINKEDIN_POSTING_SETUP.md](docs/LINKEDIN_POSTING_SETUP.md)) for the "post now" tap to actually publish — without them it gracefully falls back to saving a draft.
 
 ---
 

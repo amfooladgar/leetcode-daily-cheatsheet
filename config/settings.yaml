@@ -197,10 +197,10 @@ gallery:
 # manual /post-linkedin Claude Code command. Both require linkedin.enabled;
 # Path A additionally requires linkedin.telegram_prompt.enabled.
 linkedin:
-  enabled: false                    # master kill switch — off by default
+  enabled: true                     # master kill switch
   visibility: "PUBLIC"              # PUBLIC | CONNECTIONS
   api_version: "202608"             # LinkedIn-Version header (YYYYMM); bump periodically
   telegram_prompt:
-    enabled: false                  # sub-switch for the automatic Path A flow — off by default
+    enabled: true                   # sub-switch for the automatic Path A flow
     decision_timeout_seconds: 300   # how long src/main.py waits for a button tap before defaulting to "later"
     poll_interval_seconds: 3        # local polling cadence within the timeout window

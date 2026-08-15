@@ -84,6 +84,16 @@ jobs:
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Only read by Path A's "post now" branch when a human taps the
+          # Telegram button within decision_timeout_seconds (see
+          # ARCHITECTURE.md "LinkedIn posting"); the caption-draft and
+          # Telegram-prompt steps ahead of that never touch these. Unset
+          # secrets just mean that branch fails and falls back to saving a
+          # draft, since it's wrapped in the non-blocking except in
+          # src/main.py -- see docs/LINKEDIN_POSTING_SETUP.md to obtain them
+          # via scripts/authorize_linkedin.py.
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
           # Manual runs pick the provider via the workflow_dispatch input
           # above; scheduled runs (no `inputs` context) fall back to the
           # repository variable Settings -> Secrets and variables -> Actions
