@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ site_title }}</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f7f7f9;
+    --card-bg: #ffffff;
+    --text: #1a1a1e;
+    --muted: #62626b;
+    --border: #e2e2e8;
+    --accent: #5b4fe0;
+    --easy: #1e9e5a;
+    --medium: #b8860b;
+    --hard: #d0402e;
+    --chip-bg: #ecebfb;
+    --chip-active-bg: #5b4fe0;
+    --chip-active-text: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --card-bg: #201f26;
+      --text: #ececf1;
+      --muted: #9a99a6;
+      --border: #34333c;
+      --chip-bg: #2c2b36;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 32px clamp(16px, 4vw, 48px) 8px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  header h1 { margin: 0 0 4px; font-size: 1.6rem; }
+  header p.subtitle { margin: 0; color: var(--muted); }
+  .toolbar {
+    max-width: 1200px;
+    margin: 20px auto 0;
+    padding: 0 clamp(16px, 4vw, 48px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .filter-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .filter-row .label { color: var(--muted); font-size: 0.85rem; min-width: 72px; }
+  .chip {
+    border: 1px solid var(--border);
+    background: var(--chip-bg);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--chip-active-bg);
+    color: var(--chip-active-text);
+    border-color: var(--chip-active-bg);
+  }
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px clamp(16px, 4vw, 48px) 64px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .card img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    display: block;
+    background: var(--border);
+  }
+  .card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .card-title { font-weight: 600; font-size: 0.95rem; line-height: 1.3; }
+  .card-headline { color: var(--muted); font-size: 0.85rem; line-height: 1.35; }
+  .badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 999px;
+    color: #fff;
+    width: fit-content;
+  }
+  .badge.easy { background: var(--easy); }
+  .badge.medium { background: var(--medium); }
+  .badge.hard { background: var(--hard); }
+  .topic-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .topic-chips span {
+    font-size: 0.72rem;
+    background: var(--chip-bg);
+    color: var(--muted);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .card-meta a { color: var(--accent); text-decoration: none; }
+  .card-meta a:hover { text-decoration: underline; }
+  .empty-state {
+    color: var(--muted);
+    text-align: center;
+    padding: 60px 20px;
+    display: none;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    padding: 24px 16px 48px;
+  }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>{{ site_title }}</h1>
+  <p class="subtitle">{{ entries|length }} published cheat sheet{{ "" if entries|length == 1 else "s" }} — built from state/manifest.json</p>
+</header>
+
+<div class="toolbar">
+  <div class="filter-row" id="difficulty-filters">
+    <span class="label">Difficulty</span>
+    <button type="button" class="chip" data-difficulty="" aria-pressed="true">All</button>
+    {% for d in difficulties %}
+    <button type="button" class="chip" data-difficulty="{{ d }}" aria-pressed="false">{{ d }}</button>
+    {% endfor %}
+  </div>
+  <div class="filter-row" id="topic-filters">
+    <span class="label">Topic</span>
+    <button type="button" class="chip" data-topic="" aria-pressed="true">All</button>
+    {% for t in topics %}
+    <button type="button" class="chip" data-topic="{{ t }}" aria-pressed="false">{{ t }}</button>
+    {% endfor %}
+  </div>
+</div>
+
+<main>
+  <div class="grid" id="grid">
+    {% for e in entries %}
+    <article class="card" data-difficulty="{{ e.difficulty }}" data-topics="|{{ e.topics|join('|') }}|">
+      <a href="images/{{ e.image_filename }}" target="_blank" rel="noopener">
+        <img src="images/{{ e.image_filename }}" alt="Cheat sheet for #{{ e.number }} {{ e.title }}" loading="lazy">
+      </a>
+      <div class="card-body">
+        <div class="card-title">#{{ e.number }} {{ e.title }}</div>
+        {% if e.headline %}<div class="card-headline">{{ e.headline }}</div>{% endif %}
+        <span class="badge {{ e.difficulty|lower }}">{{ e.difficulty }}</span>
+        {% if e.topics %}
+        <div class="topic-chips">
+          {% for t in e.topics %}<span>{{ t }}</span>{% endfor %}
+        </div>
+        {% endif %}
+        <div class="card-meta">
+          <span>{{ e.date }}</span>
+          {% if e.problem_url %}<a href="{{ e.problem_url }}" target="_blank" rel="noopener">LeetCode ↗</a>{% endif %}
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  <p class="empty-state" id="empty-state">No cheat sheets match these filters.</p>
+</main>
+
+<footer>
+  Generated by <a href="https://github.com/amfooladgar/leetcode-daily-cheatsheet">leetcode-daily-cheatsheet</a>'s scripts/build_gallery.py
+</footer>
+
+<script>
+(function () {
+  // Vanilla JS, no framework/build step/external dependency -- keeps
+  // instant combinable difficulty + topic filtering without needing one
+  // pre-rendered HTML page per filter combination.
+  var state = { difficulty: "", topic: "" };
+  var cards = Array.prototype.slice.call(document.querySelectorAll("#grid .card"));
+  var emptyState = document.getElementById("empty-state");
+
+  function applyFilters() {
+    var visibleCount = 0;
+    cards.forEach(function (card) {
+      var matchesDifficulty = !state.difficulty || card.dataset.difficulty === state.difficulty;
+      var matchesTopic = !state.topic || card.dataset.topics.indexOf("|" + state.topic + "|") !== -1;
+      var visible = matchesDifficulty && matchesTopic;
+      card.style.display = visible ? "" : "none";
+      if (visible) visibleCount++;
+    });
+    emptyState.style.display = visibleCount === 0 ? "block" : "none";
+  }
+
+  function wireChipGroup(containerId, datasetKey, stateKey) {
+    var container = document.getElementById(containerId);
+    container.querySelectorAll(".chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        container.querySelectorAll(".chip").forEach(function (c) {
+          c.setAttribute("aria-pressed", "false");
+        });
+        chip.setAttribute("aria-pressed", "true");
+        state[stateKey] = chip.dataset[datasetKey] || "";
+        applyFilters();
+      });
+    });
+  }
+
+  wireChipGroup("difficulty-filters", "difficulty", "difficulty");
+  wireChipGroup("topic-filters", "topic", "topic");
+})();
+</script>
+</body>
+</html>

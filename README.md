@@ -63,6 +63,19 @@ flowchart TD
 
 ---
 
+## Gallery
+
+Every successfully published cheat sheet is also browsable on a static,
+filterable gallery site (deployed by `.github/workflows/gallery.yml`,
+built by `scripts/build_gallery.py` — see
+[ARCHITECTURE.md](ARCHITECTURE.md#gallery-site) for why the images are
+committed to the repo and why filtering is a few lines of vanilla JS
+instead of a framework):
+
+**[amfooladgar.github.io/leetcode-daily-cheatsheet](https://amfooladgar.github.io/leetcode-daily-cheatsheet/)**
+
+---
+
 ## Quick Start
 
 ### Prerequisites
@@ -142,16 +155,19 @@ ruff format --check .
 
 ```text
 ├── .claude-handoff/     # Agentic build-process artifacts (see note below) — not part of the runtime pipeline
-├── .github/workflows/   # CI/CD and daily scheduled GitHub Actions
+├── .github/workflows/   # CI/CD, daily scheduled run, & gallery deploy Actions
 ├── assets/              # Branding assets (contact card logo)
 ├── config/              # Runtime settings (config/settings.yaml)
 ├── docs/                # Operational and setup documentation
 │   ├── SETUP.md         # Step-by-step infrastructure & credentials setup
 │   ├── OPERATIONS.md    # Operating runbook, reruns, & troubleshooting
 │   └── LINKEDIN_POSTING_SETUP.md # Interactive LinkedIn posting feature spec
+├── gallery/             # Public gallery site (see "Gallery" above)
+│   ├── images/          # Committed PNG copy per published entry
+│   └── site/            # Built by scripts/build_gallery.py — gitignored
 ├── prompts/             # Versioned Claude Code & OpenAI prompts
 ├── schemas/             # JSON Schemas enforcing stage input/output shapes
-├── scripts/             # One-time authorization & smoke testing scripts
+├── scripts/             # Authorization, smoke testing, & gallery-build scripts
 ├── src/                 # Main Python package implementation
 │   ├── claude/          # Claude Code runner, validator, & schema clamper
 │   ├── leetcode/        # GraphQL client & problem HTML parser

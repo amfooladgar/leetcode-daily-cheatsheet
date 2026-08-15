@@ -519,6 +519,106 @@ failure never damages or blocks the `existing` renderer's own path.
 `tests/test_image_provider_factory.py`) mock the OpenAI client entirely —
 no test spends real API credits, matching CLAUDE.md's testing rule.
 
+## Gallery site
+
+`scripts/build_gallery.py` renders every successfully published entry
+(`state/manifest.json`, `status: "success"` and `drive: true` — the same
+definition `Manifest.already_published()` uses) into a static, framework-
+free HTML/CSS gallery, deployed to GitHub Pages by
+`.github/workflows/gallery.yml`.
+
+```mermaid
+flowchart TD
+    daily["daily.yml run<br/>publishes + commits manifest + gallery image"] --> trigger["gallery.yml<br/>workflow_run: daily.yml completed"]
+    trigger --> build["scripts/build_gallery.py"]
+    build --> read["Read state/manifest.json<br/>status=success, drive=true"]
+    read --> pair["Pair each entry with<br/>gallery/images/&lt;stem&gt;.png"]
+    pair --> site["Render gallery/site/index.html<br/>(Jinja2, vanilla filter JS)"]
+    site --> pages["actions/upload-pages-artifact<br/>+ deploy-pages"]
+```
+
+**Where the published PNGs live for the site to read.** `output/<date>/
+<problem>/` (where the pipeline actually renders each image) is
+gitignored and disposable — regenerated every run, never committed (see
+this file's "Pipeline overview" and `state/manifest.py`'s own docstring:
+"the manifest is the only piece of state the pipeline persists between
+runs"). A publicly deployed static site build still needs *some* durable
+copy of each image to read from, so the choice was between two options:
+
+1. **Commit a copy into the repo** (`gallery/images/`, what this project
+   does). `src/state/gallery.py::save_gallery_image()` copies the
+   QA-passed image there at the same point `src/main.py` records a
+   `status="success", drive=True` manifest entry.
+2. **Fetch from Google Drive at Pages-build time.** Rejected: it would
+   require handing Drive OAuth credentials to a workflow that ends in a
+   public deployment (a larger blast radius than the private, human-
+   triggered `/post-linkedin` and daily-upload paths those credentials are
+   otherwise scoped to — see "LinkedIn posting" below); it would make
+   `scripts/build_gallery.py` speak the Drive API shape, which CLAUDE.md
+   reserves for `src/storage/` alone ("Nothing outside `src/storage/` may
+   know the Drive API shape"); and it would make the gallery build depend
+   on live network access and a third-party quota, breaking the
+   offline/deterministic build property every other stage in this project
+   has (see "Why HTML/CSS instead of Pillow" above).
+
+The trade-off of option 1, stated plainly: the repo grows by roughly one
+image per published day (the `existing` renderer's deterministic PNGs run
+150-350KB; `openai` renderer output is larger). At one publish/day this is
+a few hundred KB/week — trivial for years at this cadence — but it is a
+real, unbounded, one-way growth of repo size that would need revisiting
+(e.g. Git LFS, or switching to option 2 after all) if the pipeline's
+frequency or image size ever changed materially. `gallery/site/` (the
+*built* HTML, as opposed to the source images) is gitignored and rebuilt
+from scratch on every deploy — same "regenerated every run; do not
+version" rule `output/` already follows.
+
+**Tags and difficulty already existed — no schema change needed.**
+`schemas/cheatsheet.schema.json`'s `problem.topics` and
+`problem.difficulty` were already populated end-to-end before the gallery
+existed: LeetCode's own `topicTags` (`src/leetcode/client.py`) flow into
+`Problem.topics` (`src/leetcode/models.py`), through
+`prompts/claude/v1/solve.md`'s `problem` passthrough, into the compressed
+cheat sheet content Claude returns. The gallery only needed to *persist*
+that data past a single run — `src/state/manifest.py`'s `ManifestEntry`
+gained `title`, `difficulty`, `topics`, `headline`, and `problem_url`
+fields (denormalized from `Problem` and the compressed cheatsheet at the
+point `src/main.py` records a successful run), since `output/<date>/
+<problem>/content.json` is gone by the time `scripts/build_gallery.py`
+runs later, same reasoning as the image above. No prompt or schema version
+bump was needed (see `prompts/claude/README.md` "Versioning") because
+nothing about what Claude is asked to produce changed.
+
+**Filtering is vanilla JS, not pre-rendered per-filter pages.** The
+"deterministic over AI" principle this project follows (see "Why HTML/CSS
+instead of Pillow" above) is about avoiding model non-determinism in
+*content*, not about avoiding client-side script entirely. A small inline
+`<script>` in `scripts/templates/gallery.html.jinja2` (no framework, no
+external CDN, no build step) toggles card visibility via `data-difficulty`
+/`data-topics` attributes, which lets difficulty and topic filters combine
+live. The alternative — statically generating one HTML page per
+tag/difficulty combination — stays fully script-free but can't combine two
+filters at once without a page per combination; vanilla JS was chosen for
+that UX reason while keeping the build itself (and the shipped page)
+exactly as static and dependency-free as the rest of the site.
+
+**Why a separate `gallery.yml` workflow instead of a step in `daily.yml`.**
+`daily.yml` triggers `gallery.yml` via `workflow_run` after a successful
+completion (plus `workflow_dispatch` for manual rebuilds, e.g. after a
+`--force` backfill). Keeping them separate means a Pages deploy hiccup
+(GitHub-side outage, `actions/deploy-pages` failure) never shows up as a
+red mark against the daily pipeline job that operations actually cares
+about triaging quickly (see "Failure policy" above), and the gallery can
+be rebuilt on demand without re-running Claude/Drive/Telegram/LinkedIn.
+
+**Tests** (`tests/test_gallery.py`) cover `save_gallery_image()`,
+`collect_cards()` (published-only filtering, missing-image skip, stable
+sort), `render_site()` (filter attributes present in the rendered HTML),
+and a full `build_gallery()` round trip — all offline, no network access,
+matching CLAUDE.md's testing rule. `tests/test_state.py` covers the new
+`ManifestEntry` fields round-tripping through `save()`/`load()`, including
+an old-format entry (written before these fields existed) still loading
+with sane defaults.
+
 ## Best-effort similar questions
 
 `src/leetcode/client.py` also requests `similarQuestions` on the question

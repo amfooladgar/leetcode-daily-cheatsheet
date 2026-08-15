@@ -175,6 +175,16 @@ output:
   local_dir: "output"
   filename_pattern: "{number}-{slug}-{date}"
 
+# Public gallery site (scripts/build_gallery.py) -- see ARCHITECTURE.md
+# "Gallery site". images_dir is committed to the repo (unlike output/);
+# site_dir is a build artifact, regenerated on every deploy, never
+# committed -- same "regenerated every run; do not version" pattern as
+# output/ (see .gitignore).
+gallery:
+  images_dir: "gallery/images"
+  site_dir: "gallery/site"
+  title: "LeetCode Daily Cheat Sheets"
+
 # LinkedIn posting has two independent, human-gated paths -- see
 # ARCHITECTURE.md "LinkedIn posting" and CLAUDE.md's "Rules". Path A is an
 # automatic Telegram now/later prompt inside src/main.py; Path B is the

@@ -32,6 +32,7 @@ from src.config import load_settings
 from src.leetcode.client import LeetCodeClient, LeetCodeError, PremiumProblemError
 from src.leetcode.parser import normalize
 from src.rendering.factory import UnknownProviderError, render_cheatsheet_with_provider
+from src.state import gallery as gallery_mod
 from src.state import manifest as manifest_mod
 from src.storage.google_drive import DriveUploadError, upload_cheatsheet, upload_linkedin_draft
 from src.storage.linkedin import LinkedInPostError
@@ -650,6 +651,18 @@ def run(args: argparse.Namespace) -> int:
         except Exception as exc:  # noqa: BLE001 - never fail an otherwise-successful run over this
             log.warning("LINKEDIN Path A failed (non-blocking): %s", exc)
 
+    # Gallery image copy (src/state/gallery.py): only for a genuinely
+    # published entry (status="success" and drive=True, matching
+    # Manifest.already_published's own definition) -- output/ is disposable
+    # and gone by the time scripts/build_gallery.py runs, so this is the
+    # entry's only durable image copy. See ARCHITECTURE.md "Gallery site".
+    if drive_ok:
+        gallery_mod.save_gallery_image(
+            image_path,
+            REPO_ROOT / settings["gallery"]["images_dir"],
+            filename_stem,
+        )
+
     manifest.record(
         manifest_mod.ManifestEntry(
             date=date_str,
@@ -667,6 +680,11 @@ def run(args: argparse.Namespace) -> int:
             linkedin_draft_saved=linkedin_draft_saved,
             linkedin_draft_drive_file_id=linkedin_draft_drive_file_id,
             prompt_version=prompt_version,
+            title=problem.title,
+            difficulty=problem.difficulty,
+            topics=cheatsheet["problem"].get("topics") or problem.topics,
+            headline=cheatsheet["headline"],
+            problem_url=problem.url,
         )
     )
     manifest_mod.save(manifest, manifest_path)

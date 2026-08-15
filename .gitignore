@@ -33,6 +33,12 @@ state/*.json
 # not this one; without this exception it silently defeats idempotency.
 !state/manifest.json
 
+# --- Gallery site (scripts/build_gallery.py) ---
+# gallery/site/ is a build artifact, regenerated on every deploy (see
+# ARCHITECTURE.md "Gallery site") -- gallery/images/ is NOT ignored; those
+# PNGs are the gallery's durable, committed source data.
+gallery/site/
+
 # --- OS / editor ---
 .DS_Store
 Thumbs.db

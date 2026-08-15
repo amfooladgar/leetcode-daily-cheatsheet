@@ -37,6 +37,17 @@ class ManifestEntry:
     failure_stage: str | None = None
     failure_reason: str | None = None
     prompt_version: str | None = None
+    # Denormalized gallery metadata (scripts/build_gallery.py). Populated
+    # only on a successful run -- see manifest.py's own docstring above:
+    # this file is "the only piece of state the pipeline persists between
+    # runs", so gallery display data lives here rather than in a second
+    # committed store, since output/<date>/<problem>/content.json is
+    # disposable and gone by the time the gallery is built.
+    title: str | None = None
+    difficulty: str | None = None
+    topics: list[str] = field(default_factory=list)
+    headline: str | None = None
+    problem_url: str | None = None
 
 
 @dataclass

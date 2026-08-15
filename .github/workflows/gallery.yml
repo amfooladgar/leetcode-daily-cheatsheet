@@ -1,0 +1,59 @@
+name: Gallery Site
+
+# Rebuilds and publishes the public gallery (scripts/build_gallery.py) to
+# GitHub Pages. Deliberately a separate workflow from daily.yml -- see
+# ARCHITECTURE.md "Gallery site": a Pages deploy failure should never be
+# conflated with (or block retriage of) the daily pipeline's own job, and
+# this also lets the gallery be rebuilt on demand (workflow_dispatch,
+# e.g. after a manual backfill) without re-running the pipeline itself.
+on:
+  workflow_run:
+    workflows: ["Daily LeetCode Cheat Sheet"]
+    types: [completed]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: gallery-pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    # Only rebuild after a daily.yml run that actually succeeded (or on a
+    # manual dispatch, where github.event.workflow_run is unset) -- a
+    # failed daily run has nothing new to publish.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build gallery site
+        run: python -m scripts.build_gallery -v
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload gallery artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: gallery/site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

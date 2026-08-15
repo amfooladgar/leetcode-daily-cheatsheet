@@ -30,6 +30,52 @@ class ManifestTests(unittest.TestCase):
         self.assertFalse(reloaded.already_published("2026-08-13", 2))
         self.assertFalse(reloaded.already_published("2026-08-14", 1))
 
+    def test_roundtrip_preserves_gallery_metadata(self):
+        manifest = Manifest()
+        manifest.record(
+            ManifestEntry(
+                date="2026-08-13",
+                problem_number=1,
+                slug="two-sum",
+                status="success",
+                content_hash="abc123",
+                image_filename="1-two-sum-2026-08-13.png",
+                drive=True,
+                title="Two Sum",
+                difficulty="Easy",
+                topics=["Array", "Hash Table"],
+                headline="Never Forget the One-Pass Hash Map Trick",
+                problem_url="https://leetcode.com/problems/two-sum/",
+            )
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "manifest.json"
+            save(manifest, path)
+            reloaded = load(path)
+
+        entry = reloaded.get("2026-08-13", 1)
+        self.assertEqual(entry.title, "Two Sum")
+        self.assertEqual(entry.difficulty, "Easy")
+        self.assertEqual(entry.topics, ["Array", "Hash Table"])
+        self.assertEqual(entry.headline, "Never Forget the One-Pass Hash Map Trick")
+        self.assertEqual(entry.problem_url, "https://leetcode.com/problems/two-sum/")
+
+    def test_entry_without_gallery_metadata_still_loads(self):
+        """A manifest entry written before this field existed (e.g. the
+        real state/manifest.json's pre-gallery entry) must still load."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "manifest.json"
+            path.write_text(
+                '{"2026-08-13:1": {"date": "2026-08-13", "problem_number": 1, '
+                '"slug": "two-sum", "status": "success", "content_hash": "abc", '
+                '"drive": true}}'
+            )
+            reloaded = load(path)
+
+        entry = reloaded.get("2026-08-13", 1)
+        self.assertIsNone(entry.title)
+        self.assertEqual(entry.topics, [])
+
     def test_missing_file_loads_empty_manifest(self):
         manifest = load(Path("/tmp/definitely-does-not-exist-manifest.json"))
         self.assertEqual(len(manifest.entries), 0)
