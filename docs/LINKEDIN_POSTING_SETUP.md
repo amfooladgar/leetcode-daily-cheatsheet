@@ -1,6 +1,22 @@
-# LinkedIn posting — build spec for Claude Code
+# LinkedIn posting — build spec for Claude Code (superseded)
 
-This doc is the complete spec for a LinkedIn-posting feature: after a
+**This spec has been superseded.** The feature it describes (manual-only
+posting via `/post-linkedin`) has been built and extended with a second,
+automatic path — see ARCHITECTURE.md "LinkedIn posting" for the current
+two-path design (Path A: an automatic Telegram now/later prompt inside
+`src/main.py`, gated by `linkedin.enabled` AND
+`linkedin.telegram_prompt.enabled`; Path B: this doc's original manual
+`/post-linkedin` command, gated by `linkedin.enabled` alone) and
+`docs/SETUP.md` step 3c for current setup instructions. The rest of this
+file is kept for historical context only — some file/field names below
+(e.g. the manifest fields, `.claude/commands/post-linkedin.md`'s exact
+content) have since evolved; treat `src/storage/linkedin.py`,
+`src/main.py`, and `.claude/commands/post-linkedin.md` as the source of
+truth, not this doc.
+
+---
+
+This doc is the original spec for a LinkedIn-posting feature: after a
 cheat sheet is rendered, you can ask to review a drafted caption and,
 only on your explicit approval, publish the image + caption to your
 LinkedIn profile. It is designed to be **built and run in Claude Code**

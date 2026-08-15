@@ -7,8 +7,9 @@ purpose, so a breaking upstream change is a one-file fix.
 
 from __future__ import annotations
 
+import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import requests
 
@@ -50,6 +51,7 @@ query questionData($titleSlug: String!) {
       code
     }
     isPaidOnly
+    similarQuestions
   }
 }
 """
@@ -82,6 +84,34 @@ class RawQuestion:
     example_testcases: str
     python_template: str
     is_premium: bool
+    # Best-effort: LeetCode's `similarQuestions` field is a JSON-encoded
+    # string of {title, titleSlug, difficulty} objects on the unofficial
+    # question GraphQL type (see ARCHITECTURE.md "Best-effort similar
+    # questions"). Empty when the field is missing/unparseable -- never
+    # blocks a run.
+    similar_questions: list[dict] = field(default_factory=list)
+
+
+def _parse_similar_questions(raw: str | None) -> list[dict]:
+    """Best-effort parse of the `similarQuestions` JSON-string field.
+    Missing, empty, or malformed input degrades to an empty list rather
+    than raising -- this is supplementary data for the LinkedIn caption
+    prompt, never something a run should fail over (see ARCHITECTURE.md
+    "Best-effort similar questions")."""
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+    except ValueError:
+        log.warning("Could not parse similarQuestions JSON; ignoring: %r", raw[:200])
+        return []
+    if not isinstance(parsed, list):
+        return []
+    return [
+        {"title": item["title"], "titleSlug": item["titleSlug"], "difficulty": item["difficulty"]}
+        for item in parsed
+        if isinstance(item, dict) and {"title", "titleSlug", "difficulty"} <= item.keys()
+    ]
 
 
 class LeetCodeClient:
@@ -157,6 +187,7 @@ class LeetCodeClient:
             example_testcases=q.get("exampleTestcases") or "",
             python_template=python_template,
             is_premium=bool(q.get("isPaidOnly")),
+            similar_questions=_parse_similar_questions(q.get("similarQuestions")),
         )
 
     def fetch_daily(self) -> RawQuestion:

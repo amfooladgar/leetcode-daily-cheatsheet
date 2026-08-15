@@ -518,3 +518,101 @@ failure never damages or blocks the `existing` renderer's own path.
 **Tests** (`tests/test_openai_renderer.py`, `tests/test_card_compositor.py`,
 `tests/test_image_provider_factory.py`) mock the OpenAI client entirely —
 no test spends real API credits, matching CLAUDE.md's testing rule.
+
+## Best-effort similar questions
+
+`src/leetcode/client.py` also requests `similarQuestions` on the question
+GraphQL type — an unofficial field (like the rest of this endpoint, see
+"Why fetch LeetCode directly" above) that returns a JSON-encoded string of
+`{title, titleSlug, difficulty}` objects for LeetCode's own "related
+problems" list. `_parse_similar_questions()` parses it defensively: a
+missing field, empty string, or malformed JSON all degrade to an empty
+list rather than raising — this is supplementary data, not something a run
+should ever fail over. It flows through `Problem.similar_questions`
+(`src/leetcode/models.py`) into the `linkedin_caption` prompt's input, so
+`similar_problems` in a drafted LinkedIn caption can be grounded in
+LeetCode's own data instead of the model guessing at problem titles it
+might get wrong (see "LinkedIn posting" below).
+
+## LinkedIn posting
+
+`src/storage/linkedin.py` publishes the rendered cheat sheet (image +
+caption) to a personal LinkedIn profile via the Posts API. Unlike Drive and
+Telegram, which are unattended delivery stages that always run once
+`--dry-run`/`--skip-drive` don't apply, LinkedIn posting has **two**
+entry points, both human-gated, and neither wired into any unattended-only
+surface:
+
+```mermaid
+flowchart TD
+    rendered["Rendered cheat sheet + Telegram send"] --> gateA{"linkedin.enabled AND\ntelegram_prompt.enabled?"}
+    gateA -->|no| pathAoff["Path A inert"]
+    gateA -->|yes, and telegram_ok| promptA["Telegram 'Post now / Later' prompt"]
+    promptA -->|tap 'Post now'| postA["post_cheatsheet()"]
+    promptA -->|tap 'Later', or timeout| draftA["Save caption to Drive as a draft"]
+    postA -->|LinkedInPostError| draftA
+
+    invoke["/post-linkedin invoked manually"] --> gateB{"linkedin.enabled?"}
+    gateB -->|no| pathBoff["Path B inert"]
+    gateB -->|yes| approve{"Explicit chat approval?"}
+    approve -->|no/decline| stopB["Stop: nothing published"]
+    approve -->|yes| postB["scripts/post_to_linkedin.py re-checks\nlinkedin.enabled, then post_cheatsheet()"]
+
+    unattended[".github/workflows/*.yml\n.claude/commands/solve-daily.md"] -. "intentionally no path" .-> postA
+    unattended -. "intentionally no path" .-> postB
+```
+
+- **Path A (automatic, `src/main.py`)** runs immediately after a
+  successful Telegram send, only when **both**
+  `linkedin.enabled` and `linkedin.telegram_prompt.enabled` are `true`
+  (both default `false`). It drafts a caption via the versioned
+  `linkedin_caption` stage (`prompts/claude/v1/linkedin_caption.md` ->
+  `schemas/linkedin_caption.schema.json`, run through the same
+  `run_stage()`/`clamp_to_schema()`/`validate_schema()` pipeline as
+  solve/verify/compress), sends it to Telegram, and posts an inline
+  "Post now" / "Later" keyboard (`send_linkedin_prompt()`). It then
+  long-polls (`await_button_decision()`, bounded by
+  `linkedin.telegram_prompt.decision_timeout_seconds`) for a tap. The
+  default on **no response is always "save the caption as a Drive draft,"
+  never "post"** — a timeout and an explicit "Later" tap take the exact
+  same code path. A live post that fails (`LinkedInPostError`) also falls
+  back to saving the draft rather than losing the caption. This entire
+  block is wrapped in a broad `try/except Exception` so a caption-drafting
+  or Telegram-polling failure never flips an otherwise-successful
+  Drive+Telegram run's exit code (see "Failure policy" above).
+- **Path B (manual, `.claude/commands/post-linkedin.md`)** is a Claude
+  Code slash command you invoke yourself, any time after a cheat sheet has
+  rendered (including reusing a Path A draft saved earlier that day). It
+  shows you the exact caption and image and asks "Post this to LinkedIn
+  now?" in the chat — nothing is published until you reply with explicit
+  approval. On approval it shells out to `scripts/post_to_linkedin.py`,
+  which re-checks `linkedin.enabled` itself before calling
+  `post_cheatsheet()`.
+
+**Why this is still safe.** Three independent layers, any one of which
+alone would prevent an unattended post:
+
+1. **Config kill switches.** `linkedin.enabled` (both paths) and
+   `linkedin.telegram_prompt.enabled` (Path A only) both default `false`
+   in `config/settings.yaml`. Nothing posts while either relevant flag is
+   off, regardless of what code exists.
+2. **A human action is always required, and the default is always
+   non-posting.** Path A needs an actual Telegram button tap — its
+   *un*answered/timeout branch is "save a draft," not "post," so silence
+   or inaction can never result in a publish. Path B needs your typed
+   approval in a live chat; declining or staying silent means nothing is
+   sent.
+3. **No unattended call site.** `post_cheatsheet()` is called from exactly
+   two places in this codebase — `src/main.py`'s Path A block (itself
+   gated by #1 and #2) and `scripts/post_to_linkedin.py` (Path B, gated by
+   #1 and #2, and re-checking `linkedin.enabled` a second time
+   independently of the Claude Code command that invokes it). It is never
+   called from `.github/workflows/daily.yml`, `.github/workflows/ci.yml`,
+   or `.claude/commands/solve-daily.md` — see CLAUDE.md's "Rules" for the
+   standing prohibition on adding a third call site.
+
+**Tests** (`tests/test_linkedin.py`,
+`tests/test_telegram_linkedin_prompt.py`,
+`tests/test_linkedin_caption_format.py`,
+`tests/test_post_to_linkedin_script.py`) mock every HTTP call — no test
+posts to a real LinkedIn account, matching CLAUDE.md's testing rule.

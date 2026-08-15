@@ -30,6 +30,10 @@ class ManifestEntry:
     drive_file_id: str | None = None
     telegram: bool = False
     telegram_message_id: int | None = None
+    linkedin: bool = False
+    linkedin_post_urn: str | None = None
+    linkedin_draft_saved: bool = False
+    linkedin_draft_drive_file_id: str | None = None
     failure_stage: str | None = None
     failure_reason: str | None = None
     prompt_version: str | None = None

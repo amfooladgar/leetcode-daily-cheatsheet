@@ -36,6 +36,23 @@ class ValidateSchemaTests(unittest.TestCase):
         problem = json.loads((FIXTURES / "sample_problem.json").read_text())
         validate_schema(problem, schema)  # should not raise
 
+    def test_linkedin_caption_schema_roundtrip(self):
+        schema = json.loads((SCHEMAS_DIR / "linkedin_caption.schema.json").read_text())
+        valid = {
+            "solution_summary": "Use a hash map to remember seen values so each lookup is O(1).",
+            "similar_problems": [{"title": "3Sum", "reason": "same two-pointer technique"}],
+            "hashtags": ["#leetcode", "#coding", "#arrays", "#100DaysOfCode"],
+        }
+        validate_schema(valid, schema)  # should not raise
+
+        missing_hashtags = {k: v for k, v in valid.items() if k != "hashtags"}
+        with self.assertRaises(ValidationError):
+            validate_schema(missing_hashtags, schema)
+
+        too_few_hashtags = {**valid, "hashtags": ["#leetcode"]}
+        with self.assertRaises(ValidationError):
+            validate_schema(too_few_hashtags, schema)
+
 
 class ClampToSchemaTests(unittest.TestCase):
     def setUp(self):

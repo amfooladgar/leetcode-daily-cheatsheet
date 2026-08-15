@@ -75,6 +75,45 @@ a compositing failure, for diagnosis) and `cheatsheet-openai-final.png`
 (the branded image actually uploaded/sent — this is what
 `state/manifest.json`'s `image_filename` will name for that run).
 
+## LinkedIn posting (Path A: the automatic Telegram prompt)
+
+With `linkedin.enabled: true` **and** `linkedin.telegram_prompt.enabled:
+true` in `config/settings.yaml`, the daily GitHub Actions run can block for
+up to `linkedin.telegram_prompt.decision_timeout_seconds` (5 minutes by
+default) waiting on a "Post now" / "Later" Telegram button tap after the
+cheat sheet sends. Raising that timeout gives you more time to respond
+before it defaults to saving a draft, at the cost of the workflow run
+staying "in progress" longer — `daily.yml`'s `timeout-minutes: 15` job
+ceiling is the actual hard cap, so don't raise
+`decision_timeout_seconds` close to or past that. Path B (`/post-linkedin`,
+gated only by `linkedin.enabled`) is unaffected either way and never blocks
+a pipeline run, since it's invoked separately in Claude Code.
+
+To tell what happened from the Actions run log, look for the `LINKEDIN`
+lines (or their absence):
+
+- **Posted**: a `Posted to LinkedIn: https://www.linkedin.com/feed/update/...`
+  Telegram confirmation was sent, and `state/manifest.json` for that
+  date/problem has `"linkedin": true` with a `linkedin_post_urn`.
+- **Draft saved (you tapped "Later", or a live post failed)**: a
+  `Saved the caption for later...` Telegram confirmation was sent, and the
+  manifest has `"linkedin_draft_saved": true` with a
+  `linkedin_draft_drive_file_id` — the caption `.txt` is in the same Drive
+  folder as that day's PNG. Run `/post-linkedin` any time afterward to
+  review and publish it.
+- **Timed out (no tap within `decision_timeout_seconds`)**: same as a
+  draft save above — the default on no response is always "save for
+  later," never "post" (see ARCHITECTURE.md "LinkedIn posting").
+- **Path A didn't run at all**: no `LINKEDIN` lines in the log. Either
+  `linkedin.enabled` or `linkedin.telegram_prompt.enabled` is `false`
+  (check `config/settings.yaml`), or the Telegram send itself failed
+  (`telegram_ok` was never `true` — Path A only runs after a successful
+  Telegram send, since it replies to that message).
+- A `LINKEDIN Path A failed (non-blocking): ...` warning means a
+  caption-drafting or Telegram-polling error occurred — this never fails
+  the run or flips its exit code, matching Telegram's own non-blocking
+  treatment relative to Drive (see ARCHITECTURE.md "Failure policy").
+
 ## When the OpenAI renderer fails
 
 ```mermaid

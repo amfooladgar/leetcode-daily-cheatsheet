@@ -53,6 +53,20 @@
       "type": "string",
       "description": "The starter code snippet LeetCode provides for Python 3, if available."
     },
-    "is_premium": { "type": "boolean", "default": false }
+    "is_premium": { "type": "boolean", "default": false },
+    "similar_questions": {
+      "type": "array",
+      "description": "Best-effort 'related problems' from LeetCode's similarQuestions field (see src/leetcode/client.py). Empty when unavailable/unparseable -- never blocks a run.",
+      "items": {
+        "type": "object",
+        "required": ["title", "slug", "difficulty"],
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string" },
+          "slug": { "type": "string" },
+          "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] }
+        }
+      }
+    }
   }
 }

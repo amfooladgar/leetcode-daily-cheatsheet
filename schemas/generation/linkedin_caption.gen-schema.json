@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "leetcode-daily-cheatsheet/generation/linkedin_caption.gen-schema.json",
+  "title": "LinkedInCaptionContentGeneration",
+  "description": "CLI-facing twin of ../linkedin_caption.schema.json, used ONLY for the `claude --json-schema` flag that constrains prompts/claude/v1/linkedin_caption.md's generation. See schemas/generation/solve.gen-schema.json's description for why this avoids minLength/maxLength/minItems/maxItems (stated in descriptions instead) and ARCHITECTURE.md 'Why two schema files per stage'. The full shape is enforced after generation by src/claude/validator.py's validate_schema() against ../linkedin_caption.schema.json.",
+  "type": "object",
+  "required": ["solution_summary", "hashtags"],
+  "additionalProperties": false,
+  "properties": {
+    "solution_summary": {
+      "type": "string",
+      "description": "1-3 plain-English sentences on the approach/key insight, written for a LinkedIn feed."
+    },
+    "similar_problems": {
+      "type": "array",
+      "description": "0-3 items, each {title, reason}. Only include problems you're genuinely confident are real LeetCode problems under that exact title -- omit rather than invent.",
+      "items": {
+        "type": "object",
+        "required": ["title", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string" },
+          "reason": { "type": "string", "description": "Short phrase, max 80 chars, e.g. 'same sliding-window technique'." }
+        }
+      }
+    },
+    "hashtags": {
+      "type": "array",
+      "description": "4-6 strings, each starting with '#', no spaces.",
+      "items": { "type": "string" }
+    }
+  }
+}

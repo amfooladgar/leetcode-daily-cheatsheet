@@ -11,8 +11,10 @@ one is intentionally shaped to match.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -56,6 +58,26 @@ def _load_credentials() -> tuple[str, str]:
             "to read back TELEGRAM_CHAT_ID."
         )
     return values["TELEGRAM_BOT_TOKEN"], values["TELEGRAM_CHAT_ID"]
+
+
+def _parse_result(response, method: str):
+    """Shared response handling for every Bot API call below (send_cheatsheet
+    keeps its own inline copy of this logic to avoid touching working code —
+    see that function). Returns payload["result"]; raises TelegramSendError
+    on any non-JSON body, non-ok status, or ok:false payload."""
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise TelegramSendError(
+            f"{method} returned a non-JSON response (status {response.status_code}): "
+            f"{response.text[:500]}"
+        ) from exc
+
+    if not response.ok or not payload.get("ok"):
+        description = payload.get("description", response.text[:500])
+        raise TelegramSendError(f"{method} failed (status {response.status_code}): {description}")
+
+    return payload["result"]
 
 
 def _truncate_caption(caption: str) -> str:
@@ -113,3 +135,183 @@ def send_cheatsheet(*, image_path: Path, caption: str) -> SendResult:
         result["message_id"],
     )
     return SendResult(message_id=result["message_id"], chat_id=chat_id)
+
+
+def send_message(*, text: str, reply_to_message_id: int | None = None) -> SendResult:
+    """Sends a plain text message to the configured chat -- used by the
+    LinkedIn Path A flow (see src/main.py) to post the drafted caption and
+    later confirmations alongside the already-sent cheat sheet photo."""
+    import requests
+
+    bot_token, chat_id = _load_credentials()
+    url = f"{_API_BASE}/bot{bot_token}/sendMessage"
+    data = {"chat_id": chat_id, "text": text}
+    if reply_to_message_id is not None:
+        data["reply_to_message_id"] = reply_to_message_id
+
+    try:
+        response = requests.post(url, data=data, timeout=_SEND_TIMEOUT_SECONDS)
+    except requests.RequestException as exc:
+        raise TelegramSendError(f"sendMessage request failed: {exc}") from exc
+
+    result = _parse_result(response, "sendMessage")
+    return SendResult(message_id=result["message_id"], chat_id=chat_id)
+
+
+def send_linkedin_prompt(
+    *,
+    text: str,
+    date: str,
+    problem_number: int,
+    reply_to_message_id: int | None = None,
+) -> SendResult:
+    """Sends `text` with a "Post now" / "Later" inline keyboard, encoding
+    `date`/`problem_number` into each button's callback_data so
+    await_button_decision() can match the tap back to this specific run and
+    ignore stale taps from a previous day.
+
+    Note: Telegram channels can make inline-button taps behave oddly under
+    anonymous-admin mode (the tap's callback_query can arrive without a
+    resolvable chat/user in some client versions). For this specific
+    feature, prefer using the bot's direct-message chat with yourself (the
+    common case per docs/SETUP.md step 3b) rather than a channel.
+    """
+    import requests
+
+    bot_token, chat_id = _load_credentials()
+    url = f"{_API_BASE}/bot{bot_token}/sendMessage"
+    reply_markup = {
+        "inline_keyboard": [
+            [
+                {"text": "Post now", "callback_data": f"linkedin_now:{date}:{problem_number}"},
+                {"text": "Later", "callback_data": f"linkedin_later:{date}:{problem_number}"},
+            ]
+        ]
+    }
+    data = {"chat_id": chat_id, "text": text, "reply_markup": json.dumps(reply_markup)}
+    if reply_to_message_id is not None:
+        data["reply_to_message_id"] = reply_to_message_id
+
+    try:
+        response = requests.post(url, data=data, timeout=_SEND_TIMEOUT_SECONDS)
+    except requests.RequestException as exc:
+        raise TelegramSendError(f"sendMessage (linkedin prompt) request failed: {exc}") from exc
+
+    result = _parse_result(response, "sendMessage")
+    return SendResult(message_id=result["message_id"], chat_id=chat_id)
+
+
+def get_update_offset() -> int:
+    """Returns the current highest update_id seen by this bot (0 if none),
+    so a subsequent await_button_decision() only reacts to taps that happen
+    after this point. Call this BEFORE send_linkedin_prompt()."""
+    import requests
+
+    bot_token, _ = _load_credentials()
+    url = f"{_API_BASE}/bot{bot_token}/getUpdates"
+    try:
+        response = requests.get(
+            url, params={"limit": 1, "offset": -1}, timeout=_SEND_TIMEOUT_SECONDS
+        )
+    except requests.RequestException as exc:
+        raise TelegramSendError(f"getUpdates request failed: {exc}") from exc
+
+    updates = _parse_result(response, "getUpdates")
+    if not updates:
+        return 0
+    return updates[-1]["update_id"]
+
+
+def _answer_callback_query(bot_token: str, callback_query_id: str) -> None:
+    import requests
+
+    url = f"{_API_BASE}/bot{bot_token}/answerCallbackQuery"
+    try:
+        response = requests.post(
+            url, data={"callback_query_id": callback_query_id}, timeout=_SEND_TIMEOUT_SECONDS
+        )
+    except requests.RequestException as exc:
+        raise TelegramSendError(f"answerCallbackQuery request failed: {exc}") from exc
+    _parse_result(response, "answerCallbackQuery")
+
+
+def _clear_keyboard(bot_token: str, chat_id: str, message_id: int) -> None:
+    import requests
+
+    url = f"{_API_BASE}/bot{bot_token}/editMessageReplyMarkup"
+    data = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "reply_markup": json.dumps({"inline_keyboard": []}),
+    }
+    try:
+        response = requests.post(url, data=data, timeout=_SEND_TIMEOUT_SECONDS)
+    except requests.RequestException as exc:
+        raise TelegramSendError(f"editMessageReplyMarkup request failed: {exc}") from exc
+    _parse_result(response, "editMessageReplyMarkup")
+
+
+def await_button_decision(
+    *,
+    since_update_id: int,
+    date: str,
+    problem_number: int,
+    timeout_seconds: int,
+    poll_interval_seconds: int,
+    prompt_message_id: int,
+) -> str | None:
+    """Long-polls Telegram's getUpdates for the "Post now"/"Later" tap on
+    the keyboard send_linkedin_prompt() posted for this exact date/problem,
+    ignoring callback taps for any other date/problem (a stale button from a
+    previous, unanswered run). Returns "now" or "later" on a match, or None
+    if `timeout_seconds` elapses with no match.
+
+    `prompt_message_id` (the message_id send_linkedin_prompt() returned) is
+    needed so the keyboard can be cleared on a timeout too -- Telegram's
+    getUpdates response only carries a message_id when a tap actually
+    occurs, so the caller must supply it directly for the no-tap case.
+    Either way (matched or timed out), the keyboard on that message is
+    cleared via editMessageReplyMarkup before returning, so stale buttons
+    from an already-answered or already-expired run can't be tapped again.
+    """
+    bot_token, configured_chat_id = _load_credentials()
+
+    import requests
+
+    url = f"{_API_BASE}/bot{bot_token}/getUpdates"
+    now_data = f"linkedin_now:{date}:{problem_number}"
+    later_data = f"linkedin_later:{date}:{problem_number}"
+
+    offset = since_update_id + 1
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        remaining = deadline - time.monotonic()
+        poll_timeout = max(0, min(poll_interval_seconds, int(remaining)))
+        try:
+            response = requests.get(
+                url,
+                params={"offset": offset, "timeout": poll_timeout},
+                timeout=_SEND_TIMEOUT_SECONDS + poll_timeout,
+            )
+        except requests.RequestException as exc:
+            raise TelegramSendError(f"getUpdates request failed: {exc}") from exc
+        updates = _parse_result(response, "getUpdates")
+
+        for update in updates:
+            offset = max(offset, update["update_id"] + 1)
+            callback = update.get("callback_query")
+            if not callback:
+                continue
+            callback_chat_id = str(callback.get("message", {}).get("chat", {}).get("id", ""))
+            if callback_chat_id != str(configured_chat_id):
+                continue
+            data = callback.get("data")
+            if data not in (now_data, later_data):
+                continue
+
+            _answer_callback_query(bot_token, callback["id"])
+            _clear_keyboard(bot_token, callback_chat_id, callback["message"]["message_id"])
+            return "now" if data == now_data else "later"
+
+    _clear_keyboard(bot_token, configured_chat_id, prompt_message_id)
+    return None

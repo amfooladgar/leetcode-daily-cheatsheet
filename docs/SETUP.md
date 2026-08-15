@@ -181,6 +181,60 @@ token as a bearer credential.
    the Drive archive and not the Telegram send — a disabled Telegram stage
    is a no-op, not a failure.
 
+## 3c. LinkedIn (Posts API — optional)
+
+Skip this section unless you want to publish the daily cheat sheet to
+LinkedIn. Posting always requires an explicit human action — see
+ARCHITECTURE.md "LinkedIn posting" for the two entry points this unlocks:
+
+- **Path A** (automatic): after each cheat sheet renders and sends to
+  Telegram, the bot asks "Post this to LinkedIn now, or later?" with
+  inline buttons. Requires `linkedin.enabled: true` **and**
+  `linkedin.telegram_prompt.enabled: true`.
+- **Path B** (manual): the `/post-linkedin` Claude Code command, any time.
+  Requires only `linkedin.enabled: true`.
+
+Both call the same adapter (`src/storage/linkedin.py`) and never post
+without a human tapping a button (Path A) or typing approval in chat
+(Path B) first.
+
+1. Create an app at the
+   [LinkedIn Developer Portal](https://www.linkedin.com/developers/apps).
+   LinkedIn requires every developer app to be associated with a LinkedIn
+   **Page** (a company/creator page, even a personal one you create for
+   this) — that's a LinkedIn platform requirement, not something this
+   pipeline needs beyond satisfying LinkedIn's app-creation flow.
+2. On the app's **Products** tab, request access to **"Share on LinkedIn"**
+   and **"Sign In with LinkedIn using OpenID Connect"**. Both are typically
+   auto-approved for an app you own.
+3. On the app's **Auth** tab, add `http://localhost:8765/callback` under
+   "Authorized redirect URLs for your app" — `scripts/authorize_linkedin.py`
+   runs a tiny local server on that exact URL to catch the one-time OAuth
+   redirect.
+4. Copy the app's **Client ID** and **Client Secret** from the Auth tab.
+   These are setup-only values (only `scripts/authorize_linkedin.py` reads
+   them, never the daily pipeline) — set them as env vars, either exported
+   or in your local `.env`:
+   ```bash
+   export LINKEDIN_CLIENT_ID=<client id>
+   export LINKEDIN_CLIENT_SECRET=<client secret>
+   python scripts/authorize_linkedin.py
+   ```
+   A browser window opens; sign in and approve access. The script prints
+   `LINKEDIN_ACCESS_TOKEN` and `LINKEDIN_PERSON_URN` — save both into
+   `.env` (see `.env.example`'s LinkedIn block).
+5. Flip `linkedin.enabled: true` in `config/settings.yaml` to make Path B
+   (`/post-linkedin`) available. Additionally set
+   `linkedin.telegram_prompt.enabled: true` if you also want Path A's
+   automatic Telegram now/later prompt after each daily run — leave it
+   `false` (the default) to keep every post manual-only via `/post-linkedin`.
+6. The access token expires after **~60 days** with no unattended refresh
+   mechanism (by design — both posting paths already require a human, so a
+   silent background refresh would undercut that). Re-run
+   `python scripts/authorize_linkedin.py` and update `.env` when it expires;
+   no GitHub Actions secret is needed since neither LinkedIn posting path
+   ever runs in CI.
+
 ## 3d. OpenAI image renderer (optional, off by default)
 
 Skip this section unless you specifically want GPT Image to generate the

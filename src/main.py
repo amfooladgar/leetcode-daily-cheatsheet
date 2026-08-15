@@ -33,8 +33,17 @@ from src.leetcode.client import LeetCodeClient, LeetCodeError, PremiumProblemErr
 from src.leetcode.parser import normalize
 from src.rendering.factory import UnknownProviderError, render_cheatsheet_with_provider
 from src.state import manifest as manifest_mod
-from src.storage.google_drive import DriveUploadError, upload_cheatsheet
-from src.storage.telegram import TelegramSendError, send_cheatsheet
+from src.storage.google_drive import DriveUploadError, upload_cheatsheet, upload_linkedin_draft
+from src.storage.linkedin import LinkedInPostError
+from src.storage.linkedin import post_cheatsheet as post_to_linkedin
+from src.storage.telegram import (
+    TelegramSendError,
+    await_button_decision,
+    get_update_offset,
+    send_cheatsheet,
+    send_linkedin_prompt,
+    send_message,
+)
 
 log = logging.getLogger("cheatsheet")
 
@@ -159,6 +168,24 @@ def _telegram_caption(cheatsheet: dict, problem_url: str, settings: dict) -> str
         difficulty=p["difficulty"],
         url=problem_url,
     )
+
+
+def _linkedin_caption(cheatsheet: dict, problem, linkedin_caption_json: dict) -> str:
+    """Python-side template: the linkedin_caption stage supplies content
+    fields, this function controls the final shape (mirrors
+    _telegram_caption's split of concerns)."""
+    blocks = [cheatsheet["headline"], linkedin_caption_json["solution_summary"]]
+
+    similar_problems = linkedin_caption_json.get("similar_problems") or []
+    if similar_problems:
+        parts = "; ".join(f"{sp['title']} ({sp['reason']})" for sp in similar_problems)
+        blocks.append(f"Similar problems worth trying: {parts}.")
+
+    blocks.append(
+        f"LeetCode #{problem.number} {problem.title} ({problem.difficulty})\n{problem.url}"
+    )
+    blocks.append(" ".join(linkedin_caption_json.get("hashtags", [])))
+    return "\n\n".join(blocks)
 
 
 def run(args: argparse.Namespace) -> int:
@@ -530,6 +557,99 @@ def run(args: argparse.Namespace) -> int:
                 exc,
             )
 
+    # --- LINKEDIN (Path A: automatic Telegram now/later prompt -- see
+    # ARCHITECTURE.md "LinkedIn posting". Requires BOTH linkedin.enabled and
+    # linkedin.telegram_prompt.enabled (both false by default) plus a
+    # successful Telegram send above (telegram_ok), since there is no photo
+    # message to reply to otherwise. This block can make the job wait up to
+    # linkedin.telegram_prompt.decision_timeout_seconds for a button tap --
+    # see docs/OPERATIONS.md for the tradeoff of raising it. Wrapped in a
+    # broad except so a caption-drafting or Telegram-polling failure here
+    # never flips a successful Drive+Telegram run's exit code -- same
+    # non-blocking philosophy as Telegram relative to Drive (see
+    # ARCHITECTURE.md "Failure policy"). Path B (the manual /post-linkedin
+    # command) is the only other caller of post_to_linkedin(); never add a
+    # third call site outside these two human-gated entry points. --------
+    linkedin_ok = False
+    linkedin_post_urn = None
+    linkedin_draft_saved = False
+    linkedin_draft_drive_file_id = None
+    linkedin_cfg = settings["linkedin"]
+    if telegram_ok and linkedin_cfg["enabled"] and linkedin_cfg["telegram_prompt"]["enabled"]:
+        try:
+            caption_result = run_stage(
+                stage="linkedin_caption",
+                schema_filename="generation/linkedin_caption.gen-schema.json",
+                model=claude_cfg["model_compress"],
+                max_turns=claude_cfg["max_turns"],
+                allowed_tools=claude_cfg["allowed_tools"],
+                prompt_version=prompt_version,
+                problem_json=problem_json,
+                cheatsheet_json=json.dumps(cheatsheet),
+            )
+            linkedin_caption_schema = _load_schema("linkedin_caption.schema.json")
+            clamp_to_schema(caption_result.structured_output, linkedin_caption_schema)
+            validate_schema(caption_result.structured_output, linkedin_caption_schema)
+
+            caption_text = _linkedin_caption(cheatsheet, problem, caption_result.structured_output)
+            (stage_dir / "linkedin_caption.txt").write_text(caption_text)
+
+            caption_message = send_message(
+                text=caption_text, reply_to_message_id=telegram_message_id
+            )
+            since_update_id = get_update_offset()
+            prompt_message = send_linkedin_prompt(
+                text="Post this to LinkedIn now, or later?",
+                date=date_str,
+                problem_number=problem.number,
+                reply_to_message_id=caption_message.message_id,
+            )
+            decision = await_button_decision(
+                since_update_id=since_update_id,
+                date=date_str,
+                problem_number=problem.number,
+                timeout_seconds=linkedin_cfg["telegram_prompt"]["decision_timeout_seconds"],
+                poll_interval_seconds=linkedin_cfg["telegram_prompt"]["poll_interval_seconds"],
+                prompt_message_id=prompt_message.message_id,
+            )
+
+            save_draft = decision != "now"
+            if decision == "now":
+                try:
+                    post_result = post_to_linkedin(
+                        image_path=image_path,
+                        caption=caption_text,
+                        visibility=linkedin_cfg["visibility"],
+                        api_version=linkedin_cfg["api_version"],
+                    )
+                    linkedin_ok = True
+                    linkedin_post_urn = post_result.post_urn
+                    send_message(text=f"Posted to LinkedIn: {post_result.post_url}")
+                except LinkedInPostError as exc:
+                    log.error("LINKEDIN post failed (falling back to saving a draft): %s", exc)
+                    send_message(text=f"LinkedIn post failed: {exc}")
+                    save_draft = True
+
+            if save_draft:
+                linkedin_draft_drive_file_id = upload_linkedin_draft(
+                    caption_text=caption_text,
+                    filename_stem=filename_stem,
+                    root_folder_id=os.environ["GOOGLE_DRIVE_FOLDER_ID"],
+                    category_folder_name=settings["drive"]["category_folder_name"],
+                    organize_by_year_month=settings["drive"]["organize_by_year_month"],
+                    year=f"{problem.date.year:04d}",
+                    month=f"{problem.date.month:02d}",
+                )
+                linkedin_draft_saved = True
+                send_message(
+                    text=(
+                        "Saved the caption for later — run /post-linkedin in Claude Code "
+                        "anytime to review and publish it."
+                    )
+                )
+        except Exception as exc:  # noqa: BLE001 - never fail an otherwise-successful run over this
+            log.warning("LINKEDIN Path A failed (non-blocking): %s", exc)
+
     manifest.record(
         manifest_mod.ManifestEntry(
             date=date_str,
@@ -542,6 +662,10 @@ def run(args: argparse.Namespace) -> int:
             drive_file_id=drive_file_id,
             telegram=telegram_ok,
             telegram_message_id=telegram_message_id,
+            linkedin=linkedin_ok,
+            linkedin_post_urn=linkedin_post_urn,
+            linkedin_draft_saved=linkedin_draft_saved,
+            linkedin_draft_drive_file_id=linkedin_draft_drive_file_id,
             prompt_version=prompt_version,
         )
     )

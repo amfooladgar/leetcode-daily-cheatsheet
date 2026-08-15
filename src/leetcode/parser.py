@@ -27,7 +27,7 @@ import re
 from bs4 import BeautifulSoup, NavigableString, Tag
 
 from src.leetcode.client import RawQuestion
-from src.leetcode.models import Example, Problem
+from src.leetcode.models import Example, Problem, SimilarQuestion
 
 log = logging.getLogger(__name__)
 
@@ -272,4 +272,8 @@ def normalize(raw: RawQuestion) -> Problem:
         constraints=constraints,
         python_template=raw.python_template,
         is_premium=raw.is_premium,
+        similar_questions=[
+            SimilarQuestion(title=sq["title"], slug=sq["titleSlug"], difficulty=sq["difficulty"])
+            for sq in raw.similar_questions
+        ],
     )

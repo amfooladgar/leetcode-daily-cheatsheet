@@ -155,3 +155,39 @@ def upload_cheatsheet(
         image_web_link=image_upload.get("webViewLink", ""),
         markdown_file_id=markdown_file_id,
     )
+
+
+def upload_linkedin_draft(
+    *,
+    caption_text: str,
+    filename_stem: str,
+    root_folder_id: str,
+    category_folder_name: str,
+    organize_by_year_month: bool,
+    year: str,
+    month: str,
+) -> str:
+    """Saves a drafted-but-not-yet-posted LinkedIn caption as a plain text
+    file into <root_folder_id>/<category_folder_name>/[<year>/<month>/] --
+    the exact same folder resolution upload_cheatsheet() already uses for
+    the PNG (same _find_or_create_folder() calls with the same arguments),
+    so "the same folder the cheat sheet is saved in" is structurally
+    guaranteed rather than a second implementation that could drift.
+    Returns the created file's Drive file ID."""
+
+    service = _build_service()
+
+    folder_id = _find_or_create_folder(service, category_folder_name, root_folder_id)
+    if organize_by_year_month:
+        folder_id = _find_or_create_folder(service, year, folder_id)
+        folder_id = _find_or_create_folder(service, month, folder_id)
+
+    upload = _upload_bytes(
+        service,
+        f"{filename_stem}-linkedin-caption.txt",
+        caption_text.encode("utf-8"),
+        "text/plain",
+        folder_id,
+    )
+    log.info("Uploaded %s-linkedin-caption.txt to Drive folder %s", filename_stem, folder_id)
+    return upload["id"]

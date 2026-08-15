@@ -86,6 +86,14 @@ happens both before the pipeline starts (invalid/missing config, e.g. no
 - Prompts are versioned. If you materially change a prompt's behavior, copy
   it to a new version rather than silently editing production behavior
   (see prompts/claude/README.md).
+- LinkedIn posting has two paths — an automatic Telegram now/later prompt
+  inside `src/main.py` (gated by `linkedin.enabled` AND
+  `linkedin.telegram_prompt.enabled`, both false by default, and always
+  defaulting to the non-posting branch on timeout) and the manual
+  `/post-linkedin` Claude Code command (gated by `linkedin.enabled`
+  alone). Never add a code path that posts without one of these two
+  explicit, human-gated entry points (see ARCHITECTURE.md "LinkedIn
+  posting").
 
 # Common commands
 
