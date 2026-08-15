@@ -111,15 +111,22 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-      - name: Commit updated manifest
+      - name: Commit updated manifest and gallery image
         if: always()
+        # gallery/images/ must be staged alongside state/manifest.json --
+        # src/state/gallery.py::save_gallery_image() writes a new PNG there
+        # on every successful publish (see ARCHITECTURE.md "Gallery site"),
+        # and gallery.yml's build only finds an entry's card if that image
+        # made it into this same commit. `git add gallery/images` is a
+        # no-op when nothing new was written (e.g. --dry-run/--skip-drive),
+        # so the porcelain check below still covers both paths correctly.
         run: |
-          if [ -n "$(git status --porcelain state/manifest.json)" ]; then
+          if [ -n "$(git status --porcelain state/manifest.json gallery/images)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add state/manifest.json
-            git commit -m "chore: update run manifest [skip ci]"
+            git add state/manifest.json gallery/images
+            git commit -m "chore: update run manifest and gallery image [skip ci]"
             git push
           else
-            echo "No manifest changes to commit."
+            echo "No manifest or gallery changes to commit."
           fi
