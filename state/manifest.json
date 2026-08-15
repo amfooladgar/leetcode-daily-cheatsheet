@@ -25,5 +25,62 @@
       "Array",
       "Hash Table"
     ]
+  },
+  "2026-08-13:2213": {
+    "content_hash": "48b3ac5bdad682b5",
+    "date": "2026-08-13",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1nmnNiFg2snp_C6taO0cM2l5yLEgxujPL",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Segment Tree Merge Trick",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 2213,
+    "problem_url": "https://leetcode.com/problems/longest-substring-of-one-repeating-character/",
+    "prompt_version": "v1",
+    "slug": "longest-substring-of-one-repeating-character",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 5,
+    "title": "Longest Substring of One Repeating Character",
+    "topics": [
+      "Array",
+      "String",
+      "Segment Tree",
+      "Ordered Set"
+    ]
+  },
+  "2026-08-14:3090": {
+    "content_hash": "66c519bcd4760bb1",
+    "date": "2026-08-14",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1Zf0eI_WjhqpgsSgPJ7-VccjbGueR1N3d",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget Why Left Only Moves Forward",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 3090,
+    "problem_url": "https://leetcode.com/problems/maximum-length-substring-with-two-occurrences/",
+    "prompt_version": "v1",
+    "slug": "maximum-length-substring-with-two-occurrences",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 6,
+    "title": "Maximum Length Substring With Two Occurrences",
+    "topics": [
+      "Hash Table",
+      "String",
+      "Sliding Window"
+    ]
   }
 }
