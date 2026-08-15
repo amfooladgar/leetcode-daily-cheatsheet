@@ -82,5 +82,32 @@
       "String",
       "Sliding Window"
     ]
+  },
+  "2026-08-15:3702": {
+    "content_hash": "6f00b723c5aba2a5",
+    "date": "2026-08-15",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1diISwokyGKvUPsxcxarBNI0kg2dKD_Ov",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Drop-One-Element XOR Trick",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 3702,
+    "problem_url": "https://leetcode.com/problems/longest-subsequence-with-non-zero-bitwise-xor/",
+    "prompt_version": "v1",
+    "slug": "longest-subsequence-with-non-zero-bitwise-xor",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 7,
+    "title": "Longest Subsequence With Non-Zero Bitwise XOR",
+    "topics": [
+      "Array",
+      "Bit Manipulation"
+    ]
   }
 }
