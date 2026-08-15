@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ site_title }}</title>
+<meta name="description" content="{{ og_description }}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ site_title }}">
+<meta property="og:description" content="{{ og_description }}">
+{% if site_url %}<meta property="og:url" content="{{ site_url }}/">{% endif %}
+{% if og_image_url %}<meta property="og:image" content="{{ og_image_url }}">{% endif %}
+<meta name="twitter:card" content="{{ 'summary_large_image' if og_image_url else 'summary' }}">
+<meta name="twitter:title" content="{{ site_title }}">
+<meta name="twitter:description" content="{{ og_description }}">
+{% if og_image_url %}<meta name="twitter:image" content="{{ og_image_url }}">{% endif %}
 <style>
   :root {
     color-scheme: light dark;

@@ -99,7 +99,14 @@ def collect_cards(
     return cards
 
 
-def render_site(cards: list[GalleryCard], site_title: str) -> str:
+def render_site(cards: list[GalleryCard], site_title: str, site_url: str = "") -> str:
+    """`site_url`, when set (the custom-domain case -- see build_gallery's
+    custom_domain docstring), lets the template emit absolute Open
+    Graph/Twitter Card URLs so a shared gallery link unfurls with a real
+    preview image instead of a bare title on LinkedIn/Slack/etc. Left ""
+    when there's no stable domain to build an absolute URL against (the
+    default *.github.io case), in which case the template omits the
+    image/url OG tags rather than emit incorrect relative ones."""
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATES_DIR)),
         autoescape=select_autoescape(["html"]),
@@ -107,11 +114,21 @@ def render_site(cards: list[GalleryCard], site_title: str) -> str:
     template = env.get_template("gallery.html.jinja2")
     difficulties = [d for d in ["Easy", "Medium", "Hard"] if any(c.difficulty == d for c in cards)]
     topics = sorted({t for c in cards for t in c.topics})
+    site_url = site_url.rstrip("/") if site_url else ""
+    latest = cards[0] if cards else None
+    og_image_url = f"{site_url}/images/{latest.image_filename}" if site_url and latest else ""
+    og_description = (
+        f"{len(cards)} auto-generated, adversarially-verified LeetCode cheat sheets "
+        "— solved and checked by Claude, one per day."
+    )
     return template.render(
         site_title=site_title,
         entries=cards,
         difficulties=difficulties,
         topics=topics,
+        site_url=site_url,
+        og_image_url=og_image_url,
+        og_description=og_description,
     )
 
 
@@ -144,7 +161,7 @@ def build_gallery(
     for card in cards:
         shutil.copy2(images_dir / card.image_filename, site_images_dir / card.image_filename)
 
-    html = render_site(cards, site_title)
+    html = render_site(cards, site_title, site_url=f"https://{custom_domain}" if custom_domain else "")
     (site_dir / "index.html").write_text(html)
 
     if custom_domain:
