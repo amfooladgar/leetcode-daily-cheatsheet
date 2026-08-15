@@ -163,6 +163,39 @@ class BuildGalleryTests(unittest.TestCase):
 
             self.assertFalse(stale_file.exists())
 
+    def test_custom_domain_writes_cname_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            manifest_path = tmp_path / "manifest.json"
+            images_dir = tmp_path / "gallery-images"
+            site_dir = tmp_path / "site"
+            save(Manifest(), manifest_path)
+            images_dir.mkdir()
+
+            build_gallery(
+                manifest_path,
+                images_dir,
+                site_dir,
+                FILENAME_PATTERN,
+                "Test Gallery",
+                custom_domain="leetcode.alifouladgar.com",
+            )
+
+            self.assertEqual((site_dir / "CNAME").read_text(), "leetcode.alifouladgar.com\n")
+
+    def test_no_custom_domain_omits_cname_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            manifest_path = tmp_path / "manifest.json"
+            images_dir = tmp_path / "gallery-images"
+            site_dir = tmp_path / "site"
+            save(Manifest(), manifest_path)
+            images_dir.mkdir()
+
+            build_gallery(manifest_path, images_dir, site_dir, FILENAME_PATTERN, "Test Gallery")
+
+            self.assertFalse((site_dir / "CNAME").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

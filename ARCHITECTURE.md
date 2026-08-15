@@ -610,6 +610,20 @@ red mark against the daily pipeline job that operations actually cares
 about triaging quickly (see "Failure policy" above), and the gallery can
 be rebuilt on demand without re-running Claude/Drive/Telegram/LinkedIn.
 
+**Custom domain.** `gallery.custom_domain` in `config/settings.yaml`
+(`leetcode.alifouladgar.com`, on the same Cloudflare-managed domain as the
+author's portfolio and self-hosted `n8n.alifouladgar.com`) is written into
+a `CNAME` file inside `gallery/site/` by every `scripts/build_gallery.py`
+run, not just set once via the repo's Pages settings. This is required,
+not cosmetic: GitHub Pages' docs state that an Actions-deployed site must
+carry the `CNAME` file in the published artifact on *every* deploy, or the
+custom domain silently reverts to the default `*.github.io` URL on the
+next one (unlike the older git-branch-based Pages flow, where a
+`CNAME` file committed once was enough). The DNS side (a `CNAME` record
+pointing `leetcode` at `amfooladgar.github.io`, left unproxied/DNS-only in
+Cloudflare so GitHub can complete Let's Encrypt domain verification) is
+manual, one-time setup outside this repo.
+
 **Tests** (`tests/test_gallery.py`) cover `save_gallery_image()`,
 `collect_cards()` (published-only filtering, missing-image skip, stable
 sort), `render_site()` (filter attributes present in the rendered HTML),

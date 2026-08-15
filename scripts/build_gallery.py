@@ -116,10 +116,23 @@ def render_site(cards: list[GalleryCard], site_title: str) -> str:
 
 
 def build_gallery(
-    manifest_path: Path, images_dir: Path, site_dir: Path, filename_pattern: str, site_title: str
+    manifest_path: Path,
+    images_dir: Path,
+    site_dir: Path,
+    filename_pattern: str,
+    site_title: str,
+    custom_domain: str = "",
 ) -> int:
     """Returns the number of cards written. Wipes and recreates site_dir so
-    a rebuild never leaves a stale image from a previous run behind."""
+    a rebuild never leaves a stale image from a previous run behind.
+
+    `custom_domain`, when set, writes a CNAME file into site_dir -- GitHub
+    Pages' documented mechanism for an Actions-deployed site to keep a
+    custom domain across every rebuild. The repo's Pages custom-domain
+    setting alone is not enough for a workflow-driven deploy: without this
+    file present in the *published artifact* each time, GitHub silently
+    drops the custom domain back to the default *.github.io URL on the
+    next deploy (see ARCHITECTURE.md "Gallery site")."""
     manifest = manifest_mod.load(manifest_path)
     cards = collect_cards(manifest, images_dir, filename_pattern)
 
@@ -133,6 +146,10 @@ def build_gallery(
 
     html = render_site(cards, site_title)
     (site_dir / "index.html").write_text(html)
+
+    if custom_domain:
+        (site_dir / "CNAME").write_text(custom_domain + "\n")
+
     log.info("Built gallery with %d card(s) at %s", len(cards), site_dir)
     return len(cards)
 
@@ -163,6 +180,7 @@ def main(argv: list[str] | None = None) -> int:
         site_dir,
         settings["output"]["filename_pattern"],
         settings["gallery"]["title"],
+        custom_domain=settings["gallery"].get("custom_domain", ""),
     )
     return 0
 

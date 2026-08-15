@@ -72,7 +72,7 @@ built by `scripts/build_gallery.py` — see
 committed to the repo and why filtering is a few lines of vanilla JS
 instead of a framework):
 
-**[amfooladgar.github.io/leetcode-daily-cheatsheet](https://amfooladgar.github.io/leetcode-daily-cheatsheet/)**
+**[leetcode.alifouladgar.com](https://leetcode.alifouladgar.com/)** (custom domain via Cloudflare DNS, alongside the [amfooladgar.github.io/leetcode-daily-cheatsheet](https://amfooladgar.github.io/leetcode-daily-cheatsheet/) default URL, which keeps working too)
 
 ---
 

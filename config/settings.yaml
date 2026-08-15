@@ -184,6 +184,12 @@ gallery:
   images_dir: "gallery/images"
   site_dir: "gallery/site"
   title: "LeetCode Daily Cheat Sheets"
+  # Custom domain (Cloudflare-managed, see ARCHITECTURE.md "Gallery site").
+  # scripts/build_gallery.py writes this into a CNAME file in every build,
+  # since GitHub Pages needs that file present in the published artifact
+  # on every Actions-driven deploy or it reverts to the *.github.io URL.
+  # Leave "" to serve from the default github.io URL only.
+  custom_domain: "leetcode.alifouladgar.com"
 
 # LinkedIn posting has two independent, human-gated paths -- see
 # ARCHITECTURE.md "LinkedIn posting" and CLAUDE.md's "Rules". Path A is an
