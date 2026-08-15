@@ -27,6 +27,11 @@ output/*
 !output/.gitkeep
 state/*.json
 !state/.gitkeep
+# state/manifest.json IS versioned (see CLAUDE.md "Every run must be
+# idempotent") -- daily.yml commits it back to main after every run. The
+# broad state/*.json ignore above exists for other stray/local state files,
+# not this one; without this exception it silently defeats idempotency.
+!state/manifest.json
 
 # --- OS / editor ---
 .DS_Store
