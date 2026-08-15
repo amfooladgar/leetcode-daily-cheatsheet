@@ -2,16 +2,28 @@
   "2026-08-13:1": {
     "content_hash": "1dc473b688ac32e2",
     "date": "2026-08-13",
+    "difficulty": "Easy",
     "drive": true,
     "drive_file_id": "1HWwkdBQyiWr8-8l4Ihj4TEQJi5qN3THH",
     "failure_reason": null,
     "failure_stage": null,
+    "headline": "Never Forget the Complement Hash Map Trick",
     "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
     "problem_number": 1,
+    "problem_url": "https://leetcode.com/problems/two-sum/",
     "prompt_version": "v1",
     "slug": "two-sum",
     "status": "success",
     "telegram": true,
-    "telegram_message_id": 4
+    "telegram_message_id": 4,
+    "title": "Two Sum",
+    "topics": [
+      "Array",
+      "Hash Table"
+    ]
   }
 }
