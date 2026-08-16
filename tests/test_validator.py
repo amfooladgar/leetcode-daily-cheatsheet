@@ -141,6 +141,30 @@ class RunExamplesTests(unittest.TestCase):
         self.assertFalse(report.ok)
         self.assertIn("exceeded", report.failures[0])
 
+    def test_boolean_output_using_js_literal_spelling_is_parsed(self):
+        # Reproduces the 2026-08-16 "Stone Game IX" prod failure: LeetCode
+        # renders boolean/null examples as `true`/`false`/`null` (JS/JSON
+        # spelling), which plain ast.literal_eval rejects as a malformed
+        # node -- every example failed even though the solution was correct.
+        code = (
+            "class Solution:\n"
+            "    def stoneGameIX(self, stones):\n"
+            "        return len(stones) % 2 == 1\n"
+        )
+        examples = [
+            Example(input="stones = [1,1]", output="false"),
+            Example(input="stones = [1,1,1]", output="true"),
+        ]
+        report = run_examples(code, examples)
+        self.assertTrue(report.ok, report.failures)
+        self.assertEqual(report.passed, 2)
+
+    def test_null_output_using_js_literal_spelling_is_parsed(self):
+        code = "class Solution:\n    def firstBadVersion(self, n):\n        return None\n"
+        examples = [Example(input="n = 5", output="null")]
+        report = run_examples(code, examples)
+        self.assertTrue(report.ok, report.failures)
+
 
 if __name__ == "__main__":
     unittest.main()

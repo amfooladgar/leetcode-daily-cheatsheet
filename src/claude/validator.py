@@ -35,6 +35,19 @@ log = logging.getLogger(__name__)
 
 _ASSIGNMENT_SPLIT_RE = re.compile(r",\s*(?=[A-Za-z_][A-Za-z0-9_]*\s*=)")
 _DESIGN_PROBLEM_INPUT_RE = re.compile(r'^\s*\[\s*"[A-Z]\w*"')
+_JS_LITERAL_RE = re.compile(r'"[^"]*"|\'[^\']*\'|\b(true|false|null)\b')
+_JS_TO_PY_LITERAL = {"true": "True", "false": "False", "null": "None"}
+
+
+def _normalize_js_literals(text: str) -> str:
+    """LeetCode renders example input/output using JS/JSON literal spelling
+    (`true`, `false`, `null`), which `ast.literal_eval` doesn't recognize --
+    it parses them as `ast.Name` nodes and raises "malformed node or string".
+    Swap in the Python spellings, but only outside quoted string literals so
+    a string value like "true story" is left untouched."""
+    return _JS_LITERAL_RE.sub(
+        lambda m: _JS_TO_PY_LITERAL[m.group(1)] if m.group(1) else m.group(0), text
+    )
 
 
 class ValidationError(RuntimeError):
@@ -215,7 +228,7 @@ def _parse_assignments(input_str: str) -> dict:
         name, _, value_expr = line.partition("=")
         name = name.strip()
         try:
-            namespace[name] = ast.literal_eval(value_expr.strip())
+            namespace[name] = ast.literal_eval(_normalize_js_literals(value_expr.strip()))
         except (ValueError, SyntaxError) as exc:
             raise ExampleExecutionError(
                 f"Could not parse example input fragment '{line}': {exc}"
@@ -272,7 +285,7 @@ def run_examples(code: str, examples: list[Example], timeout_seconds: int = 5) -
 
         try:
             namespace = _parse_assignments(example.input)
-            expected = ast.literal_eval(example.output.strip())
+            expected = ast.literal_eval(_normalize_js_literals(example.output.strip()))
 
             args = [namespace[name] for name in param_names if name in namespace]
             if len(args) != len(param_names):

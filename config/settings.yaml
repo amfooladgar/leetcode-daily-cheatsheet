@@ -34,6 +34,12 @@ claude:
   max_turns: 8
   allowed_tools: ""        # empty = pure reasoning, no Bash/file/network access
   output_format: "json"
+  # Wall-clock budget per `claude -p --bare` invocation (src/claude/runner.py's
+  # subprocess.run timeout). 2026-08-16: the verify stage timed out at the old
+  # 180s hardcoded default on one run and took 89s on an identical rerun --
+  # pure model-latency variance, not a real hang -- so this is raised and
+  # made configurable rather than left as a code constant.
+  stage_timeout_seconds: 300
 
 image:
   final_width: 1080
