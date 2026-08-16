@@ -109,5 +109,29 @@
       "Array",
       "Bit Manipulation"
     ]
+  },
+  "2026-08-16:2029": {
+    "content_hash": "",
+    "date": "2026-08-16",
+    "difficulty": null,
+    "drive": false,
+    "drive_file_id": null,
+    "failure_reason": "example 1: raised ValueError: malformed node or string on line 1: <ast.Name object at 0x7f5798d8f550>; example 2: raised ValueError: malformed node or string on line 1: <ast.Name object at 0x7f5798d8f0d0>; example 3: raised ValueError: malformed node or string on line 1: <ast.Name object at 0x7f5798d8d090>",
+    "failure_stage": "tested",
+    "headline": null,
+    "image_filename": null,
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 2029,
+    "problem_url": null,
+    "prompt_version": "v1",
+    "slug": "stone-game-ix",
+    "status": "failed",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": null,
+    "topics": []
   }
 }
