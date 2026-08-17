@@ -142,5 +142,34 @@
       "Nim Game",
       "Zero-Sum Game"
     ]
+  },
+  "2026-08-17:1563": {
+    "content_hash": "8386ba13bfc17f0c",
+    "date": "2026-08-17",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "10wKLeAidQ4xqcO2rR0WGo4OT1WbaqMqo",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Interval DP Split Rule",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 1563,
+    "problem_url": "https://leetcode.com/problems/stone-game-v/",
+    "prompt_version": "v1",
+    "slug": "stone-game-v",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 16,
+    "title": "Stone Game V",
+    "topics": [
+      "Array",
+      "Math",
+      "Dynamic Programming",
+      "Game Theory"
+    ]
   }
 }
