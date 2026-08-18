@@ -289,6 +289,13 @@ overwrite `assets/contact-card.png` — no code change needed — then run
 `python -m src.main --dry-run` and check
 `output/<date>/<problem>/cheatsheet.png` to confirm the new one still fits.
 
+If you also use the `openai` provider (3d above), it sends this same file
+to GPT Image as a reference image and re-letters its text from
+`image_generation.openai.card_name`/`card_title`/`card_links` in
+`config/settings.yaml` rather than reading the image — update those three
+values too if you swap in a card with different text, or the openai
+renderer will confidently draw the wrong name/title/links.
+
 ## 5. GitHub repository secrets
 
 ```mermaid

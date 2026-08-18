@@ -49,6 +49,14 @@ def _format_diagrams_summary(diagrams: list) -> str:
     return "; ".join(parts)
 
 
+def _format_card_links(links: list[dict]) -> str:
+    """Renders image_generation.openai.card_links (list of {label, value})
+    as one "- Label: value" line per entry, for the v3 CONTACT CARD prompt
+    section -- ground-truth text the model re-letters instead of reading
+    (and possibly misreading) the reference image."""
+    return "\n".join(f"- {link.get('label', '')}: {link.get('value', '')}" for link in links)
+
+
 def load_template(prompt_version: str) -> str:
     path = PROMPTS_DIR / prompt_version / "cheatsheet.txt"
     if not path.exists():
@@ -60,14 +68,25 @@ def build_prompt(
     cheatsheet: dict,
     *,
     prompt_version: str,
-    card_width: int,
-    card_height: int,
-    card_margin_right: int,
-    card_margin_bottom: int,
+    card_width: int = 0,
+    card_height: int = 0,
+    card_margin_right: int = 0,
+    card_margin_bottom: int = 0,
+    card_position: str = "bottom-right",
+    card_name: str = "",
+    card_title: str = "",
+    card_links: list[dict] | None = None,
 ) -> str:
     """Renders prompts/openai/<prompt_version>/cheatsheet.txt against
     `cheatsheet` (schemas/cheatsheet.schema.json shape). Raises
-    PromptTemplateError if the template file is missing."""
+    PromptTemplateError if the template file is missing.
+
+    `card_width`/`card_height`/`card_margin_right`/`card_margin_bottom` are
+    only meaningful to the retired v1/v2 blank-reservation templates;
+    `card_position`/`card_name`/`card_title`/`card_links` are only
+    meaningful to v3's reference-image CONTACT CARD section (see
+    prompts/openai/README.md). All are always substituted -- a template
+    that doesn't reference a given `{{placeholder}}` simply ignores it."""
 
     template = load_template(prompt_version)
     problem = cheatsheet.get("problem", {})
@@ -91,6 +110,10 @@ def build_prompt(
         "card_height": str(card_height),
         "card_margin_right": str(card_margin_right),
         "card_margin_bottom": str(card_margin_bottom),
+        "card_position": _esc(card_position.replace("-", " ")),
+        "card_name": _esc(card_name),
+        "card_title": _esc(card_title),
+        "card_links": _esc(_format_card_links(card_links or [])),
     }
 
     prompt = template

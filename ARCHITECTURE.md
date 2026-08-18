@@ -380,13 +380,9 @@ flowchart TD
     preflight -->|no, fallback true| existing["Existing renderer"]
     preflight -->|no, fallback false| stop["Stop before paid model calls"]
     preflight -->|yes, existing| existing
-    preflight -->|yes, openai| generate["Generate background PNG"]
-    generate --> scan["Detect actual blank region"]
-    scan --> composite["Scale and composite immutable contact card"]
-    composite --> openaiQa{"OpenAI QA<br/>configured dimensions + PNG"}
-    generate -. "API/decode failure" .-> fallback{"Fallback enabled?"}
-    scan -. "insufficient safe space" .-> fallback
-    composite -. "composite failure" .-> fallback
+    preflight -->|yes, openai| generate["Images Edit API:<br/>card sent as reference image"]
+    generate --> openaiQa{"OpenAI QA<br/>configured dimensions + PNG"}
+    generate -. "API/decode/shape failure" .-> fallback{"Fallback enabled?"}
     fallback -->|yes| existing
     fallback -->|no| stop
     existing --> existingQa["Existing QA<br/>1080×1350 + no overflow"]
@@ -409,6 +405,50 @@ selecting `openai` as the default is an informed trade-off that leans on
 `existing` as its safety net, not a claim that the reliability concerns
 were resolved. Set `image_generation.provider: "existing"` directly (or
 pass `--image-provider existing`) to skip GPT Image entirely.
+
+**Contact card handling (v3, current default).** Earlier versions
+(v1/v2, see `prompts/openai/README.md`) asked GPT Image to leave an exact
+or padded-minimum blank rectangle in a text-to-image request, then
+Pillow-composited the untouched `assets/contact-card.png` onto that
+rectangle afterward (`src/rendering/card_compositor.py`, since deleted).
+That flow depended on GPT Image reliably leaving enough real blank space
+near the reserved corner, measured post hoc by scanning pixels
+(`detect_blank_region()`); two consecutive live scheduled runs
+(2026-08-16 and 2026-08-17) each left only a handful of pixels of blank
+space there, tripping the minimum-scale check and falling back to the
+`existing` renderer both days — see the `2026-08-16 17:10` and
+`2026-08-17 13:56` GitHub Actions run logs (`WARNING
+src.rendering.factory: OpenAI renderer failed (Generated background left
+only 1x1px of blank space ...)`).
+
+v3 replaces that flow: `assets/contact-card.png` is sent to the Images
+Edit API as a reference `image` input alongside the prompt
+(`src/rendering/openai_provider.py::_generate_from_reference()`), and
+`prompts/openai/v3/cheatsheet.txt`'s CONTACT CARD section asks the model
+to draw the card directly into the generated design instead of reserving
+space for a later overlay. The prompt gives the model ground-truth
+`card_name`/`card_title`/`card_links` text to re-letter verbatim instead
+of relying on it to read (and possibly misread) the reference image.
+`image_generation.openai.input_fidelity` ("high"|"low") is the Images Edit
+API's own parameter for preserving fine reference-image detail (faces,
+logos) rather than reinterpreting it, but it's left unset by default: a
+live smoke test against the configured model
+(`gpt-image-2-2026-04-21`) returned `400
+invalid_input_fidelity_model` — "The model ... does not support the
+'input_fidelity' parameter" — so `_generate_from_reference()` only
+includes it in the API call when explicitly configured, for a model
+confirmed to support it. Preserving the photo currently relies on the
+CONTACT CARD prompt instructions alone; a second live smoke test
+(`scripts/smoke_test_openai.py`, LeetCode #2213 fixture) confirmed the
+model reproduced the same photo, pose, and background from the reference
+image, correctly re-lettered name/title/all three contact links, and
+didn't overlap the card with any generated content. There is no
+post-generation pixel measurement or compositing step any more — the
+model's own output is the final image, subject only to the same
+dimensions/PNG QA gate as before. This trades the old flow's exact-pixel
+card guarantee for one that no longer fails outright when GPT Image's
+layout leaves no blank corner; `assets/contact-card.png` is still only
+ever opened for reading, never written to, by either provider.
 
 **Provider factory (`src/rendering/factory.py`).** The only place that
 branches on `image_generation.provider`. `src/main.py` calls

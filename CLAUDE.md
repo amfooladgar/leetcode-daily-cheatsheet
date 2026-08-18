@@ -71,9 +71,18 @@ happens both before the pipeline starts (invalid/missing config, e.g. no
     default), NOT the `existing` provider's 1080x1350 — never apply that
     assertion to openai output. GPT Image output is non-deterministic and
     can misrender text/code/formulas/layout; this is why
-    `fallback_to_existing` defaults to `true`. The original
-    `assets/contact-card.png` is always composited onto the generated
-    background after generation — never sent to the model to redraw.
+    `fallback_to_existing` defaults to `true`. `assets/contact-card.png` is
+    sent to the model as an Images Edit API reference image and redrawn as
+    part of the generated image, re-lettered from the ground-truth
+    `card_name`/`card_title`/`card_links` config values rather than left to
+    the model to read off the reference image — a live test confirmed the
+    model preserves the reference photo faithfully from the prompt
+    instructions alone. `image_generation.openai.input_fidelity` (unset by
+    default — the configured model rejects it outright, see
+    ARCHITECTURE.md "Optional OpenAI image renderer") can additionally
+    request the Images Edit API's own fidelity-preservation mechanism, for
+    models confirmed to support it. The source file itself is only ever
+    opened for reading, never written to.
   - `existing` (the deterministic HTML/CSS + Playwright fallback,
     selectable directly via `image_generation.provider: "existing"`):
     final image is exactly 1080x1350 PNG. This is the recommended
@@ -81,8 +90,10 @@ happens both before the pipeline starts (invalid/missing config, e.g. no
     repeatability matter more than the GPT Image visual style.
 - Use at most three accent colors (see config/settings.yaml `design.accent_hex`).
 - The contact card (`assets/contact-card.png`) is an immutable source asset —
-  never regenerate or resize the source file itself, only scale it on
-  composite.
+  never regenerate or resize the source file itself. The `existing`
+  provider only ever scales it on composite; the `openai` provider only
+  ever reads it to send as an Images Edit API reference image. Neither
+  provider writes to it.
 - Prompts are versioned. If you materially change a prompt's behavior, copy
   it to a new version rather than silently editing production behavior
   (see prompts/claude/README.md).

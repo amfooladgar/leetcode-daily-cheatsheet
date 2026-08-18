@@ -111,42 +111,46 @@ image_generation:
     output_format: "png"
     # prompts/openai/<prompt_version>/cheatsheet.txt -- same versioning
     # convention as claude.prompt_version (see prompts/openai/README.md).
-    # v2 reworded the branding-reservation instruction to ask for a
-    # minimum size rather than an exact one, pairing with
-    # card_reservation_safety_margin below.
-    prompt_version: "v2"
+    # v3 switched from "reserve a blank rectangle, composite the exact
+    # card afterward" to sending the card as an Images Edit API reference
+    # image and asking the model to draw it directly -- see
+    # prompts/openai/README.md and ARCHITECTURE.md "Optional OpenAI image
+    # renderer" for why (two consecutive live runs, 2026-08-16 and
+    # 2026-08-17, left too little blank space near the reserved corner
+    # for the old flow's minimum-scale check to pass, falling back to the
+    # existing renderer both days).
+    prompt_version: "v3"
     # The same immutable asset the existing renderer embeds -- never a
-    # separate copy (see CLAUDE.md "contact card" rule).
+    # separate copy (see CLAUDE.md "contact card" rule). For this
+    # provider it is sent to the model as an Images Edit API reference
+    # image (never written to) rather than composited afterward.
     visiting_card: "assets/contact-card.png"
-    card_position: "bottom-right"   # bottom-right | bottom-left
-    # A live smoke test showed a decorative panel's rounded corner can
-    # reach close to a tight margin at the exact height a native-size card
-    # needs, marginally blocking blank-region detection even though ample
-    # real space exists just beyond the panel (see CHANGELOG.md). Wider
-    # margins give panel corners/borders more room to clear.
-    card_margin_right: 45
-    card_margin_bottom: 35
-    # A live smoke test (see CHANGELOG.md) showed GPT Image does not
-    # reliably honor an *exact* pixel reservation size -- it left a blank
-    # region shorter than requested, and the real card (placed at its
-    # true, unpadded size by the deterministic compositor) overlapped
-    # generated pseudocode. The prompt now requests a reservation this
-    # fraction larger than the card's actual composited size, as headroom
-    # against under-reservation; the compositor itself is unaffected and
-    # still places the card at its exact real size. 0.2 = 20% larger.
-    card_reservation_safety_margin: 0.2
-    # A padded prompt request alone wasn't enough (see above): the
-    # compositor also scans the generated background for the actual blank
-    # rectangle near the card's corner (src/rendering/card_compositor.py::
-    # detect_blank_region()) and sizes the card to fit *that*, capped at
-    # the padded reservation. If the detected space would force the card
-    # below this fraction of its native size, compositing fails loudly
-    # (background kept for diagnosis) instead of publishing a
-    # near-invisible or overlapping card.
-    card_min_detected_scale: 0.4
-    # Color the reserved card region is cleared to before compositing, in
-    # case the generated background isn't perfectly blank there.
-    card_clear_hex: "#FFFFFF"
+    card_position: "bottom-right"   # bottom-right | bottom-left -- a placement
+    # hint in the prompt only; the model chooses the exact layout instead
+    # of a pixel-reserved region.
+    # input_fidelity ("high"|"low") asks the Images Edit API to preserve
+    # fine detail (faces, logos) from the reference image rather than
+    # reinterpreting it. Left unset (the default) because a live smoke
+    # test found the configured model above rejects it outright (400
+    # invalid_input_fidelity_model) instead of ignoring it -- only set
+    # this if you've confirmed your chosen model supports it. Preserving
+    # the photo currently relies on the CONTACT CARD prompt instructions
+    # alone (prompts/openai/v3/cheatsheet.txt).
+    # input_fidelity: "high"
+    # Ground-truth card text, given to the model explicitly so it
+    # re-letters the card from known-correct text instead of relying on
+    # reading (and possibly misreading) the reference image -- see
+    # src/rendering/openai_prompt.py. Keep in sync with
+    # assets/contact-card.png if that file is ever replaced.
+    card_name: "Ali Fouladgar"
+    card_title: "AI Engineer"
+    card_links:
+      - label: "Website"
+        value: "AliFouladgar.com"
+      - label: "LinkedIn"
+        value: "@ali-fouladgar"
+      - label: "Leetcode"
+        value: "amfooladgar"
     # Kept as separate, predictable filenames in the same
     # output/<date>/<problem>/ stage directory as the existing renderer's
     # cheatsheet.png, so neither provider's output can collide with the

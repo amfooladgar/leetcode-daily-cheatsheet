@@ -1,6 +1,6 @@
 """The "openai" image_generation provider: GPT Image generates the complete
-visual cheat sheet, then src/rendering/card_compositor.py overlays the
-exact assets/contact-card.png afterward.
+visual cheat sheet, including the contact card, via the Images Edit API's
+reference-image input.
 
 This is a deliberate, documented exception to "why no AI image model" (see
 ARCHITECTURE.md "Optional OpenAI image renderer") -- unlike the `existing`
@@ -8,27 +8,37 @@ provider, GPT Image is asked to render exact text/code/formulas as pixels,
 which is not deterministic and can misrender. It's an explicit, non-default
 opt-in (`image_generation.provider: "openai"` in config/settings.yaml).
 
-The `openai` package and Pillow (via card_compositor) are imported lazily
-inside functions, matching src/storage/google_drive.py's pattern, so
-`python -m src.main --dry-run` with the default "existing" provider never
-requires either to be importable and OPENAI_API_KEY is only ever read here.
+Card handling (v3, current default -- see prompts/openai/README.md for the
+v1/v2 history this replaced): `assets/contact-card.png` is sent to the
+Images Edit API as a reference `image` input, and the prompt
+(prompts/openai/v3/cheatsheet.txt) asks the model to draw it directly into
+the generated design -- preserving the reference photo exactly
+(`input_fidelity: "high"`) while re-lettering the card's text from the
+ground-truth `image_generation.openai.card_name`/`card_title`/`card_links`
+config values rather than reading the reference image. The source file
+itself is only ever opened for reading here, never written to. The earlier
+v1/v2 approach (reserve an exact blank rectangle in a text-to-image
+request, then Pillow-composite the unmodified source file onto it
+afterward) was replaced after two consecutive live runs
+(2026-08-16, 2026-08-17) left too little blank space near the reserved
+corner for that flow's minimum-scale check to pass, falling back to the
+`existing` renderer both days.
+
+The `openai` package is imported lazily inside functions, matching
+src/storage/google_drive.py's pattern, so `python -m src.main --dry-run`
+with the default "existing" provider never requires it to be importable
+and OPENAI_API_KEY is only ever read here.
 """
 
 from __future__ import annotations
 
 import base64
+import hashlib
 import logging
 import os
 from pathlib import Path
 
 from src.rendering.base import RenderResult
-from src.rendering.card_compositor import (
-    CardCompositeError,
-    composite_card,
-    compute_reserved_region,
-    detect_blank_region,
-    validate_card,
-)
 from src.rendering.openai_prompt import PromptTemplateError, build_prompt
 from src.rendering.png_meta import read_png_size
 from src.utils.retry import retry
@@ -38,6 +48,8 @@ log = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 _VALID_QUALITIES = {"low", "medium", "high", "auto"}
+_VALID_POSITIONS = {"bottom-right", "bottom-left"}
+_VALID_INPUT_FIDELITIES = {"low", "high"}
 _ENV_VAR = "OPENAI_API_KEY"
 
 
@@ -49,17 +61,53 @@ class OpenAIRenderError(RuntimeError):
 class OpenAIConfigError(OpenAIRenderError):
     """Raised for any failure that must be caught *before* a paid request:
     missing API key, missing prompt template, missing/invalid card,
-    invalid size/quality/model/output directory."""
+    invalid size/quality/model/output directory/card text."""
 
 
 class OpenAIGenerationError(OpenAIRenderError):
     """Raised when the API request or response decoding fails."""
 
 
-class OpenAICompositeError(OpenAIRenderError):
-    """Raised when generation succeeded but card compositing failed. The
-    caller must keep the generated background for diagnosis and must not
-    publish it as final (see ARCHITECTURE.md 'Failure policy')."""
+class OpenAIOutputError(OpenAIRenderError):
+    """Raised when generation succeeded but its output failed validation
+    (wrong dimensions, etc). The caller must keep the generated image for
+    diagnosis and must not publish it as final (see ARCHITECTURE.md
+    'Failure policy')."""
+
+
+def _validate_card_file(card_path: Path) -> None:
+    """Fails fast (before any paid OpenAI request) if the card is missing
+    or not a decodable image."""
+    from PIL import Image
+
+    card_path = Path(card_path)
+    if not card_path.exists():
+        raise OpenAIConfigError(f"Visiting card not found at {card_path}")
+    try:
+        with Image.open(card_path) as img:
+            img.verify()
+    except Exception as exc:  # noqa: BLE001 - re-raised with context below
+        raise OpenAIConfigError(
+            f"Visiting card at {card_path} is not a valid image: {exc}"
+        ) from exc
+
+
+def _validate_card_links(card_links: object) -> list[dict]:
+    if not isinstance(card_links, list) or not card_links:
+        raise OpenAIConfigError("image_generation.openai.card_links must be a non-empty list")
+    for link in card_links:
+        if (
+            not isinstance(link, dict)
+            or not isinstance(link.get("label"), str)
+            or not link.get("label")
+            or not isinstance(link.get("value"), str)
+            or not link.get("value")
+        ):
+            raise OpenAIConfigError(
+                "Each image_generation.openai.card_links entry must have non-empty "
+                f"string 'label' and 'value' keys, got {link!r}"
+            )
+    return card_links
 
 
 def _validate_config(openai_cfg: dict, stage_dir: Path) -> tuple[int, int, Path]:
@@ -79,19 +127,29 @@ def _validate_config(openai_cfg: dict, stage_dir: Path) -> tuple[int, int, Path]
     if not model or not isinstance(model, str):
         raise OpenAIConfigError("image_generation.openai.model must be a non-empty string")
 
-    safety_margin = openai_cfg.get("card_reservation_safety_margin", 0.2)
-    if not isinstance(safety_margin, int | float) or safety_margin < 0:
+    position = openai_cfg.get("card_position", "bottom-right")
+    if position not in _VALID_POSITIONS:
         raise OpenAIConfigError(
-            f"Invalid image_generation.openai.card_reservation_safety_margin '{safety_margin}' "
-            "-- must be a number >= 0"
+            f"Invalid image_generation.openai.card_position '{position}' "
+            f"-- must be one of {sorted(_VALID_POSITIONS)}"
         )
 
-    min_scale = openai_cfg.get("card_min_detected_scale", 0.4)
-    if not isinstance(min_scale, int | float) or not (0 < min_scale <= 1):
+    # None (the default) omits the parameter from the API call entirely --
+    # a live smoke test showed the configured model rejects it outright
+    # (400 invalid_input_fidelity_model) rather than ignoring it, so it's
+    # only safe to set for a model confirmed to support it.
+    input_fidelity = openai_cfg.get("input_fidelity")
+    if input_fidelity is not None and input_fidelity not in _VALID_INPUT_FIDELITIES:
         raise OpenAIConfigError(
-            f"Invalid image_generation.openai.card_min_detected_scale '{min_scale}' "
-            "-- must be a number in (0, 1]"
+            f"Invalid image_generation.openai.input_fidelity '{input_fidelity}' "
+            f"-- must be one of {sorted(_VALID_INPUT_FIDELITIES)} or unset"
         )
+
+    if not openai_cfg.get("card_name") or not isinstance(openai_cfg.get("card_name"), str):
+        raise OpenAIConfigError("image_generation.openai.card_name must be a non-empty string")
+    if not openai_cfg.get("card_title") or not isinstance(openai_cfg.get("card_title"), str):
+        raise OpenAIConfigError("image_generation.openai.card_title must be a non-empty string")
+    _validate_card_links(openai_cfg.get("card_links"))
 
     if not os.environ.get(_ENV_VAR):
         raise OpenAIConfigError(
@@ -99,7 +157,7 @@ def _validate_config(openai_cfg: dict, stage_dir: Path) -> tuple[int, int, Path]
             "image_generation.provider is 'openai' -- see docs/SETUP.md."
         )
 
-    prompt_version = openai_cfg.get("prompt_version", "v2")
+    prompt_version = openai_cfg.get("prompt_version", "v3")
     from src.rendering.openai_prompt import PROMPTS_DIR
 
     template_path = PROMPTS_DIR / prompt_version / "cheatsheet.txt"
@@ -107,10 +165,7 @@ def _validate_config(openai_cfg: dict, stage_dir: Path) -> tuple[int, int, Path]
         raise OpenAIConfigError(f"No OpenAI prompt template at {template_path}")
 
     card_path = REPO_ROOT / openai_cfg["visiting_card"]
-    try:
-        validate_card(card_path)
-    except CardCompositeError as exc:
-        raise OpenAIConfigError(str(exc)) from exc
+    _validate_card_file(card_path)
 
     try:
         stage_dir = Path(stage_dir)
@@ -145,12 +200,14 @@ def _decode_image_response(result) -> bytes:
     return image_bytes
 
 
-def _generate_background(
+def _generate_from_reference(
     *,
     prompt: str,
     model: str,
     size: str,
     quality: str,
+    card_path: Path,
+    input_fidelity: str | None,
     max_retries: int,
     base_delay_seconds: float,
     max_delay_seconds: float,
@@ -174,7 +231,23 @@ def _generate_background(
         max_delay_seconds=max_delay_seconds,
     )
     def _call():
-        return client.images.generate(model=model, prompt=prompt, size=size, quality=quality, n=1)
+        # Re-opened on every attempt -- a file handle already sent in a
+        # prior (failed) request can't be reused for a retry.
+        with open(card_path, "rb") as card_file:
+            call_kwargs = dict(
+                model=model,
+                image=card_file,
+                prompt=prompt,
+                size=size,
+                quality=quality,
+                n=1,
+            )
+            # Omitted, not just None, when unset -- passing
+            # input_fidelity=None to the SDK still serializes the key
+            # (see the 400 finding above).
+            if input_fidelity is not None:
+                call_kwargs["input_fidelity"] = input_fidelity
+            return client.images.edit(**call_kwargs)
 
     try:
         result = _call()
@@ -206,39 +279,25 @@ def render(
     openai_cfg = settings["image_generation"]["openai"]
 
     width, height, card_path = _validate_config(openai_cfg, stage_dir)
-    card_native_width, card_native_height = read_png_size(card_path)
-
-    # The card is composited later at its exact, unpadded size (see
-    # composite_card() below, which recomputes compute_card_box() itself).
-    # What we request the model *reserve* is padded by
-    # card_reservation_safety_margin -- see compute_reserved_region()'s
-    # docstring for why (a live smoke test showed GPT Image under-reserves
-    # relative to an exact pixel request).
-    reserved_width, reserved_height = compute_reserved_region(
-        card_native_width,
-        card_native_height,
-        canvas_width=width,
-        canvas_height=height,
-        margin_right=openai_cfg["card_margin_right"],
-        margin_bottom=openai_cfg["card_margin_bottom"],
-        safety_margin=openai_cfg.get("card_reservation_safety_margin", 0.2),
-    )
+    card_hash_before = hashlib.sha256(card_path.read_bytes()).hexdigest()
 
     prompt = build_prompt(
         cheatsheet,
-        prompt_version=openai_cfg.get("prompt_version", "v2"),
-        card_width=reserved_width,
-        card_height=reserved_height,
-        card_margin_right=openai_cfg["card_margin_right"],
-        card_margin_bottom=openai_cfg["card_margin_bottom"],
+        prompt_version=openai_cfg.get("prompt_version", "v3"),
+        card_position=openai_cfg.get("card_position", "bottom-right"),
+        card_name=openai_cfg["card_name"],
+        card_title=openai_cfg["card_title"],
+        card_links=openai_cfg["card_links"],
     )
 
     try:
-        image_bytes = _generate_background(
+        image_bytes = _generate_from_reference(
             prompt=prompt,
             model=openai_cfg["model"],
             size=f"{width}x{height}",
             quality=openai_cfg["quality"],
+            card_path=card_path,
+            input_fidelity=openai_cfg.get("input_fidelity"),
             max_retries=openai_cfg.get("max_retries", 3),
             base_delay_seconds=openai_cfg.get("retry_base_delay_seconds", 1.0),
             max_delay_seconds=openai_cfg.get("retry_max_delay_seconds", 20.0),
@@ -246,65 +305,40 @@ def render(
     except PromptTemplateError as exc:
         raise OpenAIConfigError(str(exc)) from exc
 
+    # Written to disk immediately once we have decoded bytes -- this is a
+    # billed request, so every image OpenAI actually returns must survive
+    # on disk no matter what fails afterward (dimension check, card-hash
+    # check, or the caller falling back to the existing renderer). Never
+    # skipped, never overwritten by the fallback path (different filename
+    # from the existing provider's cheatsheet.png -- see
+    # ARCHITECTURE.md "Optional OpenAI image renderer").
     background_path = stage_dir / openai_cfg["background_filename"]
     _write_atomic(background_path, image_bytes)
     log.info("OpenAI background saved to %s", background_path)
 
+    card_hash_after = hashlib.sha256(card_path.read_bytes()).hexdigest()
+    if card_hash_before != card_hash_after:
+        # Should be unreachable (this function never opens card_path for
+        # writing) but this is the explicit, tested guarantee the kit
+        # requires -- fail loudly rather than silently publish a corrupted
+        # source asset state.
+        raise OpenAIOutputError(
+            f"Visiting card source file hash changed during generation. "
+            f"Generated image kept at {background_path} for diagnosis despite this failure."
+        )
+
     bg_width, bg_height = read_png_size(background_path)
     if (bg_width, bg_height) != (width, height):
         # Generation succeeded but produced the wrong shape -- keep the
-        # background for diagnosis, never publish it as final (see
+        # image for diagnosis, never publish it as final (see
         # ARCHITECTURE.md 'Failure policy').
-        raise OpenAICompositeError(
-            f"Generated background is {bg_width}x{bg_height}, expected {width}x{height}. "
-            f"Background kept at {background_path} for diagnosis."
-        )
-
-    # Don't trust the requested reservation size -- measure what's
-    # actually blank in the generated background and fit the card to that
-    # (see detect_blank_region()'s docstring: the prompt-requested size,
-    # even padded, is not reliable). Capped at the padded reservation so
-    # detection never reports more room than we asked the model for.
-    detected_width, detected_height = detect_blank_region(
-        background_path,
-        canvas_width=width,
-        canvas_height=height,
-        position=openai_cfg["card_position"],
-        margin_right=openai_cfg["card_margin_right"],
-        margin_bottom=openai_cfg["card_margin_bottom"],
-        max_width=reserved_width,
-        max_height=reserved_height,
-        background_hex=openai_cfg.get("card_clear_hex", "#FFFFFF"),
-    )
-    min_scale = openai_cfg.get("card_min_detected_scale", 0.4)
-    detected_scale = min(detected_width / card_native_width, detected_height / card_native_height)
-    if detected_scale < min_scale:
-        raise OpenAICompositeError(
-            f"Generated background left only {detected_width}x{detected_height}px of blank space "
-            f"near the {openai_cfg['card_position']} corner -- too small to place the "
-            f"{card_native_width}x{card_native_height}px card at >= {min_scale:.0%} scale. "
-            f"Background kept at {background_path} for diagnosis; final image not published."
+        raise OpenAIOutputError(
+            f"Generated image is {bg_width}x{bg_height}, expected {width}x{height}. "
+            f"Kept at {background_path} for diagnosis."
         )
 
     final_path = stage_dir / openai_cfg["final_filename"]
-    try:
-        composite_card(
-            background_path,
-            card_path,
-            final_path,
-            canvas_width=width,
-            canvas_height=height,
-            position=openai_cfg["card_position"],
-            margin_right=openai_cfg["card_margin_right"],
-            margin_bottom=openai_cfg["card_margin_bottom"],
-            clear_hex=openai_cfg.get("card_clear_hex", "#FFFFFF"),
-            available_width=detected_width,
-            available_height=detected_height,
-        )
-    except CardCompositeError as exc:
-        raise OpenAICompositeError(
-            f"{exc} Background kept at {background_path} for diagnosis; final image not published."
-        ) from exc
+    _write_atomic(final_path, image_bytes)
 
     final_width, final_height = read_png_size(final_path)
     checks = {

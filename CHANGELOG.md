@@ -32,6 +32,44 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   test_image_provider_factory.py` -- the OpenAI client is always mocked,
   no test spends real API credits.
 
+### Changed
+- Replaced the openai provider's "reserve a blank rectangle, then
+  Pillow-composite the exact contact card onto it" flow with sending
+  `assets/contact-card.png` to the OpenAI Images Edit API as a reference
+  `image` input and letting GPT Image draw the card directly into the
+  generated design. Two consecutive live scheduled runs (2026-08-16 and
+  2026-08-17) each left only a handful of pixels of blank space near the
+  reserved corner -- well under `card_min_detected_scale` -- tripping the
+  minimum-scale check and falling back to the `existing` renderer both
+  days, despite the v2 padding/detection work below. New
+  `image_generation.openai.input_fidelity` (unset by default) can ask the
+  Images Edit API to preserve the reference image's fine detail (the
+  person's photo) rather than reinterpreting it, for a model confirmed to
+  support it -- a live smoke test against the configured model
+  (`gpt-image-2-2026-04-21`) showed it rejects that parameter outright
+  (`400 invalid_input_fidelity_model`), so it's only included in the API
+  call when explicitly configured. A second live smoke test (`scripts/
+  smoke_test_openai.py`, LeetCode #2213 fixture) confirmed the model
+  preserves the reference photo faithfully from the CONTACT CARD prompt
+  instructions alone, without that parameter. New `card_name`/
+  `card_title`/`card_links` config values give the model ground-truth
+  text to re-letter instead of reading it off the reference image, which
+  that same live test confirmed came out correct (name, title, and all
+  three contact links). Added `prompts/openai/v3/
+  cheatsheet.txt` (now the default `prompt_version`) with a CONTACT CARD
+  section replacing the old BRANDING RESERVATION section; `prompts/openai/
+  v1/` and `v2/` are kept for reference per the prompt-versioning
+  convention. Deleted `src/rendering/card_compositor.py` and `tests/
+  test_card_compositor.py` (no longer called by anything -- the `existing`
+  provider never used it) along with the now-unused `image_generation.
+  openai.card_margin_right/card_margin_bottom/card_reservation_safety_
+  margin/card_min_detected_scale/card_clear_hex` config keys and the
+  `OpenAICompositeError` exception (renamed `OpenAIOutputError`, since
+  there's no compositing step left to name it after). There is no more
+  post-generation blank-region scan or pixel compositing; the model's
+  output is the final image, subject only to the same dimensions/PNG QA
+  gate as before. See ARCHITECTURE.md "Optional OpenAI image renderer".
+
 ### Fixed
 - A live smoke test of the new OpenAI renderer (LeetCode #2213 fixture,
   `quality=medium`) showed GPT Image does not reliably honor an *exact*
