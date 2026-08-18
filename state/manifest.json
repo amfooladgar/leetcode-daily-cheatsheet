@@ -171,5 +171,32 @@
       "Dynamic Programming",
       "Game Theory"
     ]
+  },
+  "2026-08-18:3471": {
+    "content_hash": "217dc12cd913f249",
+    "date": "2026-08-18",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "17nZcr0I7mZr9xIGhwiWV8zuezyleSJOB",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Count Windows, Not Occurrences",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1k-4wP4diqzzCdn8RIgRFAvd-M2uARt-X",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3471,
+    "problem_url": "https://leetcode.com/problems/find-the-largest-almost-missing-integer/",
+    "prompt_version": "v1",
+    "slug": "find-the-largest-almost-missing-integer",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 17,
+    "title": "Find the Largest Almost Missing Integer",
+    "topics": [
+      "Array",
+      "Hash Table"
+    ]
   }
 }
