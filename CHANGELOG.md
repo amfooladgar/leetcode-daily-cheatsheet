@@ -71,6 +71,16 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   gate as before. See ARCHITECTURE.md "Optional OpenAI image renderer".
 
 ### Fixed
+- `prompts/openai/v3/cheatsheet.txt`'s MAIN TITLE line hardcoded a
+  "Never Forget It: {{headline}}" prefix, inherited unchanged from v1/v2.
+  `prompts/claude/v1/compress.md` already instructs Claude to write
+  `headline` as a full "Never Forget ..." sentence when that reads
+  naturally (the `existing` renderer prints `headline` verbatim, no
+  prefix), so most real headlines rendered as a doubled-up "Never Forget
+  It: Never Forget This Trick". Caught before v3 had been used in any
+  real published run, so fixed in place rather than versioned to v4 --
+  the title now renders `headline` as-is, matching the `existing`
+  provider.
 - A live smoke test of the new OpenAI renderer (LeetCode #2213 fixture,
   `quality=medium`) showed GPT Image does not reliably honor an *exact*
   pixel branding-reservation request: the raw background left a shorter

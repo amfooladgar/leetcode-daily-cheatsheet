@@ -189,7 +189,12 @@ class OpenAIRendererTests(unittest.TestCase):
             card_title="AI Engineer",
             card_links=[{"label": "Website", "value": "AliFouladgar.com"}],
         )
-        self.assertIn(f"Never Forget It: {self.cheatsheet['headline']}", prompt)
+        # No "Never Forget It: " prefix -- compress.md already instructs
+        # Claude to write `headline` as a full "Never Forget ..." sentence
+        # when that reads naturally, so a hardcoded prefix here would
+        # double it up (e.g. "Never Forget It: Never Forget This Trick").
+        self.assertIn(f'"{self.cheatsheet["headline"]}"', prompt)
+        self.assertNotIn("Never Forget It:", prompt)
         self.assertIn(f"<code>\n{self.cheatsheet['code']}\n</code>", prompt)
         self.assertIn(self.cheatsheet["complexity"]["time"], prompt)
         self.assertIn(self.cheatsheet["complexity"]["space"], prompt)

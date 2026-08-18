@@ -1,7 +1,7 @@
 Create a polished light-mode technical cheat sheet.
 
 MAIN TITLE:
-"Never Forget It: {{headline}}"
+"{{headline}}"
 
 PROBLEM TITLE:
 "{{problem_number}}. {{problem_title}} ({{problem_difficulty}})"
