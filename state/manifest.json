@@ -198,5 +198,34 @@
       "Array",
       "Hash Table"
     ]
+  },
+  "2026-08-19:1386": {
+    "content_hash": "3779e40075301c49",
+    "date": "2026-08-19",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1CR7lPMc8yKFFBmzynI2E1hXThdzk1af5",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Disjoint LEFT/RIGHT Block Trick",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1baVSU_v4pTyiwoA5A4dBx_7DLUilo6rF",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1386,
+    "problem_url": "https://leetcode.com/problems/cinema-seat-allocation/",
+    "prompt_version": "v1",
+    "slug": "cinema-seat-allocation",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 21,
+    "title": "Cinema Seat Allocation",
+    "topics": [
+      "Array",
+      "Hash Table",
+      "Greedy",
+      "Bit Manipulation"
+    ]
   }
 }
