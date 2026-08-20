@@ -157,29 +157,53 @@ authenticate headlessly, the same way an API key would.
 
 ## 3b. Telegram (Bot API — optional, no OAuth)
 
-Delivers the same PNG (plus problem + solution caption) to your own DMs or a
-channel. Much lighter than Drive: no OAuth, no service account, just a bot
-token as a bearer credential.
+Delivers the same PNG (plus problem + solution caption) to a Telegram
+channel (recommended, so others can follow along and discuss) or your own
+DMs. Much lighter than Drive: no OAuth, no service account, just a bot
+token as a bearer credential. `src/storage/telegram.py` doesn't care which
+kind of chat it's sending to — it just POSTs to whatever `TELEGRAM_CHAT_ID`
+resolves to, so switching between a channel and DMs later is a config-only
+change, no code edits.
 
 1. Open a chat with [`@BotFather`](https://t.me/BotFather) on Telegram and
    send `/newbot`. Follow the prompts (name, username); it replies with a
    token that looks like `123456:ABC-...`. This is `TELEGRAM_BOT_TOKEN`.
-2. Get a chat ID:
-   - **Your own DMs**: send any message to your new bot, then visit
+2. Create the channel (skip this if you're using your own DMs instead):
+   - In Telegram, create a new **Channel**, give it a title and description
+     (e.g. "LeetCode Daily — Never Forget" — a daily solved-and-explained
+     cheat sheet, open for discussion), and set it public or private as you
+     prefer.
+   - If you want people to be able to comment/discuss under each post,
+     accept Telegram's prompt to link (or create) a discussion group — a
+     bare channel is broadcast-only, comments need the linked group.
+   - Add your bot as an **admin** of the channel (Channel Info → Administrators
+     → Add Admin). Regular membership isn't enough — only admins can post.
+3. Get a chat ID:
+   - **A channel**: post any message in the channel, then visit
      `https://api.telegram.org/bot<TOKEN>/getUpdates` in a browser and read
-     `result[0].message.chat.id` from the JSON.
-   - **A channel**: add the bot as an admin of the channel, post any
-     message, then hit the same `getUpdates` URL — the channel's ID looks
-     like `-1001234567890`.
-3. Test locally (put both values in `.env`, or `export` them):
+     `result[...].channel_post.chat.id` from the JSON — it looks like
+     `-1001234567890`.
+   - **Your own DMs** (alternative to a channel): send any message to your
+     new bot, then visit the same `getUpdates` URL and read
+     `result[0].message.chat.id` instead.
+4. Test locally (put both values in `.env`, or `export` them):
    ```bash
    export TELEGRAM_BOT_TOKEN=<token from step 1>
-   export TELEGRAM_CHAT_ID=<chat id from step 2>
+   export TELEGRAM_CHAT_ID=<chat id from step 3>
    python -m src.main --problem-slug two-sum --force   # sends to Telegram too
    ```
-4. Set `telegram.enabled: false` in `config/settings.yaml` if you only want
+5. Set `telegram.enabled: false` in `config/settings.yaml` if you only want
    the Drive archive and not the Telegram send — a disabled Telegram stage
    is a no-op, not a failure.
+6. If you also enable `linkedin.telegram_prompt.enabled` (Path A, see 3c
+   below), be aware that a channel with **anonymous admins** turned on can
+   make the "Post now / Later" inline-button tap unreliable — the callback
+   can arrive without a resolvable chat/user (see `send_linkedin_prompt()`'s
+   docstring in `src/storage/telegram.py`). Either turn off anonymous admin
+   rights for the bot/yourself in the channel's admin settings, or test the
+   buttons for real before relying on them, or leave
+   `linkedin.telegram_prompt.enabled: false` and use the manual
+   `/post-linkedin` command instead (Path B, unaffected by this).
 
 ## 3c. LinkedIn (Posts API — optional)
 
@@ -324,7 +348,7 @@ secret. Add:
 | `GOOGLE_OAUTH_REFRESH_TOKEN` | printed by `scripts/authorize_google_drive.py` in step 3.6 |
 | `GOOGLE_DRIVE_FOLDER_ID` | the folder ID from step 3.5 |
 | `TELEGRAM_BOT_TOKEN` | from step 3b.1 |
-| `TELEGRAM_CHAT_ID` | from step 3b.2 |
+| `TELEGRAM_CHAT_ID` | from step 3b.3 |
 | `OPENAI_API_KEY` | from step 3d.1 — only needed if you use the optional OpenAI renderer |
 
 Never put any of these in `config/settings.yaml`, `CLAUDE.md`, `README.md`,
