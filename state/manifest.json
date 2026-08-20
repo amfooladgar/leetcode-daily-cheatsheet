@@ -227,5 +227,32 @@
       "Greedy",
       "Bit Manipulation"
     ]
+  },
+  "2026-08-20:3069": {
+    "content_hash": "02e7a9e9f34e85ec",
+    "date": "2026-08-20",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "15SibOXKU8gA3JlheE5sZy-ejs5FOnExB",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Last-Element Comparison",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 3069,
+    "problem_url": "https://leetcode.com/problems/distribute-elements-into-two-arrays-i/",
+    "prompt_version": "v1",
+    "slug": "distribute-elements-into-two-arrays-i",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 10,
+    "title": "Distribute Elements Into Two Arrays I",
+    "topics": [
+      "Array",
+      "Simulation"
+    ]
   }
 }
