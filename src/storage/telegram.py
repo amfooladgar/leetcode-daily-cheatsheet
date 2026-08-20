@@ -346,9 +346,25 @@ def await_button_decision(
             if data not in (now_data, later_data):
                 continue
 
-            _answer_callback_query(bot_token, callback["id"])
-            _clear_keyboard(bot_token, callback_chat_id, callback["message"]["message_id"])
+            # Best-effort UX only (stops the tap's loading spinner, then
+            # removes the buttons) -- a failure here (e.g. Telegram's "query
+            # is too old" if our answer round-trip lagged) must never lose
+            # the decision the tap already told us. Losing it here would
+            # also leave the keyboard visible with nothing left listening,
+            # so a user retapping it gets silence -- worse than a stuck
+            # spinner.
+            try:
+                _answer_callback_query(bot_token, callback["id"])
+            except TelegramSendError as exc:
+                log.warning("answerCallbackQuery failed (decision still honored): %s", exc)
+            try:
+                _clear_keyboard(bot_token, callback_chat_id, callback["message"]["message_id"])
+            except TelegramSendError as exc:
+                log.warning("editMessageReplyMarkup failed (decision still honored): %s", exc)
             return "now" if data == now_data else "later"
 
-    _clear_keyboard(bot_token, configured_chat_id, prompt_message_id)
+    try:
+        _clear_keyboard(bot_token, configured_chat_id, prompt_message_id)
+    except TelegramSendError as exc:
+        log.warning("editMessageReplyMarkup failed (timeout decision still honored): %s", exc)
     return None

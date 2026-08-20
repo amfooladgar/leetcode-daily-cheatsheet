@@ -130,6 +130,43 @@ class TelegramLinkedInPromptTests(unittest.TestCase):
             json.loads(edit_calls[0].kwargs["data"]["reply_markup"]), {"inline_keyboard": []}
         )
 
+    def test_await_button_decision_honors_tap_despite_stale_callback_answer(self):
+        # Regression: a real Telegram quirk where answerCallbackQuery fails
+        # with "query is too old ... or query ID is invalid" even for a
+        # freshly-received tap must NOT lose the decision the tap already
+        # gave us, and must still clear the keyboard -- otherwise the
+        # buttons stay visible with the run already exited, so a retap goes
+        # nowhere (looks like the buttons "aren't responding").
+        get_response = _ok_response([_callback_update(1, "linkedin_now:2026-08-14:1")])
+
+        def post_side_effect(url, **kwargs):
+            if "answerCallbackQuery" in url:
+                resp = mock.Mock(ok=False, status_code=400, text='{"ok": false}')
+                resp.json.return_value = {
+                    "ok": False,
+                    "description": "Bad Request: query is too old and response "
+                    "timeout expired or query ID is invalid",
+                }
+                return resp
+            return _ok_response({})
+
+        with (
+            mock.patch("requests.get", return_value=get_response),
+            mock.patch("requests.post", side_effect=post_side_effect) as mock_post,
+        ):
+            decision = await_button_decision(
+                since_update_id=0,
+                date="2026-08-14",
+                problem_number=1,
+                timeout_seconds=5,
+                poll_interval_seconds=1,
+                prompt_message_id=999,
+            )
+
+        self.assertEqual(decision, "now")
+        edit_calls = [c for c in mock_post.call_args_list if "editMessageReplyMarkup" in c.args[0]]
+        self.assertEqual(len(edit_calls), 1)
+
     def test_await_button_decision_ignores_other_date_problem_and_times_out(self):
         # A stale tap for a different date -- must be ignored, not treated
         # as this run's answer.
