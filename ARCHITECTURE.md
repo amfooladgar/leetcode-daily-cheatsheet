@@ -724,7 +724,13 @@ flowchart TD
   `schemas/linkedin_caption.schema.json`, run through the same
   `run_stage()`/`clamp_to_schema()`/`validate_schema()` pipeline as
   solve/verify/compress), sends it to Telegram, and posts an inline
-  "Post now" / "Later" keyboard (`send_linkedin_prompt()`). It then
+  "Post now" / "Later" keyboard (`send_linkedin_prompt()`). These
+  owner-only, actionable messages go to `TELEGRAM_OWNER_CHAT_ID` (your own
+  DM with the bot), a chat ID kept separate from the broadcast
+  `TELEGRAM_CHAT_ID` the cheat sheet photo itself was just sent to (see
+  `src/storage/telegram.py`'s module docstring and docs/SETUP.md step 3b)
+  — so approval prompts never land in a public channel's subscriber feed.
+  It then
   long-polls (`await_button_decision()`, bounded by
   `linkedin.telegram_prompt.decision_timeout_seconds`) for a tap. The
   default on **no response is always "save the caption as a Drive draft,"

@@ -160,15 +160,24 @@ authenticate headlessly, the same way an API key would.
 Delivers the same PNG (plus problem + solution caption) to a Telegram
 channel (recommended, so others can follow along and discuss) or your own
 DMs. Much lighter than Drive: no OAuth, no service account, just a bot
-token as a bearer credential. `src/storage/telegram.py` doesn't care which
-kind of chat it's sending to — it just POSTs to whatever `TELEGRAM_CHAT_ID`
-resolves to, so switching between a channel and DMs later is a config-only
-change, no code edits.
+token as a bearer credential.
+
+One bot, two chat IDs. `TELEGRAM_CHAT_ID` is the broadcast destination
+(channel or DMs) that gets the daily cheat sheet photo — `src/storage/
+telegram.py` doesn't care which kind of chat it is, it just POSTs to
+whatever `TELEGRAM_CHAT_ID` resolves to. `TELEGRAM_OWNER_CHAT_ID` is a
+second, separate chat ID — always your own DM with the bot — used only for
+owner-only prompts (the LinkedIn "Post now / Later" approval buttons from
+Path A, see 3c below). Keeping them apart means those approval prompts
+never post into a channel full of subscribers. If you're broadcasting to
+your own DMs anyway, both variables end up pointing at the same chat; if
+you're broadcasting to a channel, they're necessarily different.
 
 1. Open a chat with [`@BotFather`](https://t.me/BotFather) on Telegram and
    send `/newbot`. Follow the prompts (name, username); it replies with a
    token that looks like `123456:ABC-...`. This is `TELEGRAM_BOT_TOKEN`.
-2. Create the channel (skip this if you're using your own DMs instead):
+2. Create the channel (skip this if you're broadcasting to your own DMs
+   instead):
    - In Telegram, create a new **Channel**, give it a title and description
      (e.g. "LeetCode Daily — Never Forget" — a daily solved-and-explained
      cheat sheet, open for discussion), and set it public or private as you
@@ -178,32 +187,38 @@ change, no code edits.
      bare channel is broadcast-only, comments need the linked group.
    - Add your bot as an **admin** of the channel (Channel Info → Administrators
      → Add Admin). Regular membership isn't enough — only admins can post.
-3. Get a chat ID:
+3. Get the broadcast chat ID (`TELEGRAM_CHAT_ID`):
    - **A channel**: post any message in the channel, then visit
      `https://api.telegram.org/bot<TOKEN>/getUpdates` in a browser and read
      `result[...].channel_post.chat.id` from the JSON — it looks like
      `-1001234567890`.
    - **Your own DMs** (alternative to a channel): send any message to your
      new bot, then visit the same `getUpdates` URL and read
-     `result[0].message.chat.id` instead.
-4. Test locally (put both values in `.env`, or `export` them):
+     `result[0].message.chat.id` instead. This same value can be reused
+     directly as `TELEGRAM_OWNER_CHAT_ID` in the next step.
+4. Get the owner chat ID (`TELEGRAM_OWNER_CHAT_ID`) — only needed if you
+   plan to enable `linkedin.telegram_prompt.enabled` (Path A, see 3c
+   below); skip this if you're leaving Path A off and using the manual
+   `/post-linkedin` command (Path B) instead. Send any message to your bot
+   in a **direct DM** (not the channel), then visit the same `getUpdates`
+   URL and read `result[0].message.chat.id`.
+5. Test locally (put all three values in `.env`, or `export` them):
    ```bash
    export TELEGRAM_BOT_TOKEN=<token from step 1>
    export TELEGRAM_CHAT_ID=<chat id from step 3>
+   export TELEGRAM_OWNER_CHAT_ID=<chat id from step 4>
    python -m src.main --problem-slug two-sum --force   # sends to Telegram too
    ```
-5. Set `telegram.enabled: false` in `config/settings.yaml` if you only want
+6. Set `telegram.enabled: false` in `config/settings.yaml` if you only want
    the Drive archive and not the Telegram send — a disabled Telegram stage
    is a no-op, not a failure.
-6. If you also enable `linkedin.telegram_prompt.enabled` (Path A, see 3c
-   below), be aware that a channel with **anonymous admins** turned on can
-   make the "Post now / Later" inline-button tap unreliable — the callback
-   can arrive without a resolvable chat/user (see `send_linkedin_prompt()`'s
-   docstring in `src/storage/telegram.py`). Either turn off anonymous admin
-   rights for the bot/yourself in the channel's admin settings, or test the
-   buttons for real before relying on them, or leave
-   `linkedin.telegram_prompt.enabled: false` and use the manual
-   `/post-linkedin` command instead (Path B, unaffected by this).
+7. `send_linkedin_prompt()`'s docstring in `src/storage/telegram.py` notes
+   that Telegram channels with **anonymous admins** turned on can make
+   inline-button taps unreliable (the callback can arrive without a
+   resolvable chat/user). Because Path A always targets
+   `TELEGRAM_OWNER_CHAT_ID` (your own DM, per step 4), this shouldn't come
+   up in practice — it only matters if you deliberately point
+   `TELEGRAM_OWNER_CHAT_ID` at a group or channel instead of a personal DM.
 
 ## 3c. LinkedIn (Posts API — optional)
 
@@ -349,6 +364,7 @@ secret. Add:
 | `GOOGLE_DRIVE_FOLDER_ID` | the folder ID from step 3.5 |
 | `TELEGRAM_BOT_TOKEN` | from step 3b.1 |
 | `TELEGRAM_CHAT_ID` | from step 3b.3 |
+| `TELEGRAM_OWNER_CHAT_ID` | from step 3b.4 — only needed for `linkedin.telegram_prompt.enabled` (Path A) |
 | `OPENAI_API_KEY` | from step 3d.1 — only needed if you use the optional OpenAI renderer |
 
 Never put any of these in `config/settings.yaml`, `CLAUDE.md`, `README.md`,

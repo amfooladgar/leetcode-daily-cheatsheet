@@ -564,9 +564,14 @@ def run(args: argparse.Namespace) -> int:
     # --- LINKEDIN (Path A: automatic Telegram now/later prompt -- see
     # ARCHITECTURE.md "LinkedIn posting". Requires BOTH linkedin.enabled and
     # linkedin.telegram_prompt.enabled (both false by default) plus a
-    # successful Telegram send above (telegram_ok), since there is no photo
-    # message to reply to otherwise. This block can make the job wait up to
-    # linkedin.telegram_prompt.decision_timeout_seconds for a button tap --
+    # successful Telegram send above (telegram_ok), so we don't prompt for a
+    # LinkedIn post when the cheat sheet itself failed to go out. The
+    # caption/prompt/confirmation messages below go to TELEGRAM_OWNER_CHAT_ID
+    # (a separate, owner-only chat -- see src/storage/telegram.py's module
+    # docstring), not the broadcast TELEGRAM_CHAT_ID above, so they can't
+    # reply-thread off the broadcast photo message. This block can make the
+    # job wait up to linkedin.telegram_prompt.decision_timeout_seconds for
+    # a button tap --
     # see docs/OPERATIONS.md for the tradeoff of raising it. Wrapped in a
     # broad except so a caption-drafting or Telegram-polling failure here
     # never flips a successful Drive+Telegram run's exit code -- same
@@ -599,9 +604,7 @@ def run(args: argparse.Namespace) -> int:
             caption_text = _linkedin_caption(cheatsheet, problem, caption_result.structured_output)
             (stage_dir / "linkedin_caption.txt").write_text(caption_text)
 
-            caption_message = send_message(
-                text=caption_text, reply_to_message_id=telegram_message_id
-            )
+            caption_message = send_message(text=caption_text)
             since_update_id = get_update_offset()
             prompt_message = send_linkedin_prompt(
                 text="Post this to LinkedIn now, or later?",

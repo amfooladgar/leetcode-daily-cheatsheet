@@ -1,4 +1,4 @@
-"""Telegram delivery via the Bot API (see docs/SETUP.md step 3.5 and
+"""Telegram delivery via the Bot API (see docs/SETUP.md step 3b and
 ARCHITECTURE.md "Failure policy" for how a Telegram failure is treated as
 independent of, and non-blocking for, the Drive upload).
 
@@ -7,6 +7,15 @@ plain bearer credential and a single `POST .../sendPhoto` multipart request
 delivers the rendered PNG with a caption (headline + LeetCode link) straight
 to a chat or channel. See src/storage/google_drive.py for the module this
 one is intentionally shaped to match.
+
+One bot, two destinations: `send_cheatsheet()` broadcasts to
+TELEGRAM_CHAT_ID (the public channel or DM subscribers see), while
+send_message()/send_linkedin_prompt()/get_update_offset()/
+await_button_decision() -- the LinkedIn Path A approval flow, see
+ARCHITECTURE.md "LinkedIn posting" -- talk to TELEGRAM_OWNER_CHAT_ID (your
+own DM with the bot) instead. Keeping these separate means "approve this
+LinkedIn post?" prompts and their inline buttons never leak into a channel
+full of subscribers.
 """
 
 from __future__ import annotations
@@ -29,6 +38,7 @@ _SEND_TIMEOUT_SECONDS = 30
 _CAPTION_MAX_CHARS = 1024
 
 _ENV_VARS = ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID")
+_OWNER_ENV_VARS = ("TELEGRAM_BOT_TOKEN", "TELEGRAM_OWNER_CHAT_ID")
 
 
 class TelegramSendError(RuntimeError):
@@ -51,13 +61,32 @@ def _load_credentials() -> tuple[str, str]:
     missing = [name for name, value in values.items() if not value]
     if missing:
         raise TelegramSendError(
-            f"{', '.join(missing)} not set. See docs/SETUP.md step 3.5 -- "
+            f"{', '.join(missing)} not set. See docs/SETUP.md step 3b -- "
             "message @BotFather on Telegram to create a bot and get "
             "TELEGRAM_BOT_TOKEN, then message the bot (or add it to a "
             "channel) and hit https://api.telegram.org/bot<TOKEN>/getUpdates "
             "to read back TELEGRAM_CHAT_ID."
         )
     return values["TELEGRAM_BOT_TOKEN"], values["TELEGRAM_CHAT_ID"]
+
+
+def _load_owner_credentials() -> tuple[str, str]:
+    """Like _load_credentials(), but for TELEGRAM_OWNER_CHAT_ID -- the
+    owner's own DM with the bot, used for the LinkedIn Path A approval
+    flow so those prompts never post to the (possibly public)
+    TELEGRAM_CHAT_ID channel. See the module docstring."""
+    values = {name: os.environ.get(name) for name in _OWNER_ENV_VARS}
+    missing = [name for name, value in values.items() if not value]
+    if missing:
+        raise TelegramSendError(
+            f"{', '.join(missing)} not set. See docs/SETUP.md step 3b -- "
+            "message @BotFather on Telegram to create a bot and get "
+            "TELEGRAM_BOT_TOKEN, then send the bot a DM and hit "
+            "https://api.telegram.org/bot<TOKEN>/getUpdates to read back "
+            "TELEGRAM_OWNER_CHAT_ID (kept separate from TELEGRAM_CHAT_ID so "
+            "owner-only prompts never post to a public channel)."
+        )
+    return values["TELEGRAM_BOT_TOKEN"], values["TELEGRAM_OWNER_CHAT_ID"]
 
 
 def _parse_result(response, method: str):
@@ -138,12 +167,16 @@ def send_cheatsheet(*, image_path: Path, caption: str) -> SendResult:
 
 
 def send_message(*, text: str, reply_to_message_id: int | None = None) -> SendResult:
-    """Sends a plain text message to the configured chat -- used by the
-    LinkedIn Path A flow (see src/main.py) to post the drafted caption and
-    later confirmations alongside the already-sent cheat sheet photo."""
+    """Sends a plain text message to the owner's chat (TELEGRAM_OWNER_CHAT_ID)
+    -- used by the LinkedIn Path A flow (see src/main.py) to post the drafted
+    caption and later confirmations. Deliberately not the broadcast
+    TELEGRAM_CHAT_ID: these are owner-only actionable messages, not content
+    for channel subscribers (see module docstring). `reply_to_message_id`
+    must therefore reference another message already sent to this same
+    owner chat, never the broadcast send_cheatsheet() message."""
     import requests
 
-    bot_token, chat_id = _load_credentials()
+    bot_token, chat_id = _load_owner_credentials()
     url = f"{_API_BASE}/bot{bot_token}/sendMessage"
     data = {"chat_id": chat_id, "text": text}
     if reply_to_message_id is not None:
@@ -165,20 +198,21 @@ def send_linkedin_prompt(
     problem_number: int,
     reply_to_message_id: int | None = None,
 ) -> SendResult:
-    """Sends `text` with a "Post now" / "Later" inline keyboard, encoding
-    `date`/`problem_number` into each button's callback_data so
-    await_button_decision() can match the tap back to this specific run and
-    ignore stale taps from a previous day.
+    """Sends `text` with a "Post now" / "Later" inline keyboard to the
+    owner's chat (TELEGRAM_OWNER_CHAT_ID), encoding `date`/`problem_number`
+    into each button's callback_data so await_button_decision() can match
+    the tap back to this specific run and ignore stale taps from a
+    previous day.
 
     Note: Telegram channels can make inline-button taps behave oddly under
     anonymous-admin mode (the tap's callback_query can arrive without a
-    resolvable chat/user in some client versions). For this specific
-    feature, prefer using the bot's direct-message chat with yourself (the
-    common case per docs/SETUP.md step 3b) rather than a channel.
+    resolvable chat/user in some client versions). TELEGRAM_OWNER_CHAT_ID
+    is meant to be your own DM with the bot specifically to avoid this --
+    if you point it at a channel or group instead, the same caveat applies.
     """
     import requests
 
-    bot_token, chat_id = _load_credentials()
+    bot_token, chat_id = _load_owner_credentials()
     url = f"{_API_BASE}/bot{bot_token}/sendMessage"
     reply_markup = {
         "inline_keyboard": [
@@ -204,10 +238,13 @@ def send_linkedin_prompt(
 def get_update_offset() -> int:
     """Returns the current highest update_id seen by this bot (0 if none),
     so a subsequent await_button_decision() only reacts to taps that happen
-    after this point. Call this BEFORE send_linkedin_prompt()."""
+    after this point. Call this BEFORE send_linkedin_prompt(). Uses
+    TELEGRAM_OWNER_CHAT_ID's credentials (bot token only, here) so a
+    misconfigured owner chat fails with the right error before any
+    Telegram calls happen, rather than surfacing later."""
     import requests
 
-    bot_token, _ = _load_credentials()
+    bot_token, _ = _load_owner_credentials()
     url = f"{_API_BASE}/bot{bot_token}/getUpdates"
     try:
         response = requests.get(
@@ -274,7 +311,7 @@ def await_button_decision(
     cleared via editMessageReplyMarkup before returning, so stale buttons
     from an already-answered or already-expired run can't be tapped again.
     """
-    bot_token, configured_chat_id = _load_credentials()
+    bot_token, configured_chat_id = _load_owner_credentials()
 
     import requests
 
