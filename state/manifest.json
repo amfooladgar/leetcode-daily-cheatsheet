@@ -254,5 +254,36 @@
       "Array",
       "Simulation"
     ]
+  },
+  "2026-08-21:3116": {
+    "content_hash": "6cac7e9b11d3de3f",
+    "date": "2026-08-21",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1W8jcsWpU3HypkKjw7u9eWi5GdEcxCkNY",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Binary Search + Inclusion-Exclusion on LCM",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1lKHYqtTKfD0I6MsOlvKEHpKRY1i94Z2B",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3116,
+    "problem_url": "https://leetcode.com/problems/kth-smallest-amount-with-single-denomination-combination/",
+    "prompt_version": "v1",
+    "slug": "kth-smallest-amount-with-single-denomination-combination",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 11,
+    "title": "Kth Smallest Amount With Single Denomination Combination",
+    "topics": [
+      "Array",
+      "Math",
+      "Binary Search",
+      "Bit Manipulation",
+      "Combinatorics",
+      "Number Theory"
+    ]
   }
 }
