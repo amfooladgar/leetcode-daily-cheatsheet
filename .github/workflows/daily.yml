@@ -84,6 +84,10 @@ jobs:
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Owner-only DM used by Path A's LinkedIn now/later prompt --
+          # separate from TELEGRAM_CHAT_ID (the public broadcast channel)
+          # so those prompts never post there. See docs/SETUP.md step 3b.
+          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
           # Only read by Path A's "post now" branch when a human taps the
           # Telegram button within decision_timeout_seconds (see
           # ARCHITECTURE.md "LinkedIn posting"); the caption-draft and
