@@ -285,5 +285,31 @@
       "Combinatorics",
       "Number Theory"
     ]
+  },
+  "2026-08-22:3622": {
+    "content_hash": "a8b25ac70ae54c19",
+    "date": "2026-08-22",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1G2ykpkiMGuYrTrSXBNzol5K6c4AbgiTu",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget Digit Sum Plus Product",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1ImMJpLytDxG4RzEkJp5JWq0WE9C04qUo",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3622,
+    "problem_url": "https://leetcode.com/problems/check-divisibility-by-digit-sum-and-product/",
+    "prompt_version": "v1",
+    "slug": "check-divisibility-by-digit-sum-and-product",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 12,
+    "title": "Check Divisibility by Digit Sum and Product",
+    "topics": [
+      "Math"
+    ]
   }
 }
