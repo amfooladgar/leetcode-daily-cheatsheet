@@ -479,71 +479,30 @@ tokens are spent, not just before the OpenAI request itself.
    to treat that content as untrusted data, not instructions — the
    prompt-injection boundary the content contract requires.
 3. Calls the OpenAI Image API (`gpt-image-2-2026-04-21`, `1536x1024`,
-   `quality: high` by default), decodes and validates the returned
-   base64 PNG, and writes it atomically to
-   `output/<date>/<problem>/cheatsheet-openai-background.png`.
+   `quality: high` by default) and decodes and validates the returned
+   base64 PNG.
 4. Retries only `RateLimitError` / `APIConnectionError` /
    `InternalServerError` with the existing `src/utils/retry.py` capped
    backoff helper (reused as-is, no jitter — see that module's docstring).
    Auth/permission/validation errors (`AuthenticationError`,
    `PermissionDeniedError`, `BadRequestError`, `NotFoundError`) never
    retry.
-5. Hands off to `src/rendering/card_compositor.py` to overlay the *exact*
-   `assets/contact-card.png` — the model is never asked to draw the card.
-   Two live smoke tests showed GPT Image does not reliably honor a
-   requested reservation size, even a padded one worded as a minimum (see
-   CHANGELOG.md for both runs), so the *prompt* request and the *actual
-   placement* are handled by two different, independent mechanisms rather
-   than one trusted number:
-   - **Prompt-side (a nudge, not a guarantee).** The reserved region
-     requested in the prompt is sized via
-     `card_compositor.compute_reserved_region()`, which pads the card's
-     canvas-fit box (`compute_card_box()`) by
-     `image_generation.openai.card_reservation_safety_margin` (default
-     0.2 / 20%), and `prompts/openai/v2/cheatsheet.txt` states it as a
-     minimum ("err on the side of larger"). This alone was insufficient in
-     both live tests.
-   - **Compositor-side (the actual guarantee).** Before placing the card,
-     `card_compositor.detect_blank_region()` scans the *generated*
-     background itself near the configured corner and returns the real
-     blank rectangle found there (capped at the padded reservation size).
-     The card is then fit to *that* measured space (`composite_card()`'s
-     `available_width`/`available_height` params), not the requested size.
-     If the detected space would force the card below
-     `image_generation.openai.card_min_detected_scale` (default 0.4) of
-     its native size, compositing fails loudly instead of publishing an
-     illegible or overlapping card. Three live smoke tests (see
-     CHANGELOG.md) drove the actual algorithm:
-     - Height and width are each measured across several probe
-       lines, taking the *minimum* extent found, so a genuine content
-       intrusion on any one line can only shrink the result, never inflate
-       it.
-     - A short (`max_gap`, default 4px) non-blank interruption on a probe
-       line is tolerated and skipped over if real blank space resumes
-       right after it — a card can safely sit over a thin panel-border
-       line; only a sustained non-blank run counts as real content.
-     - Width is probed only within `min(max_height, detected_height)`, not
-       the full requested window — a panel positioned beyond the height
-       the card will actually occupy must not zero out width for no real
-       reason.
-     - The reference "blank" color is the configured `card_clear_hex`,
-       deliberately not sampled from the corner pixel itself — if content
-       extends all the way into the corner, that pixel is content, not
-       background, and self-sampling would silently treat that content's
-       color as blank.
-     `image_generation.openai.card_margin_right`/`card_margin_bottom`
-     (default 45/35, widened from an initial 25/20) also give rounded
-     panel corners more room to clear the card's footprint in the first
-     place.
-
-   Either way, the compositor still clears the destination rect, preserves
-   the card's alpha channel and aspect ratio (proportional downscale only,
-   never crop or recolor), clamps placement to the canvas, and writes the
-   branded result atomically to `cheatsheet-openai-final.png` — a
-   separate, predictable name from the existing renderer's
-   `cheatsheet.png`, so neither provider can overwrite the other's output.
-   If compositing fails, the background is kept for diagnosis and the
-   final file is never written.
+5. Writes the decoded bytes to `cheatsheet-openai-background.png`
+   immediately (a billed request, so every image OpenAI actually returns
+   must survive on disk no matter what fails afterward), then checks that
+   `assets/contact-card.png`'s hash is unchanged since step 2 (the
+   send-as-reference-image call in `_generate_from_reference()` never
+   opens the card for writing, so a mismatch here should be unreachable —
+   this is the explicit, tested guarantee that the source asset was never
+   touched) and that the decoded image's actual dimensions match
+   `image_generation.openai.{width,height}`. Either check failing raises
+   loudly and keeps the background file for diagnosis rather than
+   publishing it. There is no separate compositing step — the model draws
+   the card directly into the generated image (see the v3 description
+   above), so the same bytes are written again as
+   `cheatsheet-openai-final.png`, a separate, predictable name from the
+   existing renderer's `cheatsheet.png` so neither provider can overwrite
+   the other's output.
 
 **Fallback (`image_generation.fallback_to_existing`, default `true`).**
 Two call sites check this flag, both logging a warning and falling back to
@@ -555,7 +514,7 @@ factory (`OpenAIRenderError` from the actual render/composite call). Set
 with the reason recorded in `state/manifest.json`. Either way, an `openai`
 failure never damages or blocks the `existing` renderer's own path.
 
-**Tests** (`tests/test_openai_renderer.py`, `tests/test_card_compositor.py`,
+**Tests** (`tests/test_openai_renderer.py`,
 `tests/test_image_provider_factory.py`) mock the OpenAI client entirely —
 no test spends real API credits, matching CLAUDE.md's testing rule.
 
