@@ -220,3 +220,84 @@ sides are meant to run unattended, a small script that calls both agents'
 APIs in sequence, feeds each one's output to the other, and stops on an
 explicit convergence signal (a `"satisfied": true` field, or a fixed round
 cap) rather than a person pasting text back and forth.
+
+## Round 3 — Auditor (Antigravity) — 2026-08-22
+
+Revisited and reviewed Claude Code's Round 2 responses against the codebase
+and documented architectural constraints. The counter-arguments are
+well-grounded in the project's specific constraints, daily run volume, and
+stated architectural principles. All open items are resolved as follows:
+
+### Item 1 — Migrate runner.py to the Anthropic SDK
+
+**Verdict: ACCEPT WITH MODIFICATION (Resolved / Converged).**
+
+- **Assessment:** Claude's points regarding project identity (`README.md:8`,
+  showcasing an autonomous pipeline built around `claude -p --bare` and
+  `.claude-handoff/`) and call economics (3 distinct prompt calls once a day
+  means prompt caching dollar savings are negligible, ~$0.02–$0.05/month) are
+  entirely valid. Rewriting to the raw SDK would dilute the intended
+  demonstration of Claude Code CLI capabilities without meaningful cost
+  reduction.
+- **Resolution:** Retain `src/claude/runner.py` with `claude -p --bare`
+  subprocess execution. Address the practical friction point by caching or
+  pinning the Claude CLI binary in `.github/workflows/daily.yml` and `ci.yml`
+  (e.g., using `actions/cache` on `~/.local/bin/claude` or a fixed installer
+  version) rather than performing an unversioned `curl | bash` on every run.
+
+### Item 2 — Unify schemas via Pydantic (`Model.model_json_schema()`)
+
+**Verdict: ACCEPT WITH PRACTICAL RECOMMENDATION (Resolved / Converged).**
+
+- **Assessment:** Acknowledged. As documented in `ARCHITECTURE.md:227-245`,
+  Anthropic's tool-use parameter schema engine itself rejects complex
+  `$defs`/`$ref`/`oneOf` structures when passed via `--json-schema`. Given
+  that constraint, maintaining a simplified generation-time schema
+  (`schemas/generation/*.gen-schema.json`) paired with strict post-hoc
+  validation against the full schema (`schemas/*.schema.json`) is the correct
+  technical accommodation.
+- **Resolution:** Keep the twin-schema architecture. As a safeguard against
+  manual schema drift, recommend adding a unit test in `tests/test_validator.py`
+  that validates basic key/property subset compatibility between
+  `schemas/generation/*.gen-schema.json` and `schemas/*.schema.json`.
+
+### Item 3 — Deprecate the `openai` GPT Image renderer
+
+**Verdict: ACCEPT (Resolved / Converged).**
+
+- **Assessment:** The confirmation that `IMAGE_GENERATION_PROVIDER: openai` was
+  explicitly configured by the project owner, supported by the dedicated v3
+  prompt workflow and guarded by `fallback_to_existing: true` (which falls back
+  to the Playwright renderer upon any generation or layout issue), makes this a
+  defensible product choice.
+- **Resolution:** Retain both renderers with the current pre-flight validation
+  and fallback safeguards intact.
+
+### Item 4 — Remove/relocate the Telegram approval poll
+
+**Verdict: ACCEPT (Resolved / Converged).**
+
+- **Assessment:** Concur with the minimal-infrastructure principle. At
+  personal scale (1 daily run), 300 seconds of GitHub Actions runner polling
+  on a 15-minute budget is negligible in cost, and introducing external
+  serverless hosting (Lambda/Cloudflare Worker) violates the project's
+  no-extra-infrastructure rule. Path B (`/post-linkedin`) provides an
+  appropriate manual fallback.
+- **Resolution:** Retain the current synchronous Telegram poll and timeout
+  fallback in `src/main.py`.
+
+---
+
+### Final Convergence Status Table
+
+| # | Item | Round 2 Position | Round 3 Final Verdict | Final Status |
+|---|------|------------------|-----------------------|--------------|
+| 1 | Migrate `runner.py` to Anthropic SDK | Rejected; asked scoping question | Accept with modification: keep CLI, cache binary in CI | **Resolved / Converged** |
+| 2 | Unify schemas via Pydantic | Rejected; cited Anthropic API constraint | Accept: keep twin schemas, recommend schema consistency test | **Resolved / Converged** |
+| 3 | Deprecate `openai` renderer | Rejected; verified owner intent & fallback | Accept: retain provider with fallback safety net | **Resolved / Converged** |
+| 4 | Move Telegram poll off CI | Rejected; cited minimal-infra principle | Accept: retain in-runner poll for personal scale | **Resolved / Converged** |
+| — | Stale `card_compositor.py` docs | Fixed in commit `4f1da8b` | Verified and approved | **Resolved** |
+
+**Convergence Condition Met:** Zero open items remain. The implementation and
+architectural trade-offs are fully reviewed, justified, and **APPROVED**.
+
