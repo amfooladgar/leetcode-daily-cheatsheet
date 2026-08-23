@@ -311,5 +311,34 @@
     "topics": [
       "Math"
     ]
+  },
+  "2026-08-23:1927": {
+    "content_hash": "49251d713e4a733b",
+    "date": "2026-08-23",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "15YcsIEbub_zLJsBzDTMPLt3G2V3QKMMu",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget Bob's Mirror Pairing Forces One Outcome",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1BcMHkObuyVZhwKFVOERTaf_gUWGsDwc7",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1927,
+    "problem_url": "https://leetcode.com/problems/sum-game/",
+    "prompt_version": "v1",
+    "slug": "sum-game",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 13,
+    "title": "Sum Game",
+    "topics": [
+      "Math",
+      "String",
+      "Greedy",
+      "Game Theory"
+    ]
   }
 }
