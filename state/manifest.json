@@ -340,5 +340,37 @@
       "Greedy",
       "Game Theory"
     ]
+  },
+  "2026-08-24:1872": {
+    "content_hash": "72dfda3a9f47120e",
+    "date": "2026-08-24",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1HOdfoIHu67kcVRpPatNQpz1ewLp6FGtX",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Every Move Score Is a Prefix Sum",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1q8Zb5V5dT_Bg0v8JbF7tyWNog4rH6cCZ",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1872,
+    "problem_url": "https://leetcode.com/problems/stone-game-viii/",
+    "prompt_version": "v1",
+    "slug": "stone-game-viii",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 14,
+    "title": "Stone Game VIII",
+    "topics": [
+      "Array",
+      "Math",
+      "Dynamic Programming",
+      "Minimax",
+      "Prefix Sum",
+      "Game Theory",
+      "Zero-Sum Game"
+    ]
   }
 }
