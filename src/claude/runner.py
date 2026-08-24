@@ -67,6 +67,28 @@ def _load_schema_json(schema_filename: str) -> str:
     return path.read_text()
 
 
+def _summarize_failed_payload(stdout: str) -> str | None:
+    """Best-effort one-line summary of a failed stage's cost, terminal
+    reason, and any denied tool-use attempts. Returns None if stdout isn't
+    the JSON payload `claude -p` normally emits (nothing to summarize)."""
+    try:
+        payload = json.loads(stdout)
+    except json.JSONDecodeError:
+        return None
+    cost = payload.get("total_cost_usd")
+    reason = payload.get("terminal_reason") or payload.get("result")
+    denied = payload.get("permission_denials") or []
+    parts = []
+    if reason:
+        parts.append(f"terminal_reason={reason!r}")
+    if cost is not None:
+        parts.append(f"cost=${cost:.4f}")
+    if denied:
+        tools = ", ".join(sorted({d.get("tool_name", "?") for d in denied}))
+        parts.append(f"{len(denied)} denied tool-use attempt(s) ({tools})")
+    return "(" + ", ".join(parts) + ")" if parts else None
+
+
 def run_stage(
     *,
     stage: str,
@@ -104,6 +126,19 @@ def run_stage(
     ]
     # Empty string is a valid, deliberate value: pure reasoning, no tool use.
     cmd += ["--allowedTools", allowed_tools]
+    if not allowed_tools:
+        # --allowedTools "" only denies *permission* to use a tool -- the
+        # model's built-in Bash/Edit/Read/etc. roster is still listed as
+        # "available" by default, so a pure-reasoning stage would still see
+        # Bash and attempt it, burn a real (billed) turn on the denial, and
+        # sometimes repeat this until max_turns is exhausted with zero
+        # usable output (observed: a compress-stage run spent ~$0.07 across
+        # 4 denied Bash attempts trying to verify a character count, then
+        # failed outright). --tools "" removes the tool roster itself, so
+        # the model never perceives a tool as available and never attempts
+        # one -- see ARCHITECTURE.md "Why the prompts explicitly say 'no
+        # tool access'".
+        cmd += ["--tools", ""]
 
     log.info(
         "Running Claude stage '%s' (model=%s, prompt_version=%s)", stage, model, prompt_version
@@ -132,6 +167,15 @@ def run_stage(
         stderr = proc.stderr.strip() or "(empty)"
         stdout = proc.stdout.strip()
         detail = f"Stage '{stage}' exited {proc.returncode}.\n--- stderr ---\n{stderr}"
+        # stdout is usually still valid JSON even on failure (e.g. a
+        # max_turns exhaustion) -- pull out the cost/denial/reason fields so
+        # a burned-budget-for-nothing failure is diagnosable from the log
+        # line alone, without re-running and manually reading raw JSON.
+        summary = _summarize_failed_payload(stdout)
+        if summary:
+            detail = (
+                f"Stage '{stage}' exited {proc.returncode}. {summary}\n--- stderr ---\n{stderr}"
+            )
         if stdout:
             detail += f"\n--- stdout (first 4000 chars) ---\n{stdout[:4000]}"
         raise ClaudeStageError(detail)

@@ -4,6 +4,10 @@
 schedule:
   timezone: "America/New_York"
   target_hour: 9          # local hour the run must match to actually publish
+  slack_minutes: 90       # tolerance around target_hour:00 to absorb GitHub
+                           # Actions' scheduled-dispatch delay (routinely
+                           # 30-100+ min under load) -- see ARCHITECTURE.md
+                           # "Daylight saving time"
   cron_utc:                # both crons fire; src/main.py no-ops outside target_hour
     - "5 13 * * *"          # 09:05 ET during EDT (UTC-4)
     - "5 14 * * *"          # 09:05 ET during EST (UTC-5)

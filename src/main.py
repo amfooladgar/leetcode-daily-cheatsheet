@@ -102,17 +102,28 @@ def _resolve_image_provider(args: argparse.Namespace, settings: dict) -> str:
 def _schedule_gate(settings: dict) -> bool:
     """Returns True if this run should actually publish. Only applies to the
     unattended daily invocation (no --date/--problem-slug/--force/
-    --dry-run) — see ARCHITECTURE.md 'Daylight saving time'."""
+    --dry-run) — see ARCHITECTURE.md 'Daylight saving time'.
+
+    GitHub Actions' scheduled-workflow dispatch is best-effort and routinely
+    delayed tens of minutes under load, which can push the correct DST leg's
+    execution across the top of the target hour. An exact `now.hour ==
+    target_hour` match is therefore too strict — allow a slack window either
+    side of target_hour:00 so a delayed dispatch still publishes."""
     tz = ZoneInfo(settings["schedule"]["timezone"])
     now = dt.datetime.now(tz)
     target_hour = settings["schedule"]["target_hour"]
-    if now.hour != target_hour:
+    slack_minutes = settings["schedule"]["slack_minutes"]
+    target = now.replace(hour=target_hour, minute=0, second=0, microsecond=0)
+    delta_minutes = abs((now - target).total_seconds()) / 60
+    if delta_minutes > slack_minutes:
         log.info(
-            "Current %s time is %02d:%02d, not the configured target hour %02d:00 — "
-            "no-op (this is expected for the cron leg that isn't currently DST-correct).",
+            "Current %s time is %02d:%02d, outside the %d-minute slack window "
+            "around the configured target hour %02d:00 — no-op (this is expected "
+            "for the cron leg that isn't currently DST-correct).",
             settings["schedule"]["timezone"],
             now.hour,
             now.minute,
+            slack_minutes,
             target_hour,
         )
         return False

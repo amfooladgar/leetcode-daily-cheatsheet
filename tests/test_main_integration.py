@@ -468,5 +468,49 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         self.assertFalse(entry["telegram"])
 
 
+class ScheduleGateTests(unittest.TestCase):
+    """_schedule_gate must tolerate GitHub Actions' scheduled-dispatch delay
+    (routinely 30-100+ min under load) rather than requiring the wall clock
+    to land on the exact target hour -- see ARCHITECTURE.md 'Daylight
+    saving time'."""
+
+    def setUp(self):
+        self.settings = load_settings()
+
+    def _at(self, hour, minute):
+        import datetime as dt
+        from zoneinfo import ZoneInfo
+
+        tz = ZoneInfo(self.settings["schedule"]["timezone"])
+        return dt.datetime(2026, 8, 24, hour, minute, tzinfo=tz)
+
+    def test_exact_target_hour_passes(self):
+        from src.main import _schedule_gate
+
+        fixed_now = self._at(9, 5)
+        with mock.patch("src.main.dt.datetime") as mock_dt:
+            mock_dt.now.return_value = fixed_now
+            self.assertTrue(_schedule_gate(self.settings))
+
+    def test_delayed_dispatch_past_the_top_of_the_hour_still_passes(self):
+        # Regression: today's real failure -- the correct DST leg dispatched
+        # late enough that its execution ticked over from 09:xx to 10:00,
+        # and an exact-hour check no-op'd it.
+        from src.main import _schedule_gate
+
+        fixed_now = self._at(10, 0)
+        with mock.patch("src.main.dt.datetime") as mock_dt:
+            mock_dt.now.return_value = fixed_now
+            self.assertTrue(_schedule_gate(self.settings))
+
+    def test_outside_slack_window_still_no_ops(self):
+        from src.main import _schedule_gate
+
+        fixed_now = self._at(11, 45)
+        with mock.patch("src.main.dt.datetime") as mock_dt:
+            mock_dt.now.return_value = fixed_now
+            self.assertFalse(_schedule_gate(self.settings))
+
+
 if __name__ == "__main__":
     unittest.main()

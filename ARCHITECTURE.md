@@ -89,6 +89,26 @@ against the same failure mode recurring anywhere else, since a few
 recovered-from turns cost tokens but a hard stop at max-turns fails the
 whole run.
 
+The prompt wording alone did not fully fix it: on 2026-08-24 a `compress`
+run hit the same failure again — four separate attempts to shell out and
+verify a bullet's character count, each denied, before exhausting
+`max_turns` and failing outright, for a measured `total_cost_usd` of
+~$0.07 with zero usable output. The gap is that `--allowedTools ""` only
+denies *permission* to use a tool; the model's full built-in roster
+(Bash, Edit, Read, ...) is still listed as "available" by default via
+`--tools` (which defaults to the full set), so a pure-reasoning stage
+still perceives Bash as an option worth trying and pays for the attempt
+even though it can never succeed. `src/claude/runner.py`'s `run_stage()`
+now also passes `--tools ""` whenever `allowed_tools` is empty, which
+removes the tool roster itself rather than merely gating it — the model
+never sees a tool as available, so it never attempts one, closing the
+wasted-turn path at the config level instead of relying solely on the
+model reliably following the prompt's instruction not to try. `run_stage()`
+also parses a failed run's stdout (even on non-zero exit) to surface
+`total_cost_usd` / `terminal_reason` / any `permission_denials` inline in
+the raised `ClaudeStageError`, so a recurrence of this failure mode is
+diagnosable from the log line alone.
+
 The same root cause shows up in a second-order way: several schema fields
 carry a hard `maxLength` (e.g. `reasoning_panel.bullets[i]` at 120 chars,
 `headline` at 90) that Claude is expected to respect by estimation, exactly
@@ -342,10 +362,15 @@ step 3.
 GitHub Actions cron is UTC-only and America/New_York alternates between
 UTC-4 (EDT) and UTC-5 (EST). `daily.yml` schedules the job at **both**
 13:05 and 14:05 UTC every day; `src/main.py` checks the actual wall-clock
-hour in `America/New_York` via `zoneinfo` and no-ops if it isn't the
-configured `target_hour` (09:00 by default). Combined with the
-idempotency manifest, this guarantees exactly one publish per day
-regardless of DST.
+time in `America/New_York` via `zoneinfo` and no-ops if it falls outside a
+`slack_minutes` window (90 by default) around the configured `target_hour`
+(09:00 by default). The slack window — rather than an exact-hour match —
+exists because GitHub Actions' scheduled-workflow dispatch is best-effort
+and routinely delayed 30-100+ minutes under load; an exact match was
+observed to no-op the correct DST leg entirely on days where dispatch
+delay pushed its execution across the top of the target hour. Combined
+with the idempotency manifest, this guarantees exactly one publish per day
+regardless of DST or dispatch delay.
 
 ## Failure policy
 
