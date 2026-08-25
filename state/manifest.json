@@ -372,5 +372,32 @@
       "Game Theory",
       "Zero-Sum Game"
     ]
+  },
+  "2026-08-25:3718": {
+    "content_hash": "e2526f524b7bada8",
+    "date": "2026-08-25",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1BKovELdJSjnSFLosuA2O76W227dlx9Rg",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Filter to Multiples, Then Walk Up",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1ySTCOXx730-7-33rlGHDI35ckEzx_M5x",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3718,
+    "problem_url": "https://leetcode.com/problems/smallest-missing-multiple-of-k/",
+    "prompt_version": "v1",
+    "slug": "smallest-missing-multiple-of-k",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 15,
+    "title": "Smallest Missing Multiple of K",
+    "topics": [
+      "Array",
+      "Hash Table"
+    ]
   }
 }
