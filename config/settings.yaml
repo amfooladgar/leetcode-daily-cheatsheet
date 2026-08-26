@@ -89,18 +89,20 @@ contact_card:
   max_width_px: 210
 
 image_generation:
-  # Which renderer produces the published cheat sheet. "existing" (the
-  # deterministic HTML/CSS + Playwright renderer above) is the
-  # production-safe default -- see ARCHITECTURE.md "Optional OpenAI image
-  # renderer" for why "openai" is an explicit, non-default opt-in with a
-  # different dimension/QA contract. Resolution order: --image-provider CLI
+  # Which renderer produces the published cheat sheet. "openai" (GPT Image)
+  # is the current default -- see ARCHITECTURE.md "Optional OpenAI image
+  # renderer" for why. "existing" (the deterministic HTML/CSS + Playwright
+  # renderer above) remains the recommended choice whenever exact text,
+  # code, formulas, or byte-for-byte repeatability matter more than the
+  # GPT Image visual style. Resolution order: --image-provider CLI
   # flag > IMAGE_GENERATION_PROVIDER env var > this value.
   enabled: true
   provider: "openai"       # "existing" | "openai"
   # If the openai provider fails (config, API, decode, or compositing) and
   # this is true, fall back to the existing renderer with a logged warning
-  # instead of failing the run. Default false: an OpenAI failure should be
-  # visible, not silently masked.
+  # instead of failing the run. Default true: GPT Image output is
+  # non-deterministic and can misrender text/code/formulas, so a failure
+  # falls back rather than failing the whole run.
   fallback_to_existing: true
 
   existing:

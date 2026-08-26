@@ -20,14 +20,14 @@ Then:
 
 1. Read `output/<today's date>/<problem-number>/problem.json`,
    `solve.json`, `verify.json`, and `content.json` and summarize what was
-   fetched, what Codex decided, and whether verification passed on the
+   fetched, what Claude decided, and whether verification passed on the
    first attempt or needed a regeneration.
 2. Open `output/<today's date>/<problem-number>/cheatsheet.png` and
    describe what it looks like — is anything visually off (clipped text,
    an empty section, a section running into the contact card)?
 3. If anything looks wrong, say specifically which stage/file is the
    likely cause (e.g. "compress.md let intuition run long — see
-   prompts/Codex/v1/compress.md") rather than just re-running blindly.
+   prompts/claude/v1/compress.md") rather than just re-running blindly.
 
 Do not modify Drive, `state/manifest.json`, or push anything — this command
 is for local iteration only. See docs/OPERATIONS.md for the production

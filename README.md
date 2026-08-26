@@ -4,6 +4,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Telegram](https://img.shields.io/badge/Telegram-join%20channel-26A5E4.svg?logo=telegram&logoColor=white)](https://t.me/+ZKB3t6LCaFk2NDFh)
 
 An automated end-to-end pipeline that reads each morning's **LeetCode Daily Challenge**, solves and adversarially verifies it using **Claude Code (`claude -p --bare`)**, executes sandboxed example tests, and renders a precise, "never-forget-it" visual cheat sheet (sized for a LinkedIn portrait 4:5 post) archived directly to **Google Drive** and **Telegram**.
 
@@ -55,8 +56,8 @@ flowchart TD
 - **First-Principles Problem Solving**: Generates solutions strictly from problem statements and constraints — never scrapes or paraphrases copyrighted solution write-ups.
 - **Adversarial Verification & Testing**: Performs a two-pass verification for edge cases and time/space complexity, running the generated Python code against official examples in a sandboxed execution context before publishing.
 - **Dual-Renderer Architecture**:
-  - **HTML/CSS + Playwright (Default & Recommended)**: Fully deterministic, offline-capable 1080x1350 PNG generator using Jinja2 templates, Pygments syntax highlighting, and responsive component diagrams (`array_pointers`, `comparison_states`).
-  - **OpenAI GPT-Image (Optional)**: AI-generated visual cards, with the branding card sent as an Images Edit API reference image (`input_fidelity: "high"` preserves the photo; the model re-letters ground-truth card text) and non-blocking fallback to the HTML/CSS engine if rendering fails.
+  - **OpenAI GPT-Image (Default)**: AI-generated visual cards, with the branding card sent as an Images Edit API reference image and re-lettered from ground-truth card text (ordinary prompt instructions, not `input_fidelity` — the configured model rejects that parameter outright); non-blocking fallback to the HTML/CSS engine if rendering fails.
+  - **HTML/CSS + Playwright (Recommended for exact reproducibility)**: Fully deterministic, offline-capable 1080x1350 PNG generator using Jinja2 templates, Pygments syntax highlighting, and responsive component diagrams (`array_pointers`, `comparison_states`). Select it with `--image-provider existing`.
 - **Idempotency & DST Awareness**: Powered by `state/manifest.json` to prevent duplicate uploads, with dual-cron schedule triggers accommodating Daylight Saving Time (EDT/EST).
 - **Multi-Channel Delivery**: Archives formatted assets to Google Drive folders and broadcasts alerts with structured markdown captions to Telegram.
 - **LinkedIn posting** — after each cheat sheet, Telegram asks whether to post now or save for later (`/post-linkedin` in Claude Code any time). Enabled (`linkedin.enabled: true`, `linkedin.telegram_prompt.enabled: true`); requires `LINKEDIN_ACCESS_TOKEN`/`LINKEDIN_PERSON_URN` (see [docs/LINKEDIN_POSTING_SETUP.md](docs/LINKEDIN_POSTING_SETUP.md)) for the "post now" tap to actually publish — without them it gracefully falls back to saving a draft.
@@ -73,6 +74,8 @@ committed to the repo and why filtering is a few lines of vanilla JS
 instead of a framework):
 
 **[leetcode.alifouladgar.com](https://leetcode.alifouladgar.com/)** (custom domain via Cloudflare DNS, alongside the [amfooladgar.github.io/leetcode-daily-cheatsheet](https://amfooladgar.github.io/leetcode-daily-cheatsheet/) default URL, which keeps working too)
+
+Every new cheat sheet is also broadcast to the **[Telegram channel](https://t.me/+ZKB3t6LCaFk2NDFh)** — join it for the daily drop, or to follow project updates.
 
 ---
 
@@ -188,6 +191,7 @@ ruff format --check .
 - [docs/SETUP.md](docs/SETUP.md): One-time setup guide for Anthropic, Google Cloud OAuth, Telegram, and GitHub Secrets.
 - [docs/OPERATIONS.md](docs/OPERATIONS.md): Operational runbook for manual triggers, failure policies, and credential rotation.
 - [CHANGELOG.md](CHANGELOG.md): Complete project version history following Keep a Changelog standards.
+- [CONTRIBUTING.md](CONTRIBUTING.md): How to set up a dev environment, the codebase rules, and how to open a PR or issue. See the [open issues](https://github.com/amfooladgar/leetcode-daily-cheatsheet/issues) for scoped starting points, including extending the pipeline to SQL, system design, ML/AI, and behavioral interview tracks.
 
 ---
 

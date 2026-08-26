@@ -1,23 +1,25 @@
 # Project
 
 Automated daily pipeline that reads the LeetCode Daily Challenge, solves and
-verifies it with Codex, and renders a "Never Forget" cheat-sheet
+verifies it with Claude Code, and renders a "Never Forget" cheat-sheet
 (1080x1350 PNG, LinkedIn portrait 4:5) that is archived to Google Drive.
 
-This file is read automatically by interactive `Codex` sessions in this
-repo. The production pipeline invokes `Codex -p --bare`, which does **not**
-read this file by design (see ARCHITECTURE.md, "Why --bare") — production
-prompts live entirely in `prompts/Codex/*.md` so a run is reproducible
-independent of anyone's local Codex memory.
+This file follows the [AGENTS.md](https://agents.md/) convention read by
+agentic coding tools other than Claude Code (which reads `CLAUDE.md`
+instead — the two are kept in sync). The production pipeline invokes
+`claude -p --bare`, which does **not** read either file by design (see
+ARCHITECTURE.md, "Why --bare") — production prompts live entirely in
+`prompts/claude/*.md` so a run is reproducible independent of anyone's
+local agent memory.
 
 # Architecture (short version — see ARCHITECTURE.md for the full diagram)
 
 LeetCode Daily Challenge
   -> normalize problem (src/leetcode/)
-  -> Codex solves from first principles (prompts/Codex/solve.md)
-  -> Codex adversarial verification (prompts/Codex/verify.md)
+  -> Claude solves from first principles (prompts/claude/solve.md)
+  -> Claude adversarial verification (prompts/claude/verify.md)
   -> executable tests against official examples
-  -> Codex compresses content to fit the canvas (prompts/Codex/compress.md)
+  -> Claude compresses content to fit the canvas (prompts/claude/compress.md)
   -> image render: openai (default) with fallback to deterministic HTML/CSS
      + Playwright (src/rendering/) -> PNG
   -> Google Drive (src/storage/google_drive.py)
@@ -54,11 +56,11 @@ happens both before the pipeline starts (invalid/missing config, e.g. no
   fallback_to_existing: true` (the default), a missing/invalid key is
   caught pre-flight and the run falls back to the `existing` renderer
   with a logged warning instead.
-- All Codex-generated content (problem understanding, code, complexity
+- All Claude-generated content (problem understanding, code, complexity
   claims) MUST pass `jsonschema` validation against `schemas/*.json` before
   it is allowed to reach the renderer. A schema failure is a pipeline
   failure, not a warning.
-- A failed adversarial verification (`prompts/Codex/verify.md` returns
+- A failed adversarial verification (`prompts/claude/verify.md` returns
   `"valid": false` after one regeneration attempt) MUST stop the run before
   rendering or uploading anything. Never publish unverified code.
 - Every run must be idempotent: re-running the same date/problem must not
@@ -71,9 +73,18 @@ happens both before the pipeline starts (invalid/missing config, e.g. no
     default), NOT the `existing` provider's 1080x1350 — never apply that
     assertion to openai output. GPT Image output is non-deterministic and
     can misrender text/code/formulas/layout; this is why
-    `fallback_to_existing` defaults to `true`. The original
-    `assets/contact-card.png` is always composited onto the generated
-    background after generation — never sent to the model to redraw.
+    `fallback_to_existing` defaults to `true`. `assets/contact-card.png` is
+    sent to the model as an Images Edit API reference image and redrawn as
+    part of the generated image, re-lettered from the ground-truth
+    `card_name`/`card_title`/`card_links` config values rather than left to
+    the model to read off the reference image — a live test confirmed the
+    model preserves the reference photo faithfully from the prompt
+    instructions alone. `image_generation.openai.input_fidelity` (unset by
+    default — the configured model rejects it outright, see
+    ARCHITECTURE.md "Optional OpenAI image renderer") can additionally
+    request the Images Edit API's own fidelity-preservation mechanism, for
+    models confirmed to support it. The source file itself is only ever
+    opened for reading, never written to.
   - `existing` (the deterministic HTML/CSS + Playwright fallback,
     selectable directly via `image_generation.provider: "existing"`):
     final image is exactly 1080x1350 PNG. This is the recommended
@@ -81,11 +92,21 @@ happens both before the pipeline starts (invalid/missing config, e.g. no
     repeatability matter more than the GPT Image visual style.
 - Use at most three accent colors (see config/settings.yaml `design.accent_hex`).
 - The contact card (`assets/contact-card.png`) is an immutable source asset —
-  never regenerate or resize the source file itself, only scale it on
-  composite.
+  never regenerate or resize the source file itself. The `existing`
+  provider only ever scales it on composite; the `openai` provider only
+  ever reads it to send as an Images Edit API reference image. Neither
+  provider writes to it.
 - Prompts are versioned. If you materially change a prompt's behavior, copy
   it to a new version rather than silently editing production behavior
-  (see prompts/Codex/README.md).
+  (see prompts/claude/README.md).
+- LinkedIn posting has two paths — an automatic Telegram now/later prompt
+  inside `src/main.py` (gated by `linkedin.enabled` AND
+  `linkedin.telegram_prompt.enabled`, both false by default, and always
+  defaulting to the non-posting branch on timeout) and the manual
+  `/post-linkedin` Claude Code command (gated by `linkedin.enabled`
+  alone). Never add a code path that posts without one of these two
+  explicit, human-gated entry points (see ARCHITECTURE.md "LinkedIn
+  posting").
 
 # Common commands
 
