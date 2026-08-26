@@ -399,5 +399,32 @@
       "Array",
       "Hash Table"
     ]
+  },
+  "2026-08-26:2904": {
+    "content_hash": "a8e8690967ad24dd",
+    "date": "2026-08-26",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1QkykLbYQzgOpU24S-1C3WzCnlpBrgPPC",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget to Trim Leading and Trailing Zeros",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 2904,
+    "problem_url": "https://leetcode.com/problems/shortest-and-lexicographically-smallest-beautiful-string/",
+    "prompt_version": "v1",
+    "slug": "shortest-and-lexicographically-smallest-beautiful-string",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 16,
+    "title": "Shortest and Lexicographically Smallest Beautiful String",
+    "topics": [
+      "String",
+      "Sliding Window"
+    ]
   }
 }
