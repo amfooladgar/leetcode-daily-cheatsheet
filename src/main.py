@@ -544,6 +544,42 @@ def run(args: argparse.Namespace) -> int:
                 exc,
             )
 
+    # Persist the manifest (and, for a successful upload, the durable
+    # gallery image copy) as soon as Drive upload is resolved, rather than
+    # waiting until after the Telegram/LinkedIn stages below. Path A's
+    # LinkedIn prompt can block for up to
+    # linkedin.telegram_prompt.decision_timeout_seconds waiting on a Telegram
+    # button tap, and a CI job that gets killed by daily.yml's job timeout
+    # during that wait must never leave a genuinely uploaded image missing
+    # from state/manifest.json and gallery/images/ (see ARCHITECTURE.md
+    # "Gallery site" and "Idempotency"). Re-recorded below with the real
+    # telegram/linkedin outcome once those stages finish.
+    if drive_ok:
+        gallery_mod.save_gallery_image(
+            image_path,
+            REPO_ROOT / settings["gallery"]["images_dir"],
+            filename_stem,
+        )
+    manifest.record(
+        manifest_mod.ManifestEntry(
+            date=date_str,
+            problem_number=problem.number,
+            slug=problem.slug,
+            status="success",
+            content_hash=content_hash,
+            image_filename=image_path.name,
+            drive=drive_ok,
+            drive_file_id=drive_file_id,
+            prompt_version=prompt_version,
+            title=problem.title,
+            difficulty=problem.difficulty,
+            topics=cheatsheet["problem"].get("topics") or problem.topics,
+            headline=cheatsheet["headline"],
+            problem_url=problem.url,
+        )
+    )
+    manifest_mod.save(manifest, manifest_path)
+
     # --- TELEGRAM (independent of Drive: a Telegram failure never blocks a
     # successful Drive upload, and vice versa — see ARCHITECTURE.md
     # "Failure policy") --------------------------------------------------
@@ -669,18 +705,10 @@ def run(args: argparse.Namespace) -> int:
         except Exception as exc:  # noqa: BLE001 - never fail an otherwise-successful run over this
             log.warning("LINKEDIN Path A failed (non-blocking): %s", exc)
 
-    # Gallery image copy (src/state/gallery.py): only for a genuinely
-    # published entry (status="success" and drive=True, matching
-    # Manifest.already_published's own definition) -- output/ is disposable
-    # and gone by the time scripts/build_gallery.py runs, so this is the
-    # entry's only durable image copy. See ARCHITECTURE.md "Gallery site".
-    if drive_ok:
-        gallery_mod.save_gallery_image(
-            image_path,
-            REPO_ROOT / settings["gallery"]["images_dir"],
-            filename_stem,
-        )
-
+    # Gallery image and manifest were already recorded right after the
+    # Drive upload above (see that block's comment) -- this final record()
+    # just updates the same entry with the real telegram/linkedin outcome
+    # now that those stages have finished.
     manifest.record(
         manifest_mod.ManifestEntry(
             date=date_str,
