@@ -25,10 +25,10 @@ on:
       image_provider:
         description: "Image-generation provider (see ARCHITECTURE.md 'Optional OpenAI image renderer')"
         type: choice
-        default: "existing"
+        default: "openai"
         options:
-          - existing
           - openai
+          - existing
 
 # Prevent two runs from racing (e.g. a manual dispatch during the scheduled
 # window) and each stepping on the other's Drive upload / manifest commit.
@@ -99,14 +99,14 @@ jobs:
           LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
           LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
           # Manual runs pick the provider via the workflow_dispatch input
-          # above; scheduled runs (no `inputs` context) fall back to the
-          # repository variable Settings -> Secrets and variables -> Actions
-          # -> Variables -> IMAGE_GENERATION_PROVIDER, defaulting to
-          # "existing" if that variable isn't set either -- see
-          # ARCHITECTURE.md "Optional OpenAI image renderer". OPENAI_API_KEY
-          # is scoped to this one step (the only one that can reach the
-          # openai renderer) and is only ever read when that path actually
-          # runs.
+          # above (default "openai"); scheduled runs (no `inputs` context)
+          # fall back to the repository variable Settings -> Secrets and
+          # variables -> Actions -> Variables -> IMAGE_GENERATION_PROVIDER,
+          # defaulting to "existing" if that variable isn't set either --
+          # see ARCHITECTURE.md "Optional OpenAI image renderer".
+          # OPENAI_API_KEY is scoped to this one step (the only one that
+          # can reach the openai renderer) and is only ever read when that
+          # path actually runs.
           IMAGE_GENERATION_PROVIDER: ${{ inputs.image_provider || vars.IMAGE_GENERATION_PROVIDER || 'existing' }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
