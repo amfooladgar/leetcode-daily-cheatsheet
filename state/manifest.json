@@ -456,5 +456,61 @@
       "Counting",
       "Enumeration"
     ]
+  },
+  "2026-08-28:3734": {
+    "content_hash": "2bd63839e513f585",
+    "date": "2026-08-28",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1ngJr4F6hhiPyFwYN4wMJO4GZ1SkPs-12",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Deepest Valid Break Point",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1p__t5nDDbwgZV8Tfkg4YhFfNL0DIoreT",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3734,
+    "problem_url": "https://leetcode.com/problems/lexicographically-smallest-palindromic-permutation-greater-than-target/",
+    "prompt_version": "v1",
+    "slug": "lexicographically-smallest-palindromic-permutation-greater-than-target",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 19,
+    "title": "Lexicographically Smallest Palindromic Permutation Greater Than Target",
+    "topics": [
+      "Two Pointers",
+      "String",
+      "Enumeration"
+    ]
+  },
+  "2026-08-29:2948": {
+    "content_hash": "1dae48729f758222",
+    "date": "2026-08-29",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1sf14ldecU13aMNEXcVB-vWyYJsVugdmw",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Sorted-Gap Grouping Trick",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1mFatSucahMMjUwR78UB3J4KZhzjn_InE",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 2948,
+    "problem_url": "https://leetcode.com/problems/make-lexicographically-smallest-array-by-swapping-elements/",
+    "prompt_version": "v1",
+    "slug": "make-lexicographically-smallest-array-by-swapping-elements",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 20,
+    "title": "Make Lexicographically Smallest Array by Swapping Elements",
+    "topics": [
+      "Array",
+      "Union-Find",
+      "Sorting"
+    ]
   }
 }
