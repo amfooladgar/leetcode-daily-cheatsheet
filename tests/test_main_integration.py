@@ -470,9 +470,9 @@ class MainPipelineIntegrationTests(unittest.TestCase):
 
 class ScheduleGateTests(unittest.TestCase):
     """_schedule_gate must tolerate GitHub Actions' scheduled-dispatch delay
-    (routinely 30-100+ min under load) rather than requiring the wall clock
-    to land on the exact target hour -- see ARCHITECTURE.md 'Daylight
-    saving time'."""
+    -- which on 2026-08-27..29 ran the legs 9-10h late and missed those days
+    outright -- while still rejecting the wrong-DST leg that fires before the
+    local morning. See ARCHITECTURE.md 'Daylight saving time'."""
 
     def setUp(self):
         self.settings = load_settings()
@@ -481,35 +481,40 @@ class ScheduleGateTests(unittest.TestCase):
         import datetime as dt
         from zoneinfo import ZoneInfo
 
+        # 2026-08-24 is EDT (UTC-4): the local date and the UTC date diverge
+        # at 20:00 local.
         tz = ZoneInfo(self.settings["schedule"]["timezone"])
         return dt.datetime(2026, 8, 24, hour, minute, tzinfo=tz)
 
-    def test_exact_target_hour_passes(self):
+    def _run_gate_at(self, fixed_now):
         from src.main import _schedule_gate
 
-        fixed_now = self._at(9, 5)
         with mock.patch("src.main.dt.datetime") as mock_dt:
             mock_dt.now.return_value = fixed_now
-            self.assertTrue(_schedule_gate(self.settings))
+            return _schedule_gate(self.settings)
+
+    def test_exact_target_hour_passes(self):
+        self.assertTrue(self._run_gate_at(self._at(9, 5)))
 
     def test_delayed_dispatch_past_the_top_of_the_hour_still_passes(self):
-        # Regression: today's real failure -- the correct DST leg dispatched
-        # late enough that its execution ticked over from 09:xx to 10:00,
-        # and an exact-hour check no-op'd it.
-        from src.main import _schedule_gate
+        # The correct DST leg dispatched late enough that its execution
+        # ticked over from 09:xx to 10:00.
+        self.assertTrue(self._run_gate_at(self._at(10, 0)))
 
-        fixed_now = self._at(10, 0)
-        with mock.patch("src.main.dt.datetime") as mock_dt:
-            mock_dt.now.return_value = fixed_now
-            self.assertTrue(_schedule_gate(self.settings))
+    def test_several_hours_late_still_publishes_same_day(self):
+        # Regression for the 2026-08-27..29 misses: the leg ran ~19:00 ET.
+        # The UTC date has not rolled yet (23:00 UTC), so it must publish.
+        self.assertTrue(self._run_gate_at(self._at(19, 0)))
 
-    def test_outside_slack_window_still_no_ops(self):
-        from src.main import _schedule_gate
+    def test_after_utc_midnight_no_ops(self):
+        # 20:30 ET on 2026-08-24 == 00:30 UTC on 2026-08-25: LeetCode's
+        # "daily" is already tomorrow's problem, so this leg must no-op.
+        self.assertFalse(self._run_gate_at(self._at(20, 30)))
 
-        fixed_now = self._at(11, 45)
-        with mock.patch("src.main.dt.datetime") as mock_dt:
-            mock_dt.now.return_value = fixed_now
-            self.assertFalse(_schedule_gate(self.settings))
+    def test_wrong_dst_leg_before_the_window_no_ops(self):
+        # A leg firing well before target_hour - slack_minutes (09:00 - 90m
+        # = 07:30) is the wrong-DST leg and must not publish early.
+        self.assertFalse(self._run_gate_at(self._at(6, 0)))
 
 
 if __name__ == "__main__":

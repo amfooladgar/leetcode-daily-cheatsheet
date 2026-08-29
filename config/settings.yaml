@@ -3,14 +3,19 @@
 
 schedule:
   timezone: "America/New_York"
-  target_hour: 9          # local hour the run must match to actually publish
-  slack_minutes: 90       # tolerance around target_hour:00 to absorb GitHub
-                           # Actions' scheduled-dispatch delay (routinely
-                           # 30-100+ min under load) -- see ARCHITECTURE.md
-                           # "Daylight saving time"
-  cron_utc:                # both crons fire; src/main.py no-ops outside target_hour
+  target_hour: 9          # earliest local hour the run may publish
+  slack_minutes: 90       # how far BEFORE target_hour:00 a run may still
+                           # publish (absorbs the wrong-DST cron leg + jitter).
+                           # There is no symmetric upper bound: a late run
+                           # publishes until the UTC date rolls over -- see
+                           # _schedule_gate() and ARCHITECTURE.md "Daylight
+                           # saving time"
+  cron_utc:                # all legs fire; _schedule_gate() + idempotency
+                           # manifest keep it to one publish/day
     - "5 13 * * *"          # 09:05 ET during EDT (UTC-4)
     - "5 14 * * *"          # 09:05 ET during EST (UTC-5)
+    - "5 16 * * *"          # catch-up leg (GitHub Actions dispatch delay/drop)
+    - "5 18 * * *"          # catch-up leg (GitHub Actions dispatch delay/drop)
 
 leetcode:
   source: "graphql"

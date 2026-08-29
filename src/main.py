@@ -104,29 +104,54 @@ def _schedule_gate(settings: dict) -> bool:
     unattended daily invocation (no --date/--problem-slug/--force/
     --dry-run) — see ARCHITECTURE.md 'Daylight saving time'.
 
-    GitHub Actions' scheduled-workflow dispatch is best-effort and routinely
-    delayed tens of minutes under load, which can push the correct DST leg's
-    execution across the top of the target hour. An exact `now.hour ==
-    target_hour` match is therefore too strict — allow a slack window either
-    side of target_hour:00 so a delayed dispatch still publishes."""
+    The window is deliberately asymmetric:
+
+    * **Not before** ``target_hour:00`` minus ``slack_minutes``. This rejects
+      the wrong-DST cron leg (and normal negative jitter), so we never
+      publish before the intended local morning.
+    * **Not after** the UTC calendar date has rolled past the local date.
+      GitHub Actions' scheduled dispatch is best-effort and has been observed
+      to delay a run by 9-10 hours (or drop it entirely and re-dispatch it
+      late) — see the 2026-08-27..29 misses. A run that late should still
+      publish *that day's* challenge, so the only hard upper stop is the
+      point where LeetCode's "daily" endpoint starts serving tomorrow's
+      problem (00:00 UTC) and we'd archive it under the wrong date.
+
+    Combined with the idempotency manifest this still yields exactly one
+    publish per day regardless of DST or dispatch delay."""
     tz = ZoneInfo(settings["schedule"]["timezone"])
     now = dt.datetime.now(tz)
     target_hour = settings["schedule"]["target_hour"]
     slack_minutes = settings["schedule"]["slack_minutes"]
     target = now.replace(hour=target_hour, minute=0, second=0, microsecond=0)
-    delta_minutes = abs((now - target).total_seconds()) / 60
-    if delta_minutes > slack_minutes:
+
+    minutes_early = (target - now).total_seconds() / 60
+    if minutes_early > slack_minutes:
         log.info(
-            "Current %s time is %02d:%02d, outside the %d-minute slack window "
-            "around the configured target hour %02d:00 — no-op (this is expected "
-            "for the cron leg that isn't currently DST-correct).",
+            "Current %s time is %02d:%02d, %d min before the %d-minute window "
+            "opens around target hour %02d:00 — no-op (this is expected for the "
+            "cron leg that isn't currently DST-correct).",
             settings["schedule"]["timezone"],
             now.hour,
             now.minute,
+            int(minutes_early),
             slack_minutes,
             target_hour,
         )
         return False
+
+    if (now - now.utcoffset()).date() != now.date():
+        log.info(
+            "Current %s time is %02d:%02d but the UTC date has already rolled "
+            "over — a run dispatched this late would fetch tomorrow's daily "
+            "challenge; no-op. (GitHub Actions dropped or badly delayed the "
+            "on-time dispatch.)",
+            settings["schedule"]["timezone"],
+            now.hour,
+            now.minute,
+        )
+        return False
+
     return True
 
 
