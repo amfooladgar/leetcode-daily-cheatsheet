@@ -1,13 +1,18 @@
 name: Daily LeetCode Cheat Sheet
 
-# Runs at both 13:05 and 14:05 UTC every day so one of the two legs always
-# lands at 09:05 America/New_York regardless of DST. src/main.py's
-# _schedule_gate() no-ops the leg that doesn't match the configured
-# target_hour. See ARCHITECTURE.md "Daylight saving time".
+# 13:05 and 14:05 UTC cover 09:05 America/New_York on either side of DST;
+# 16:05 and 18:05 UTC are catch-up legs for when GitHub Actions drops or
+# badly delays the on-time dispatch (observed 9-10h late on 2026-08-27..29,
+# which missed those days entirely). src/main.py's _schedule_gate() lets any
+# leg through from (target_hour - slack) until the UTC date rolls over, and
+# the idempotency manifest keeps it to exactly one publish per day. See
+# ARCHITECTURE.md "Daylight saving time".
 on:
   schedule:
     - cron: "5 13 * * *"
     - cron: "5 14 * * *"
+    - cron: "5 16 * * *"
+    - cron: "5 18 * * *"
   workflow_dispatch:
     inputs:
       dry_run:

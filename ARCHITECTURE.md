@@ -360,17 +360,28 @@ step 3.
 ## Daylight saving time
 
 GitHub Actions cron is UTC-only and America/New_York alternates between
-UTC-4 (EDT) and UTC-5 (EST). `daily.yml` schedules the job at **both**
-13:05 and 14:05 UTC every day; `src/main.py` checks the actual wall-clock
-time in `America/New_York` via `zoneinfo` and no-ops if it falls outside a
-`slack_minutes` window (90 by default) around the configured `target_hour`
-(09:00 by default). The slack window — rather than an exact-hour match —
-exists because GitHub Actions' scheduled-workflow dispatch is best-effort
-and routinely delayed 30-100+ minutes under load; an exact match was
-observed to no-op the correct DST leg entirely on days where dispatch
-delay pushed its execution across the top of the target hour. Combined
-with the idempotency manifest, this guarantees exactly one publish per day
-regardless of DST or dispatch delay.
+UTC-4 (EDT) and UTC-5 (EST). `daily.yml` schedules the job at 13:05, 14:05,
+16:05 and 18:05 UTC every day; `src/main.py::_schedule_gate()` checks the
+actual wall-clock time in `America/New_York` via `zoneinfo` and decides
+whether that leg should publish. The window is **asymmetric**:
+
+* **Lower bound** — reject anything earlier than `target_hour:00` (09:00 by
+  default) minus `slack_minutes` (90 by default). This drops the wrong-DST
+  cron leg and normal negative jitter so nothing publishes before the
+  intended local morning.
+* **Upper bound** — none, until the UTC calendar date rolls past the local
+  date. GitHub Actions' scheduled-workflow dispatch is best-effort: it is
+  routinely delayed 30-100+ minutes under load, and on 2026-08-27..29 it
+  ran the legs 9-10 hours late (≈19:00 ET) or dropped them entirely,
+  missing those days because the old symmetric ±90-minute window no-op'd
+  every leg. A run that late should still publish *that day's* challenge;
+  the only hard stop is 00:00 UTC, after which LeetCode's "daily" endpoint
+  already serves tomorrow's problem.
+
+The 16:05 and 18:05 UTC legs are catch-up shots for a dropped on-time
+dispatch — each lands comfortably inside the window in both DST regimes.
+Combined with the idempotency manifest, this guarantees exactly one publish
+per day regardless of DST or dispatch delay.
 
 ## Failure policy
 
