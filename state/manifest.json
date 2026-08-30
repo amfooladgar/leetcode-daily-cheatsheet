@@ -514,27 +514,30 @@
     ]
   },
   "2026-08-30:2091": {
-    "content_hash": "",
+    "content_hash": "370f312455bbca24",
     "date": "2026-08-30",
-    "difficulty": null,
-    "drive": false,
-    "drive_file_id": null,
-    "failure_reason": "example 1: Could not parse example input fragment 'nums = [2,': '[' was never closed (<unknown>, line 1); example 2: Could not parse example input fragment 'nums = [0,': '[' was never closed (<unknown>, line 1); example 3: Could not parse example input fragment 'nums = [': '[' was never closed (<unknown>, line 1)",
-    "failure_stage": "tested",
-    "headline": null,
-    "image_filename": null,
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "16JO9qeDj-_9TySR0-a32jR_qlgY8HRbv",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Three-Cut Strategy Trick",
+    "image_filename": "cheatsheet-openai-final.png",
     "linkedin": false,
-    "linkedin_draft_drive_file_id": null,
-    "linkedin_draft_saved": false,
+    "linkedin_draft_drive_file_id": "1XZcmVqUJePA6936NAgxAcEmIFHAb_caq",
+    "linkedin_draft_saved": true,
     "linkedin_post_urn": null,
     "problem_number": 2091,
-    "problem_url": null,
+    "problem_url": "https://leetcode.com/problems/removing-minimum-and-maximum-from-array/",
     "prompt_version": "v1",
     "slug": "removing-minimum-and-maximum-from-array",
-    "status": "failed",
-    "telegram": false,
-    "telegram_message_id": null,
-    "title": null,
-    "topics": []
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 21,
+    "title": "Removing Minimum and Maximum From Array",
+    "topics": [
+      "Array",
+      "Greedy"
+    ]
   }
 }
