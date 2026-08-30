@@ -33,8 +33,16 @@ log = logging.getLogger(__name__)
 
 _EXAMPLE_HEADING_RE = re.compile(r"^\s*example\s*\d*\s*:?\s*$", re.IGNORECASE)
 _CONSTRAINTS_HEADING_RE = re.compile(r"^\s*constraints\s*:?\s*$", re.IGNORECASE)
-_INPUT_LINE_RE = re.compile(r"input\s*:\s*(.*)", re.IGNORECASE)
-_OUTPUT_LINE_RE = re.compile(r"output\s*:\s*(.*)", re.IGNORECASE)
+# DOTALL + non-greedy up to the next known label: LeetCode sometimes hard-
+# wraps a long array literal across a raw newline inside the <pre> block
+# (e.g. "Input: nums = [2,\n10,7,...]"), and a plain '.*' (no DOTALL) stops
+# at that first newline, truncating the value to "nums = [2," -- this is
+# exactly what broke the 2026-08-30 run (problem 2091). The lookahead keeps
+# the capture from also swallowing the next label's own line.
+_INPUT_LINE_RE = re.compile(r"input\s*:\s*(.*?)(?=\n\s*output\s*:|\Z)", re.IGNORECASE | re.DOTALL)
+_OUTPUT_LINE_RE = re.compile(
+    r"output\s*:\s*(.*?)(?=\n\s*explanation\s*:|\Z)", re.IGNORECASE | re.DOTALL
+)
 # DOTALL: newer LeetCode problems put the explanation's own text in a
 # separate node from the "Explanation:" label (see
 # _looks_like_example_container), so it lands on a later line once the

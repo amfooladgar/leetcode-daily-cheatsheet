@@ -2,7 +2,7 @@ import unittest
 from unittest import mock
 
 from src.leetcode.client import LeetCodeClient, PremiumProblemError, RawQuestion
-from src.leetcode.parser import normalize, parse_statement_html
+from src.leetcode.parser import _parse_example_block, normalize, parse_statement_html
 from tests.helpers import load_sample_problem_html, load_sample_problem_html_v2
 
 
@@ -21,6 +21,33 @@ class ParseStatementHtmlTests(unittest.TestCase):
         self.assertEqual(len(constraints), 3)
         # superscript exponents must survive as '^', not silently vanish
         self.assertIn("10^4", constraints[0])
+
+
+class ParseExampleBlockLineWrapTests(unittest.TestCase):
+    """LeetCode sometimes hard-wraps a long array literal across a raw
+    newline inside the <pre> block (e.g. problem 2091 on 2026-08-30, which
+    truncated to input="nums = [2," and broke the pipeline). The input/
+    output regexes must span that line break instead of stopping at it."""
+
+    def test_input_spans_wrapped_array_literal(self):
+        pre_text = (
+            "Input: nums = [2,\n10,7,5,4,1,8,9]\n"
+            "Output: 5\n"
+            "Explanation: the min is at index 5 and the max is at index 1."
+        )
+        example = _parse_example_block(pre_text)
+
+        self.assertIsNotNone(example)
+        self.assertEqual(example.input, "nums = [2,\n10,7,5,4,1,8,9]")
+        self.assertEqual(example.output, "5")
+        self.assertIn("the min is at index 5", example.explanation)
+
+    def test_output_spans_wrapped_array_literal(self):
+        pre_text = "Input: nums = [1,2]\nOutput: [0,\n1]\nExplanation: trivial."
+        example = _parse_example_block(pre_text)
+
+        self.assertIsNotNone(example)
+        self.assertEqual(example.output, "[0,\n1]")
 
 
 class ParseStatementHtmlV2Tests(unittest.TestCase):
