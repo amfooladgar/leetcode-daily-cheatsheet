@@ -512,5 +512,29 @@
       "Union-Find",
       "Sorting"
     ]
+  },
+  "2026-08-30:2091": {
+    "content_hash": "",
+    "date": "2026-08-30",
+    "difficulty": null,
+    "drive": false,
+    "drive_file_id": null,
+    "failure_reason": "example 1: Could not parse example input fragment 'nums = [2,': '[' was never closed (<unknown>, line 1); example 2: Could not parse example input fragment 'nums = [0,': '[' was never closed (<unknown>, line 1); example 3: Could not parse example input fragment 'nums = [': '[' was never closed (<unknown>, line 1)",
+    "failure_stage": "tested",
+    "headline": null,
+    "image_filename": null,
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 2091,
+    "problem_url": null,
+    "prompt_version": "v1",
+    "slug": "removing-minimum-and-maximum-from-array",
+    "status": "failed",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": null,
+    "topics": []
   }
 }
