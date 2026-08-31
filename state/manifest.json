@@ -541,27 +541,29 @@
     ]
   },
   "2026-08-31:2058": {
-    "content_hash": "",
+    "content_hash": "6c83a734065a93c0",
     "date": "2026-08-31",
-    "difficulty": null,
-    "drive": false,
-    "drive_file_id": null,
-    "failure_reason": "example 1: raised AttributeError: 'list' object has no attribute 'next'; example 2: raised AttributeError: 'list' object has no attribute 'next'; example 3: raised AttributeError: 'list' object has no attribute 'next'",
-    "failure_stage": "tested",
-    "headline": null,
-    "image_filename": null,
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "14gV62wtxG4WrPDScmTwA8RD9GNC2QmmY",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Min Is Consecutive Gap, Max Is First-Last",
+    "image_filename": "cheatsheet-openai-final.png",
     "linkedin": false,
-    "linkedin_draft_drive_file_id": null,
-    "linkedin_draft_saved": false,
+    "linkedin_draft_drive_file_id": "1x53BG5UgTYHnaSHJ9oeOWIVSUF5f3-WE",
+    "linkedin_draft_saved": true,
     "linkedin_post_urn": null,
     "problem_number": 2058,
-    "problem_url": null,
+    "problem_url": "https://leetcode.com/problems/find-the-minimum-and-maximum-number-of-nodes-between-critical-points/",
     "prompt_version": "v1",
     "slug": "find-the-minimum-and-maximum-number-of-nodes-between-critical-points",
-    "status": "failed",
-    "telegram": false,
-    "telegram_message_id": null,
-    "title": null,
-    "topics": []
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 22,
+    "title": "Find the Minimum and Maximum Number of Nodes Between Critical Points",
+    "topics": [
+      "Linked List"
+    ]
   }
 }
