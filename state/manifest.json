@@ -539,5 +539,29 @@
       "Array",
       "Greedy"
     ]
+  },
+  "2026-08-31:2058": {
+    "content_hash": "",
+    "date": "2026-08-31",
+    "difficulty": null,
+    "drive": false,
+    "drive_file_id": null,
+    "failure_reason": "example 1: raised AttributeError: 'list' object has no attribute 'next'; example 2: raised AttributeError: 'list' object has no attribute 'next'; example 3: raised AttributeError: 'list' object has no attribute 'next'",
+    "failure_stage": "tested",
+    "headline": null,
+    "image_filename": null,
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 2058,
+    "problem_url": null,
+    "prompt_version": "v1",
+    "slug": "find-the-minimum-and-maximum-number-of-nodes-between-critical-points",
+    "status": "failed",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": null,
+    "topics": []
   }
 }
