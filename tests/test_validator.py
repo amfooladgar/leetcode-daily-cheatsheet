@@ -165,6 +165,74 @@ class RunExamplesTests(unittest.TestCase):
         report = run_examples(code, examples)
         self.assertTrue(report.ok, report.failures)
 
+    def test_listnode_input_is_converted_from_array_literal(self):
+        # Reproduces the 2026-08-31 "Find the Minimum and Maximum Number of
+        # Nodes Between Critical Points" prod failure: LeetCode encodes a
+        # ListNode example as a plain array (`head = [3,1]`), matching the
+        # real judge, and the generated code only comments out its own
+        # ListNode class (also matching the real judge's convention of
+        # supplying it) -- every example raised AttributeError on `.next`
+        # because `head` arrived as a plain list.
+        code = (
+            "from typing import Optional, List\n\n"
+            "# class ListNode:\n"
+            "#     def __init__(self, val=0, next=None):\n"
+            "#         self.val = val\n"
+            "#         self.next = next\n\n"
+            "class Solution:\n"
+            "    def nodesBetweenCriticalPoints(self, head: Optional[ListNode]) -> List[int]:\n"
+            "        prev_node = head\n"
+            "        curr_node = head.next\n"
+            "        idx = 1\n"
+            "        first_idx = -1\n"
+            "        last_idx = -1\n"
+            "        min_dist = float('inf')\n"
+            "        while curr_node.next:\n"
+            "            next_node = curr_node.next\n"
+            "            is_max = curr_node.val > prev_node.val and curr_node.val > next_node.val\n"
+            "            is_min = curr_node.val < prev_node.val and curr_node.val < next_node.val\n"
+            "            if is_max or is_min:\n"
+            "                if first_idx == -1:\n"
+            "                    first_idx = idx\n"
+            "                else:\n"
+            "                    min_dist = min(min_dist, idx - last_idx)\n"
+            "                last_idx = idx\n"
+            "            prev_node, curr_node = curr_node, next_node\n"
+            "            idx += 1\n"
+            "        if first_idx == -1 or first_idx == last_idx:\n"
+            "            return [-1, -1]\n"
+            "        return [min_dist, last_idx - first_idx]\n"
+        )
+        examples = [
+            Example(input="head = [3,1]", output="[-1,-1]"),
+            Example(input="head = [5,3,1,2,5,1,2]", output="[1,3]"),
+        ]
+        report = run_examples(code, examples)
+        self.assertTrue(report.ok, report.failures)
+        self.assertEqual(report.passed, 2)
+
+    def test_treenode_input_and_output_are_converted_from_array_literal(self):
+        code = (
+            "from typing import Optional\n\n"
+            "# class TreeNode:\n"
+            "#     def __init__(self, val=0, left=None, right=None):\n"
+            "#         self.val = val\n"
+            "#         self.left = left\n"
+            "#         self.right = right\n\n"
+            "class Solution:\n"
+            "    def invertTree(self, root: Optional[TreeNode]) -> Optional[TreeNode]:\n"
+            "        if root is None:\n"
+            "            return None\n"
+            "        root.left, root.right = root.right, root.left\n"
+            "        self.invertTree(root.left)\n"
+            "        self.invertTree(root.right)\n"
+            "        return root\n"
+        )
+        examples = [Example(input="root = [4,2,7,1,3,6,9]", output="[4,7,2,9,6,3,1]")]
+        report = run_examples(code, examples)
+        self.assertTrue(report.ok, report.failures)
+        self.assertEqual(report.passed, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

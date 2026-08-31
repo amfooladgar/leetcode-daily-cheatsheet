@@ -16,6 +16,19 @@ a sequence of method calls (e.g. LRUCache-style
 `["LRUCache","put","get"], [[2],[1,1],[1]]`) — those are detected and
 skipped with a warning rather than crashing the run, since building a full
 call-sequence interpreter is out of scope for v1.
+
+Linked-list and binary-tree problems get a similar array-literal treatment:
+LeetCode encodes a `ListNode`/`TreeNode` structure as a flat/level-order
+array (e.g. `head = [3,1]`), matching the real judge harness, and generated
+solutions follow the real LeetCode convention of only *commenting* the node
+class definition (the real judge supplies it) — see the 2026-08-31 "Find
+the Minimum and Maximum Number of Nodes Between Critical Points" prod
+failure, where `head` arrived as a plain `list` and `head.next` raised
+`AttributeError`. `_NODE_STUBS_SRC` supplies real `ListNode`/`TreeNode`
+classes (redefined by the generated code itself if it happens to define
+its own), and `run_examples` converts array-literal args/return values to
+and from real node chains/trees based on the entry method's parameter and
+return annotations.
 """
 
 from __future__ import annotations
@@ -37,6 +50,25 @@ _ASSIGNMENT_SPLIT_RE = re.compile(r",\s*(?=[A-Za-z_][A-Za-z0-9_]*\s*=)")
 _DESIGN_PROBLEM_INPUT_RE = re.compile(r'^\s*\[\s*"[A-Z]\w*"')
 _JS_LITERAL_RE = re.compile(r'"[^"]*"|\'[^\']*\'|\b(true|false|null)\b')
 _JS_TO_PY_LITERAL = {"true": "True", "false": "False", "null": "None"}
+
+# Real LeetCode ListNode/TreeNode definitions, prepended ahead of generated
+# code so `head: Optional[ListNode]`-style annotations resolve to a real
+# class instead of the commented-out stub LeetCode's own convention leaves
+# in the generated source. Redefined harmlessly if the generated code
+# happens to define its own version of either class.
+_NODE_STUBS_SRC = (
+    "class ListNode:\n"
+    "    def __init__(self, val=0, next=None):\n"
+    "        self.val = val\n"
+    "        self.next = next\n"
+    "\n"
+    "class TreeNode:\n"
+    "    def __init__(self, val=0, left=None, right=None):\n"
+    "        self.val = val\n"
+    "        self.left = left\n"
+    "        self.right = right\n"
+    "\n"
+)
 
 
 def _normalize_js_literals(text: str) -> str:
@@ -236,17 +268,93 @@ def _parse_assignments(input_str: str) -> dict:
     return namespace
 
 
-def _find_solution_class(code: str) -> type:
+def _find_solution_class(code: str) -> tuple[type, dict]:
     namespace: dict = {}
     try:
-        exec(compile(code, "<generated_solution>", "exec"), namespace)  # noqa: S102
+        exec(  # noqa: S102
+            compile(_NODE_STUBS_SRC + code, "<generated_solution>", "exec"), namespace
+        )
     except Exception as exc:  # noqa: BLE001 - any failure here is a real validation failure
         raise ExampleExecutionError(f"Generated code failed to execute/import: {exc}") from exc
 
     solution_cls = namespace.get("Solution")
     if solution_cls is None or not inspect.isclass(solution_cls):
         raise ExampleExecutionError("Generated code does not define a `Solution` class")
-    return solution_cls
+    return solution_cls, namespace
+
+
+def _structure_kind(annotation: object) -> str | None:
+    """Classifies a (possibly stringified, due to this module's own `from
+    __future__ import annotations` being inherited into the generated
+    code's `compile()` call) type annotation as the array-literal LeetCode
+    encoding it needs converting from/to, or None for a plain value."""
+    text = str(annotation)
+    if "TreeNode" in text:
+        return "tree"
+    if "ListNode" in text:
+        return "list"
+    return None
+
+
+def _build_linked_list(values: list, node_cls: type):
+    dummy = node_cls(0)
+    curr = dummy
+    for value in values:
+        curr.next = node_cls(value)
+        curr = curr.next
+    return dummy.next
+
+
+def _linked_list_to_values(node) -> list:
+    values = []
+    while node is not None:
+        values.append(node.val)
+        node = node.next
+    return values
+
+
+def _build_tree(values: list, node_cls: type):
+    """Builds a binary tree from LeetCode's level-order array encoding
+    (`None`/`null` marks a missing child; children of a missing node are
+    never encoded)."""
+    if not values or values[0] is None:
+        return None
+    root = node_cls(values[0])
+    queue = [root]
+    i, n = 1, len(values)
+    while queue and i < n:
+        node = queue.pop(0)
+        if i < n:
+            left_val = values[i]
+            i += 1
+            if left_val is not None:
+                node.left = node_cls(left_val)
+                queue.append(node.left)
+        if i < n:
+            right_val = values[i]
+            i += 1
+            if right_val is not None:
+                node.right = node_cls(right_val)
+                queue.append(node.right)
+    return root
+
+
+def _tree_to_values(root) -> list:
+    if root is None:
+        return []
+    values = []
+    queue = [root]
+    while queue:
+        node = queue.pop(0)
+        if node is None:
+            values.append(None)
+            continue
+        values.append(node.val)
+        queue.append(node.left)
+        queue.append(node.right)
+    while values and values[-1] is None:
+        values.pop()
+    return values
 
 
 def _find_entry_method(solution_cls: type):
@@ -270,9 +378,12 @@ def _find_entry_method(solution_cls: type):
 def run_examples(code: str, examples: list[Example], timeout_seconds: int = 5) -> ExampleRunReport:
     report = ExampleRunReport(total=len(examples))
 
-    solution_cls = _find_solution_class(code)
+    solution_cls, exec_namespace = _find_solution_class(code)
     method = _find_entry_method(solution_cls)
-    param_names = [p for p in inspect.signature(method).parameters if p != "self"]
+    sig = inspect.signature(method)
+    param_names = [p for p in sig.parameters if p != "self"]
+    param_kinds = {name: _structure_kind(sig.parameters[name].annotation) for name in param_names}
+    return_kind = _structure_kind(sig.return_annotation)
 
     for i, example in enumerate(examples, start=1):
         label = f"example {i}"
@@ -284,13 +395,24 @@ def run_examples(code: str, examples: list[Example], timeout_seconds: int = 5) -
             continue
 
         try:
-            namespace = _parse_assignments(example.input)
+            example_vars = _parse_assignments(example.input)
             expected = ast.literal_eval(_normalize_js_literals(example.output.strip()))
 
-            args = [namespace[name] for name in param_names if name in namespace]
+            args = []
+            for name in param_names:
+                if name not in example_vars:
+                    continue
+                value = example_vars[name]
+                kind = param_kinds.get(name)
+                if kind == "list" and isinstance(value, list):
+                    value = _build_linked_list(value, exec_namespace["ListNode"])
+                elif kind == "tree" and isinstance(value, list):
+                    value = _build_tree(value, exec_namespace["TreeNode"])
+                args.append(value)
+
             if len(args) != len(param_names):
                 report.skipped.append(
-                    f"{label}: could not map example variables {list(namespace)} to "
+                    f"{label}: could not map example variables {list(example_vars)} to "
                     f"method parameters {param_names} — skipping"
                 )
                 continue
@@ -298,6 +420,11 @@ def run_examples(code: str, examples: list[Example], timeout_seconds: int = 5) -
             with _TimeoutGuard(timeout_seconds):
                 instance = solution_cls()
                 actual = method(instance, *args)
+
+            if return_kind == "list":
+                actual = _linked_list_to_values(actual)
+            elif return_kind == "tree":
+                actual = _tree_to_values(actual)
 
             if actual == expected:
                 report.passed += 1
