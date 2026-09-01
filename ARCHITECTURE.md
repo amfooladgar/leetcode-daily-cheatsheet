@@ -66,6 +66,43 @@ local login session. That means:
 CLAUDE.md still matters — it's what loads when you run interactive `claude`
 sessions in this repo for development (see docs/OPERATIONS.md).
 
+`--bare` also forces auth to strictly `ANTHROPIC_API_KEY`/`apiKeyHelper` —
+OAuth and keychain are never read (confirmed via `claude -p --help`). See
+"Claude Pro/Max fallback auth" below for the one deliberate, scoped
+exception to that.
+
+## Claude Pro/Max fallback auth
+
+`src/claude/runner.py`'s `run_stage()` normally shells out to
+`claude -p --bare` using `ANTHROPIC_API_KEY` alone (see "Why `--bare`"
+above). If Anthropic's billing rejects a request with its own
+`"credit balance is too low"` error (`api_error_status: 400`) — as opposed
+to any other failure — and `CLAUDE_CODE_OAUTH_TOKEN` is set (a long-lived
+token from `claude setup-token`, tied to a Claude Pro/Max subscription),
+that one stage is retried exactly once with:
+
+- `ANTHROPIC_API_KEY` stripped from the subprocess environment, and
+- `--bare` dropped from the command line.
+
+Both are required together: `--bare` never reads OAuth credentials at all
+(see above), so there is no way to reach the subscription token while
+keeping it. Dropping `--bare` for this one retry means it auto-loads this
+repo's checked-out `CLAUDE.md`, hooks, and MCP config — a real, deliberate
+exception to the reproducibility guarantee `--bare` normally provides,
+intentionally scoped to only this rare billing-outage path. The primary
+path for every other call, and every other failure mode on this one, is
+completely unaffected.
+
+This is why the retry is gated on the specific `"credit balance is too
+low"` message (`src/claude/runner.py::_is_low_credit_failure()`) rather
+than firing on any non-zero exit: a bad solution, a failed adversarial
+verification, or a `max_turns` exhaustion must surface immediately, not
+get silently re-run under different auth and different (non-bare) context.
+
+`CLAUDE_CODE_OAUTH_TOKEN` is entirely optional — unset, the pipeline
+behaves exactly as before this fallback existed, and a low-credit failure
+just fails the run as usual (see "Failure policy" below).
+
 ## Why the prompts explicitly say "no tool access"
 
 `allowed_tools: ""` in `config/settings.yaml` means every `run_stage()`
@@ -388,6 +425,7 @@ per day regardless of DST or dispatch delay.
 | Stage failure          | Action                                              |
 |-------------------------|------------------------------------------------------|
 | LeetCode fetch           | Retry (`tenacity`, 3 attempts) -> stop, no artifact  |
+| Claude solve, verify, or compress (low-credit billing error) | Retry once via `CLAUDE_CODE_OAUTH_TOKEN` fallback if set -> else stop (see "Claude Pro/Max fallback auth") |
 | Claude solve              | Retry once -> stop                                   |
 | Claude verify (invalid)   | Regenerate solution once, re-verify -> stop if still invalid |
 | Example/edge-case tests   | Never publish; stop                                  |

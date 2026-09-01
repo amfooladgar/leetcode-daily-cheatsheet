@@ -83,6 +83,16 @@ jobs:
         id: pipeline
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Optional Claude Pro/Max subscription fallback -- see
+          # ARCHITECTURE.md "Claude Pro/Max fallback auth". Generated once
+          # locally via `claude setup-token` and stored as a repo secret;
+          # src/claude/runner.py only reaches for this if a stage fails with
+          # Anthropic's own "credit balance is too low" error, and strips
+          # ANTHROPIC_API_KEY *and* --bare from that one retry (--bare never
+          # reads OAuth -- see ARCHITECTURE.md "Why --bare"), so that single
+          # call also picks up this repo's checked-out CLAUDE.md/hooks/MCP
+          # config. Leave unset to disable the fallback entirely.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
           GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
           GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}

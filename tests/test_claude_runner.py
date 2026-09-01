@@ -8,6 +8,22 @@ from unittest import mock
 
 from src.claude.runner import ClaudeStageError, run_stage
 
+_LOW_CREDIT_STDOUT = json.dumps(
+    {
+        "is_error": True,
+        "terminal_reason": "api_error",
+        "api_error_status": 400,
+        "result": "Credit balance is too low",
+        "total_cost_usd": 0,
+    }
+)
+_MAX_TURNS_STDOUT = json.dumps(
+    {"is_error": True, "terminal_reason": "max_turns", "total_cost_usd": 0.07}
+)
+_OK_STDOUT = json.dumps(
+    {"structured_output": {"ok": True}, "total_cost_usd": 0.01, "session_id": "s1"}
+)
+
 
 def _completed(stdout: str, returncode: int = 0) -> subprocess.CompletedProcess:
     return subprocess.CompletedProcess(
@@ -104,6 +120,101 @@ class RunStageFailureDiagnosticsTests(unittest.TestCase):
         message = self._run_and_capture_error("not json at all")
         self.assertIn("Stage 'compress' exited 1", message)
         self.assertIn("not json at all", message)
+
+
+class RunStageOAuthFallbackTests(unittest.TestCase):
+    """A stage that fails with Anthropic's own 'credit balance is too low'
+    billing rejection retries exactly once with ANTHROPIC_API_KEY stripped,
+    if and only if CLAUDE_CODE_OAUTH_TOKEN is set -- see ARCHITECTURE.md
+    'Claude Pro/Max fallback auth'. Every other failure must never retry,
+    or a real bug (bad solve, verify rejection, max_turns) would be
+    silently re-run under different auth instead of surfacing."""
+
+    def _run(self, allowed_tools: str = "") -> None:
+        run_stage(
+            stage="solve",
+            schema_filename="generation/solve.gen-schema.json",
+            model="claude-sonnet-5",
+            max_turns=8,
+            allowed_tools=allowed_tools,
+            prompt_version="v1",
+            problem_json="{}",
+        )
+
+    def test_low_credit_failure_retries_once_without_the_api_key(self):
+        with (
+            mock.patch.dict(
+                "os.environ",
+                {"ANTHROPIC_API_KEY": "sk-ant-broke", "CLAUDE_CODE_OAUTH_TOKEN": "oauth-tok"},
+            ),
+            mock.patch(
+                "subprocess.run",
+                side_effect=[
+                    _completed(_LOW_CREDIT_STDOUT, returncode=1),
+                    _completed(_OK_STDOUT, returncode=0),
+                ],
+            ) as mock_run,
+        ):
+            self._run()
+
+        self.assertEqual(mock_run.call_count, 2)
+        first_call, second_call = mock_run.call_args_list
+        first_env = first_call.kwargs["env"]
+        second_env = second_call.kwargs["env"]
+        self.assertIsNone(first_env)
+        self.assertNotIn("ANTHROPIC_API_KEY", second_env)
+        self.assertEqual(second_env.get("CLAUDE_CODE_OAUTH_TOKEN"), "oauth-tok")
+
+        # --bare forces ANTHROPIC_API_KEY/apiKeyHelper auth and never reads
+        # OAuth (confirmed via `claude -p --help`) -- the fallback call must
+        # drop it, or CLAUDE_CODE_OAUTH_TOKEN would be silently ignored and
+        # the retry would fail the exact same way as the first attempt.
+        self.assertIn("--bare", first_call.args[0])
+        self.assertNotIn("--bare", second_call.args[0])
+
+    def test_low_credit_failure_without_oauth_token_never_retries(self):
+        with (
+            mock.patch.dict("os.environ", {"ANTHROPIC_API_KEY": "sk-ant-broke"}, clear=False),
+            mock.patch(
+                "subprocess.run", return_value=_completed(_LOW_CREDIT_STDOUT, returncode=1)
+            ) as mock_run,
+            self.assertRaises(ClaudeStageError),
+        ):
+            self._run()
+
+        self.assertEqual(mock_run.call_count, 1)
+
+    def test_non_billing_failure_never_retries_even_with_oauth_token_set(self):
+        with (
+            mock.patch.dict(
+                "os.environ",
+                {"ANTHROPIC_API_KEY": "sk-ant-broke", "CLAUDE_CODE_OAUTH_TOKEN": "oauth-tok"},
+            ),
+            mock.patch(
+                "subprocess.run", return_value=_completed(_MAX_TURNS_STDOUT, returncode=1)
+            ) as mock_run,
+            self.assertRaises(ClaudeStageError),
+        ):
+            self._run()
+
+        self.assertEqual(mock_run.call_count, 1)
+
+    def test_fallback_attempt_also_failing_raises_from_the_fallback(self):
+        with (
+            mock.patch.dict(
+                "os.environ",
+                {"ANTHROPIC_API_KEY": "sk-ant-broke", "CLAUDE_CODE_OAUTH_TOKEN": "oauth-tok"},
+            ),
+            mock.patch(
+                "subprocess.run",
+                return_value=_completed(_LOW_CREDIT_STDOUT, returncode=1),
+            ) as mock_run,
+            self.assertRaises(ClaudeStageError) as ctx,
+        ):
+            self._run()
+
+        self.assertEqual(mock_run.call_count, 2)
+        self.assertIn("Credit balance is too low", str(ctx.exception))
 
 
 if __name__ == "__main__":

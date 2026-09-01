@@ -53,7 +53,12 @@ happens both before the pipeline starts (invalid/missing config, e.g. no
   absence must never crash the run — with `image_generation.
   fallback_to_existing: true` (the default), a missing/invalid key is
   caught pre-flight and the run falls back to the `existing` renderer
-  with a logged warning instead.
+  with a logged warning instead. `CLAUDE_CODE_OAUTH_TOKEN` is likewise
+  optional: `src/claude/runner.py` reads it only as a fallback when
+  Anthropic's own "credit balance is too low" billing error rejects
+  `ANTHROPIC_API_KEY`, retrying that one stage once with the API key (and
+  `--bare`, which never reads OAuth) stripped from the subprocess — see
+  ARCHITECTURE.md "Claude Pro/Max fallback auth" before touching this path.
 - All Claude-generated content (problem understanding, code, complexity
   claims) MUST pass `jsonschema` validation against `schemas/*.json` before
   it is allowed to reach the renderer. A schema failure is a pipeline

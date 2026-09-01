@@ -11,6 +11,22 @@ byte of the prompt comes from prompts/claude/<version>/<stage>.md, filled in
 by this module, so a run is fully reproducible from the files in this repo
 plus the ANTHROPIC_API_KEY environment variable.
 
+If `CLAUDE_CODE_OAUTH_TOKEN` is also set (a long-lived token from
+`claude setup-token`, tied to a Claude Pro/Max subscription -- see
+ARCHITECTURE.md "Claude Pro/Max fallback auth"), a stage that fails with
+Anthropic's own "credit balance is too low" billing rejection is retried
+exactly once with `ANTHROPIC_API_KEY` stripped from that one subprocess's
+environment. That retry also drops `--bare`: per `claude -p --help`,
+`--bare` forces auth to strictly ANTHROPIC_API_KEY/apiKeyHelper and *never*
+reads OAuth, so there is no way to reach the subscription token without
+dropping it. This means the one fallback call also auto-loads this repo's
+checked-out CLAUDE.md/hooks/MCP config -- a real, deliberate exception to
+the reproducibility guarantee described in ARCHITECTURE.md "Why --bare",
+scoped to only the rare billing-outage retry. Any other failure (bad
+solution, verify rejection, max_turns, timeout, ...) is never retried here
+-- that would silently paper over a real bug instead of routing around a
+billing outage.
+
 The `schema_filename` callers pass here (src/main.py) is deliberately the
 *simplified* generation schema under schemas/generation/, not the full
 schemas/<stage>.schema.json -- see ARCHITECTURE.md "Why two schema files
@@ -25,6 +41,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -65,6 +82,20 @@ def _load_schema_json(schema_filename: str) -> str:
     if not path.exists():
         raise ClaudeStageError(f"No schema file at {path}")
     return path.read_text()
+
+
+def _is_low_credit_failure(stdout: str) -> bool:
+    """True only for Anthropic's own "credit balance is too low" billing
+    rejection (api_error_status 400) -- the one failure mode the
+    CLAUDE_CODE_OAUTH_TOKEN fallback below is allowed to retry. Every other
+    failure (bad solution, verify rejection, max_turns, ...) must surface
+    immediately, not get silently re-run under different auth."""
+    try:
+        payload = json.loads(stdout)
+    except json.JSONDecodeError:
+        return False
+    reason = str(payload.get("result") or "")
+    return "credit balance is too low" in reason.lower()
 
 
 def _summarize_failed_payload(stdout: str) -> str | None:
@@ -143,20 +174,40 @@ def run_stage(
     log.info(
         "Running Claude stage '%s' (model=%s, prompt_version=%s)", stage, model, prompt_version
     )
-    try:
-        proc = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            check=False,
+
+    def _invoke(env: dict[str, str] | None, cmd_to_run: list[str]) -> subprocess.CompletedProcess:
+        try:
+            return subprocess.run(
+                cmd_to_run,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+                check=False,
+                env=env,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise ClaudeStageError(f"Stage '{stage}' timed out after {timeout_seconds}s") from exc
+        except FileNotFoundError as exc:
+            raise ClaudeStageError(
+                f"'{claude_bin}' not found on PATH — install Claude Code first (see docs/SETUP.md)."
+            ) from exc
+
+    proc = _invoke(None, cmd)
+
+    oauth_token = os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
+    if proc.returncode != 0 and oauth_token and _is_low_credit_failure(proc.stdout):
+        log.warning(
+            "Stage '%s' hit Anthropic's 'credit balance is too low' error -- "
+            "retrying once via CLAUDE_CODE_OAUTH_TOKEN (Claude Pro/Max subscription) "
+            "instead of ANTHROPIC_API_KEY. This retry also drops --bare (OAuth is "
+            "never read in --bare mode), so this one call auto-loads this repo's "
+            "checked-out CLAUDE.md/hooks/MCP config -- see ARCHITECTURE.md "
+            "'Claude Pro/Max fallback auth'.",
+            stage,
         )
-    except subprocess.TimeoutExpired as exc:
-        raise ClaudeStageError(f"Stage '{stage}' timed out after {timeout_seconds}s") from exc
-    except FileNotFoundError as exc:
-        raise ClaudeStageError(
-            f"'{claude_bin}' not found on PATH — install Claude Code first (see docs/SETUP.md)."
-        ) from exc
+        fallback_env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+        fallback_cmd = [arg for arg in cmd if arg != "--bare"]
+        proc = _invoke(fallback_env, fallback_cmd)
 
     if proc.returncode != 0:
         # Surface stdout too, not just stderr: some `claude` CLI failure
