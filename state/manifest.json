@@ -565,5 +565,35 @@
     "topics": [
       "Linked List"
     ]
+  },
+  "2026-09-01:3568": {
+    "content_hash": "eadbb52d1f367ddf",
+    "date": "2026-09-01",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "18OK2D9ZUsWvF4h0RaEUAHRIyKpZw5Uxf",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget BFS Needs Energy and Litter in State",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1zY4G2qz9aeQIood6Xa_2Z4gmeU2BQMQD",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3568,
+    "problem_url": "https://leetcode.com/problems/minimum-moves-to-clean-the-classroom/",
+    "prompt_version": "v1",
+    "slug": "minimum-moves-to-clean-the-classroom",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 23,
+    "title": "Minimum Moves to Clean the Classroom",
+    "topics": [
+      "Array",
+      "Hash Table",
+      "Bit Manipulation",
+      "Breadth-First Search",
+      "Matrix"
+    ]
   }
 }
