@@ -595,5 +595,32 @@
       "Breadth-First Search",
       "Matrix"
     ]
+  },
+  "2026-09-02:3875": {
+    "content_hash": "4c3f3ee470baca1a",
+    "date": "2026-09-02",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1ivsD43eLx5QpJagVBu2AWpj6BtlrQ2_v",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Subtracting Odd Flips Parity, Even Doesn't",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 3875,
+    "problem_url": "https://leetcode.com/problems/construct-uniform-parity-array-i/",
+    "prompt_version": "v1",
+    "slug": "construct-uniform-parity-array-i",
+    "status": "success",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": "Construct Uniform Parity Array I",
+    "topics": [
+      "Array",
+      "Math"
+    ]
   }
 }
