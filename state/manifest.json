@@ -622,5 +622,32 @@
       "Array",
       "Math"
     ]
+  },
+  "2026-09-03:3876": {
+    "content_hash": "cfab082930b3f49c",
+    "date": "2026-09-03",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1F7gxl0KR6PkliJriNaipL5Hwhi5alDkC",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Fixed First-Element Parity Trick",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1MDrnlrn7x1k3lWnz0iEJ8KsMIaleOXzo",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3876,
+    "problem_url": "https://leetcode.com/problems/construct-uniform-parity-array-ii/",
+    "prompt_version": "v1",
+    "slug": "construct-uniform-parity-array-ii",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 27,
+    "title": "Construct Uniform Parity Array II",
+    "topics": [
+      "Array",
+      "Math"
+    ]
   }
 }
