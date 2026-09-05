@@ -676,5 +676,32 @@
       "Array",
       "Prefix Sum"
     ]
+  },
+  "2026-09-05:3904": {
+    "content_hash": "e8fd976de69e57ee",
+    "date": "2026-09-05",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1yzjndVKqIipVCnEh2HA38y0ZwwbdTSho",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Prefix-Max, Suffix-Min Trick",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1qdXdFwVU4mcZQ4k3DFe3QL7hNhx2SM4D",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3904,
+    "problem_url": "https://leetcode.com/problems/smallest-stable-index-ii/",
+    "prompt_version": "v1",
+    "slug": "smallest-stable-index-ii",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 30,
+    "title": "Smallest Stable Index II",
+    "topics": [
+      "Array",
+      "Prefix Sum"
+    ]
   }
 }
