@@ -703,5 +703,32 @@
       "Array",
       "Prefix Sum"
     ]
+  },
+  "2026-09-06:115": {
+    "content_hash": "83ce0f3f7cc730b6",
+    "date": "2026-09-06",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1PJ9s9A8YoogO6DhTyx0DBHeAiUF4tXk5",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Skip-or-Match DP Split",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1KpChWZX70dBWz_l0YRgS3liRN4084iSC",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 115,
+    "problem_url": "https://leetcode.com/problems/distinct-subsequences/",
+    "prompt_version": "v1",
+    "slug": "distinct-subsequences",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 31,
+    "title": "Distinct Subsequences",
+    "topics": [
+      "String",
+      "Dynamic Programming"
+    ]
   }
 }
