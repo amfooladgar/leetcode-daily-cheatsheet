@@ -730,5 +730,32 @@
       "String",
       "Dynamic Programming"
     ]
+  },
+  "2026-09-07:940": {
+    "content_hash": "e1a4996d368047cc",
+    "date": "2026-09-07",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1xqUSuS4DsiERddLU1xCN8F4tq-AB6kfU",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Double-Then-Subtract-Last Trick",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "14z6Y23gQ3oCBc25VjDgsmIsVTw-OX2fj",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 940,
+    "problem_url": "https://leetcode.com/problems/distinct-subsequences-ii/",
+    "prompt_version": "v1",
+    "slug": "distinct-subsequences-ii",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 32,
+    "title": "Distinct Subsequences II",
+    "topics": [
+      "String",
+      "Dynamic Programming"
+    ]
   }
 }
