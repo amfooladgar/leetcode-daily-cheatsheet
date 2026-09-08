@@ -757,5 +757,31 @@
       "String",
       "Dynamic Programming"
     ]
+  },
+  "2026-09-08:3870": {
+    "content_hash": "66e9aaf13bc7503a",
+    "date": "2026-09-08",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "16yCyDRAfJYWBFxdTlMKJAHzo0YepTIzY",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Commas Depend Only on Digit-Length",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1kQKHAhVxoSsJX9kHx-rJghptskudJQ5I",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3870,
+    "problem_url": "https://leetcode.com/problems/count-commas-in-range/",
+    "prompt_version": "v1",
+    "slug": "count-commas-in-range",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 33,
+    "title": "Count Commas in Range",
+    "topics": [
+      "Math"
+    ]
   }
 }
