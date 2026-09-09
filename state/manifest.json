@@ -783,5 +783,31 @@
     "topics": [
       "Math"
     ]
+  },
+  "2026-09-09:3871": {
+    "content_hash": "aabfa36373b3b90c",
+    "date": "2026-09-09",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1w4KI1uzP7NeCUvTzv0CZAL7wLBRrm5Pf",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Commas Depend Only on Digit Length",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1hhKN6NlhFpA5Z_m7JGxM0K0PEMJz4r_8",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3871,
+    "problem_url": "https://leetcode.com/problems/count-commas-in-range-ii/",
+    "prompt_version": "v1",
+    "slug": "count-commas-in-range-ii",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 34,
+    "title": "Count Commas in Range II",
+    "topics": [
+      "Math"
+    ]
   }
 }
