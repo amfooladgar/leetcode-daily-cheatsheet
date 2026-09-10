@@ -811,27 +811,31 @@
     ]
   },
   "2026-09-10:2265": {
-    "content_hash": "",
+    "content_hash": "26c1ec526f47c55d",
     "date": "2026-09-10",
-    "difficulty": null,
-    "drive": false,
-    "drive_file_id": null,
-    "failure_reason": "still invalid after regeneration: ['The algorithm itself (post-order DFS returning (sum, count) and comparing total_sum // total_count to node.val) is logically correct and matches both worked examples exactly.', \"However, the constraint 'number of nodes in the tree is in the range [1, 1000]' allows a fully skewed (degenerate) tree of height ~1000. The plain recursive dfs() will then need a call-stack depth of ~1000 nested Python function calls. Python's default recursion limit (sys.getrecursionlimit()) is 1000, and the ambient call stack already includes several frames from the test harness/driver before Solution.averageOfSubtree is even invoked. On a maximally skewed 1000-node input this recursive solution is therefore at real risk of raising a RecursionError instead of returning the answer -- the code as written makes no accommodation (no sys.setrecursionlimit bump, no iterative fallback) for this worst-case boundary that the problem's own constraints explicitly permit.\", \"This is a genuine boundary-condition bug (not merely a style nitpick): the algorithm is right, but the implementation's reliance on unmodified Python recursion depth fails to account for the stated maximum constraint n=1000 combined with a valid skewed-tree shape, so it can crash rather than return the correct count on such inputs.\"]",
-    "failure_stage": "verify",
-    "headline": null,
-    "image_filename": null,
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1HMGatCxWKJ_joWTK8FuFFUunoD9XSg5X",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget Post-Order DFS for Subtree Stats",
+    "image_filename": "cheatsheet-openai-final.png",
     "linkedin": false,
-    "linkedin_draft_drive_file_id": null,
-    "linkedin_draft_saved": false,
+    "linkedin_draft_drive_file_id": "1kKaEL3EWBHzTQKABL_hb8kNwGEb8T7LW",
+    "linkedin_draft_saved": true,
     "linkedin_post_urn": null,
     "problem_number": 2265,
-    "problem_url": null,
-    "prompt_version": "v1",
+    "problem_url": "https://leetcode.com/problems/count-nodes-equal-to-average-of-subtree/",
+    "prompt_version": "v2",
     "slug": "count-nodes-equal-to-average-of-subtree",
-    "status": "failed",
-    "telegram": false,
-    "telegram_message_id": null,
-    "title": null,
-    "topics": []
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 35,
+    "title": "Count Nodes Equal to Average of Subtree",
+    "topics": [
+      "Tree",
+      "Depth-First Search",
+      "Binary Tree"
+    ]
   }
 }
