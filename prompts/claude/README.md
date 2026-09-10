@@ -2,10 +2,17 @@
 
 Each file here is passed verbatim (with `{{placeholders}}` substituted by
 `src/claude/runner.py`) as the prompt to `claude -p --bare`. Production
-always reads from `prompts/claude/v1/` — the symlink-free convention is:
-`src/claude/runner.py` takes a `prompt_version` argument (default `"v1"`,
-set in `config/settings.yaml`) and reads
-`prompts/claude/{prompt_version}/{stage}.md`.
+reads the version named by `claude.prompt_version` in
+`config/settings.yaml` (currently `v2`) — the symlink-free convention is:
+`src/claude/runner.py` takes a `prompt_version` argument (default `"v1"`
+when unset) and reads `prompts/claude/{prompt_version}/{stage}.md`.
+
+`v2` (2026-09-10) adds a recursion-depth-safety requirement to `solve.md`
+and `verify.md`: recursive traversals whose worst-case depth can reach
+CPython's default 1000-frame limit under the problem's constraints must
+bump `sys.setrecursionlimit(...)` or go iterative. Added after the
+adversarial verifier repeatedly (and correctly) failed an unguarded
+recursive solution to problem #2265.
 
 ## Pipeline order
 

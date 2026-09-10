@@ -27,11 +27,35 @@ leetcode:
 
 claude:
   # Any Claude Code model name (`claude --model <name>`), see prompts/claude/.
-  # Sonnet is the default balance of quality/cost; swap to a cheaper/faster
-  # model in prompts that don't need as much reasoning if you want to cut cost.
-  model_solve: "claude-sonnet-5"
+  # Per-stage so each stage runs on the cheapest model that still clears its
+  # bar. Rough first-party rates: haiku-4-5 $1/$5 per 1M tok, sonnet-5
+  # $2/$10 (note: "older" models like sonnet-4-6 at $3/$15 are *pricier*, not
+  # cheaper -- haiku-4-5 is the real cost lever). 2026-09-10: solve +
+  # compress moved to haiku-4-5 to cut run cost.
+  #   - solve: haiku. A weak solution is still caught downstream -- the
+  #     verify stage adversarially reviews it AND src/claude/validator.py
+  #     executes it against every official example before anything renders.
+  #   - verify: stays on sonnet-5. This is the adversarial correctness gate
+  #     and the one stage where a CI run has already shown haiku-4-5 failing
+  #     the --json-schema structured-output contract
+  #     (structured_output_retry_exhausted). Do not downgrade without
+  #     re-checking that.
+  #   - compress: haiku. Mechanical "fit the text into the canvas budget"
+  #     task, and an overflow is caught by the renderer's QA gate +
+  #     src/main.py's overflow-recovery retry.
+  # model_compress is also reused for the linkedin_caption stage (marketing
+  # copy -- fine on haiku).
+  model_solve: "claude-haiku-4-5"
   model_verify: "claude-sonnet-5"
-  model_compress: "claude-sonnet-5"
+  model_compress: "claude-haiku-4-5"
+  # Which prompts/claude/<version>/ directory the pipeline reads. Bump this
+  # (after copying the directory) when you materially change a prompt's
+  # behavior -- see prompts/claude/README.md "Versioning". v2 (2026-09-10)
+  # added the recursion-depth-safety requirement to solve.md + verify.md
+  # after the adversarial verifier repeatedly failed correct recursive
+  # tree solutions over CPython's default 1000-frame recursion limit
+  # (problem #2265, the 2026-09-10 daily).
+  prompt_version: "v2"
   # allowed_tools is deliberately empty (see below), so every turn beyond
   # the first is either extended thinking or a denied tool-use attempt the
   # model has to recover from. 4 was too tight in practice -- compress hit

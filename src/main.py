@@ -314,7 +314,7 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     claude_cfg = settings["claude"]
-    prompt_version = "v1"
+    prompt_version = claude_cfg.get("prompt_version", "v1")
     problem_json = problem.model_dump_json(indent=2)
 
     def _solve() -> dict:
