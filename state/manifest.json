@@ -809,5 +809,29 @@
     "topics": [
       "Math"
     ]
+  },
+  "2026-09-10:2265": {
+    "content_hash": "",
+    "date": "2026-09-10",
+    "difficulty": null,
+    "drive": false,
+    "drive_file_id": null,
+    "failure_reason": "still invalid after regeneration: ['The algorithm itself (post-order DFS returning (sum, count) and comparing total_sum // total_count to node.val) is logically correct and matches both worked examples exactly.', \"However, the constraint 'number of nodes in the tree is in the range [1, 1000]' allows a fully skewed (degenerate) tree of height ~1000. The plain recursive dfs() will then need a call-stack depth of ~1000 nested Python function calls. Python's default recursion limit (sys.getrecursionlimit()) is 1000, and the ambient call stack already includes several frames from the test harness/driver before Solution.averageOfSubtree is even invoked. On a maximally skewed 1000-node input this recursive solution is therefore at real risk of raising a RecursionError instead of returning the answer -- the code as written makes no accommodation (no sys.setrecursionlimit bump, no iterative fallback) for this worst-case boundary that the problem's own constraints explicitly permit.\", \"This is a genuine boundary-condition bug (not merely a style nitpick): the algorithm is right, but the implementation's reliance on unmodified Python recursion depth fails to account for the stated maximum constraint n=1000 combined with a valid skewed-tree shape, so it can crash rather than return the correct count on such inputs.\"]",
+    "failure_stage": "verify",
+    "headline": null,
+    "image_filename": null,
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 2265,
+    "problem_url": null,
+    "prompt_version": "v1",
+    "slug": "count-nodes-equal-to-average-of-subtree",
+    "status": "failed",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": null,
+    "topics": []
   }
 }
