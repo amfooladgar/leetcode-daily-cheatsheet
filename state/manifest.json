@@ -811,27 +811,31 @@
     ]
   },
   "2026-09-10:2265": {
-    "content_hash": "",
+    "content_hash": "14f895c5a104f3f2",
     "date": "2026-09-10",
-    "difficulty": null,
-    "drive": false,
-    "drive_file_id": null,
-    "failure_reason": "still invalid after regeneration: [\"The recursive DFS uses one Python stack frame per node along the deepest root-to-leaf path. The constraint allows up to 1000 nodes and a perfectly skewed tree (essentially a linked list) is a valid input under that constraint, producing a recursion depth of ~1000. Python's default recursion limit (sys.getrecursionlimit() == 1000) counts all active frames, not just this function's, so the extra frames from module/method dispatch plus the 1000 nested `dfs` calls will exceed the limit and raise a RecursionError on the maximum-size skewed test case, which is a real correctness failure for a valid input within the stated constraints.\", 'Aside from the recursion-depth risk, the algorithmic logic (post-order sum/count accumulation, floor-division average check) is correct and matches both worked examples.']",
-    "failure_stage": "verify",
-    "headline": null,
-    "image_filename": null,
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1SKlYEQtxkRgPuNbsfad14fKKh-0mcQCo",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget Post-Order DFS for Subtree Averages",
+    "image_filename": "cheatsheet-openai-final.png",
     "linkedin": false,
-    "linkedin_draft_drive_file_id": null,
-    "linkedin_draft_saved": false,
+    "linkedin_draft_drive_file_id": "1baku9EkbFsFJaBxkO28Z6FaaNelyFRQO",
+    "linkedin_draft_saved": true,
     "linkedin_post_urn": null,
     "problem_number": 2265,
-    "problem_url": null,
-    "prompt_version": "v1",
+    "problem_url": "https://leetcode.com/problems/count-nodes-equal-to-average-of-subtree/",
+    "prompt_version": "v2",
     "slug": "count-nodes-equal-to-average-of-subtree",
-    "status": "failed",
-    "telegram": false,
-    "telegram_message_id": null,
-    "title": null,
-    "topics": []
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 36,
+    "title": "Count Nodes Equal to Average of Subtree",
+    "topics": [
+      "Tree",
+      "Depth-First Search",
+      "Binary Tree"
+    ]
   }
 }
