@@ -837,5 +837,34 @@
       "Depth-First Search",
       "Binary Tree"
     ]
+  },
+  "2026-09-11:3483": {
+    "content_hash": "2af895ccb8f9bf1b",
+    "date": "2026-09-11",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1vlUuaMXm8RK3XIm3l-s_jRaHLGGDm89O",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Count by Digit Value",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1gM2TA9v8KcFBDe7JAGDtp2-m4HsOnWZ7",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3483,
+    "problem_url": "https://leetcode.com/problems/unique-3-digit-even-numbers/",
+    "prompt_version": "v2",
+    "slug": "unique-3-digit-even-numbers",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 37,
+    "title": "Unique 3-Digit Even Numbers",
+    "topics": [
+      "Array",
+      "Hash Table",
+      "Recursion",
+      "Enumeration"
+    ]
   }
 }
