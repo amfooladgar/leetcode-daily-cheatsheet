@@ -72,7 +72,14 @@ claude:
   # 180s hardcoded default on one run and took 89s on an identical rerun --
   # pure model-latency variance, not a real hang -- so this is raised and
   # made configurable rather than left as a code constant.
-  stage_timeout_seconds: 300
+  # 2026-09-12: raised again from 300 to 600. All 3 of that day's scheduled
+  # runs failed verifying #3414 (Hard, interval DP + lexicographic
+  # tie-breaking) -- solve alone took 188s (vs. ~70-100s on Easy/Medium
+  # days) and verify blew past 300s outright. Hard dailies need materially
+  # more headroom than Easy/Medium ones. Paired with daily.yml's
+  # timeout-minutes bump to 30, so the larger per-stage budget can't itself
+  # get cut off by the job-level cap.
+  stage_timeout_seconds: 600
 
 image:
   final_width: 1080
