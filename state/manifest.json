@@ -895,5 +895,32 @@
       "Dynamic Programming",
       "Sorting"
     ]
+  },
+  "2026-09-13:835": {
+    "content_hash": "598b96c6b73cec37",
+    "date": "2026-09-13",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1bEAvqkFMrHEe5Ffds0-t9GIOQ4Ntwte3",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Offset Frequency Trick",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1sBmrL9_3GZJyL-Nsvp0hzJHOGDRvxypH",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 835,
+    "problem_url": "https://leetcode.com/problems/image-overlap/",
+    "prompt_version": "v2",
+    "slug": "image-overlap",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 40,
+    "title": "Image Overlap",
+    "topics": [
+      "Array",
+      "Matrix"
+    ]
   }
 }
