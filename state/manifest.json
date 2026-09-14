@@ -922,5 +922,32 @@
       "Array",
       "Matrix"
     ]
+  },
+  "2026-09-14:836": {
+    "content_hash": "d44c126c222944a3",
+    "date": "2026-09-14",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1QQ3BhMw4pjSSXx5oFzuZY_z4kdZ8eYeH",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Two-Axis Overlap Check",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "10QGR2J02wlLnk0sdqdvvBS4Phzv_C--L",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 836,
+    "problem_url": "https://leetcode.com/problems/rectangle-overlap/",
+    "prompt_version": "v2",
+    "slug": "rectangle-overlap",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 41,
+    "title": "Rectangle Overlap",
+    "topics": [
+      "Math",
+      "Geometry"
+    ]
   }
 }
