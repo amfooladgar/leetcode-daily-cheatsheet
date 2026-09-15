@@ -949,5 +949,29 @@
       "Math",
       "Geometry"
     ]
+  },
+  "2026-09-15:2472": {
+    "content_hash": "",
+    "date": "2026-09-15",
+    "difficulty": null,
+    "drive": false,
+    "drive_file_id": null,
+    "failure_reason": "still invalid after regeneration: [\"The DP recurrence itself (dp[i] = max(dp[i-1], max over valid j of dp[j]+1)) is algorithmically correct and traces correctly against both examples (dp[9]=2 for example 1 via 'aba'+'dbbd'; dp[6]=0 for example 2). The bug is not in the recurrence but in the stated complexity claim and its practical implications.\", \"The complexity explanation asserts 'O(n^3) = 8x10^9 operations is tight but acceptable' for n<=2000 \u2014 this is a false characterization. 8x10^9 character comparisons is not 'tight but acceptable' for a Python solution under any realistic LeetCode time limit (typically 1-10s for Hard problems); this would almost certainly TLE. Worse, the O(n^3) bound is actually reached for small k (e.g. k=1), where nearly every (i,j) pair with i-j>=k triggers an O(n) is_palindrome scan, giving roughly n^3/6 character comparisons \u2014 on the order of 1-8 billion operations depending on k, translating to minutes-to-hours in CPython, not something that passes within typical judge limits.\", \"The problem's own constraint (n<=2000, Hard difficulty) is a strong signal the intended solution is O(n^2) (precompute a palindrome table once in O(n^2), then reuse it in O(1) lookups inside the same DP), not O(n^3) brute-force re-scanning. Publishing this as a verified 'accepted' complexity claim is misleading to a reader using the cheat sheet to internalize correct complexity intuition for this problem.\"]",
+    "failure_stage": "verify",
+    "headline": null,
+    "image_filename": null,
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 2472,
+    "problem_url": null,
+    "prompt_version": "v2",
+    "slug": "maximum-number-of-non-overlapping-palindrome-substrings",
+    "status": "failed",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": null,
+    "topics": []
   }
 }
