@@ -973,5 +973,33 @@
     "telegram_message_id": null,
     "title": null,
     "topics": []
+  },
+  "2026-09-16:1621": {
+    "content_hash": "21d44bc71ee535ba",
+    "date": "2026-09-16",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1_TY072Mq4lxgmPsqm_ZoWayJufUKvKrX",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Cumulative DP Trick",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "15JF_xtc3JSQOQJenDhU6gwkWGtF306rg",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1621,
+    "problem_url": "https://leetcode.com/problems/number-of-sets-of-k-non-overlapping-line-segments/",
+    "prompt_version": "v2",
+    "slug": "number-of-sets-of-k-non-overlapping-line-segments",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 42,
+    "title": "Number of Sets of K Non-Overlapping Line Segments",
+    "topics": [
+      "Dynamic Programming",
+      "Math",
+      "Combinatorics"
+    ]
   }
 }
