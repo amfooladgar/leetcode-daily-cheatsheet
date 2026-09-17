@@ -427,7 +427,7 @@ per day regardless of DST or dispatch delay.
 | LeetCode fetch           | Retry (`tenacity`, 3 attempts) -> stop, no artifact  |
 | Claude solve, verify, or compress (low-credit billing error) | Retry once via `CLAUDE_CODE_OAUTH_TOKEN` fallback if set -> else stop (see "Claude Pro/Max fallback auth") |
 | Claude solve              | Retry once -> stop                                   |
-| Claude verify (invalid)   | Regenerate solution once, re-verify -> stop if still invalid |
+| Claude verify (invalid)   | Regenerate solution once (with the verifier's issues fed back in, see below), re-verify -> stop if still invalid |
 | Example/edge-case tests   | Never publish; stop                                  |
 | Renderer / QA gate        | Stop (this is a bug, not a transient failure)        |
 | Google Drive upload       | Retry -> stop; manifest marks `drive: false`         |
@@ -445,6 +445,24 @@ in the manifest only when `image_generation.fallback_to_existing` is
 `false`; with the default `true`, the factory (and, for a bad/missing
 config caught before any stage runs, `src/main.py`'s pre-flight check)
 falls back to the `existing` provider instead of stopping.
+
+### Regeneration feedback loop
+
+The one allowed "regenerate solution once" retry above is not a blind
+re-run of the identical `solve` prompt. `src/main.py`'s
+`_format_verification_feedback` builds a `{{previous_attempt_feedback}}`
+block from the verifier's `issues` plus the rejected `code`, and the
+regenerated `_solve()` call passes it through to
+`prompts/claude/v3/solve.md`'s optional feedback section (empty string on
+the first attempt, so the prompt is unchanged there). Without this, the
+retry was just the same prompt against the same model
+(`claude.model_solve`, haiku-tier by default) a second time -- harmless
+when the first failure was a fluke, but a wasted retry when the model
+deterministically reaches for the same wrong approach, as happened for
+problem #2472 (2026-09-15, Hard): every one of that day's 5 scheduled
+runs regenerated the same disproven greedy strategy and failed
+identically, because the second attempt never knew what the first one
+had gotten wrong.
 
 ## Optional OpenAI image renderer
 

@@ -46,6 +46,15 @@ claude:
   # model_compress is also reused for the linkedin_caption stage (marketing
   # copy -- fine on haiku).
   model_solve: "claude-haiku-4-5"
+  # 2026-09-16: override for Hard dailies only -- haiku's weaker reasoning
+  # kept reaching for the same disproven greedy strategy on problem #2472
+  # (2026-09-15, Hard), failing all 5 scheduled runs that day even with
+  # the regeneration-feedback loop above (see prompts/claude/README.md
+  # "v3"), because the underlying model wasn't capable enough for this
+  # problem class, not because it lacked context. src/main.py selects this
+  # instead of model_solve when problem.difficulty == "Hard"; Easy/Medium
+  # keep running on haiku.
+  model_solve_hard: "claude-sonnet-5"
   model_verify: "claude-sonnet-5"
   model_compress: "claude-haiku-4-5"
   # Which prompts/claude/<version>/ directory the pipeline reads. Bump this
@@ -54,8 +63,16 @@ claude:
   # added the recursion-depth-safety requirement to solve.md + verify.md
   # after the adversarial verifier repeatedly failed correct recursive
   # tree solutions over CPython's default 1000-frame recursion limit
-  # (problem #2265, the 2026-09-10 daily).
-  prompt_version: "v2"
+  # (problem #2265, the 2026-09-10 daily). v3 (2026-09-16) adds a
+  # `{{previous_attempt_feedback}}` section to solve.md, filled in by
+  # src/main.py only on the one allowed regeneration attempt after a
+  # failed verification -- the retry now sees the verifier's actual issues
+  # and its own rejected code instead of blindly re-running the identical
+  # prompt on the same (often haiku-tier) model. Added after problem #2472
+  # (the 2026-09-15 daily, Hard) burned all 5 scheduled runs that day: the
+  # solve stage kept regenerating the same flawed greedy with zero
+  # knowledge of what the verifier had already disproven.
+  prompt_version: "v3"
   # allowed_tools is deliberately empty (see below), so every turn beyond
   # the first is either extended thinking or a denied tool-use attempt the
   # model has to recover from. 4 was too tight in practice -- compress hit

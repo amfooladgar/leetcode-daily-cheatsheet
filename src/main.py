@@ -164,6 +164,29 @@ def _write_json(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
 
 
+def _format_verification_feedback(previous_solved: dict, issues: list[str]) -> str:
+    """Builds the `{{previous_attempt_feedback}}` section for a regenerated
+    solve attempt, so the one allowed retry is actually informed by what the
+    verifier found wrong instead of a blind re-roll of the same prompt (see
+    ARCHITECTURE.md "Regeneration feedback loop")."""
+    issue_list = "\n".join(f"- {issue}" for issue in issues)
+    return (
+        "## Previous attempt was rejected\n\n"
+        "Your previous solution for this problem failed adversarial "
+        "verification. Do not repeat these mistakes -- produce a new "
+        "solution that actually fixes every issue below, not a cosmetic "
+        "rewording of the same approach.\n\n"
+        "Verifier issues:\n\n"
+        f"{issue_list}\n\n"
+        "Your previous (rejected) code, for reference only -- do not just "
+        "resubmit it with minor edits if the underlying algorithm is what "
+        "was flagged:\n\n"
+        "```python\n"
+        f"{previous_solved.get('code', '')}\n"
+        "```"
+    )
+
+
 def _markdown_summary(cheatsheet: dict, problem_url: str) -> str:
     p = cheatsheet["problem"]
     lines = [
@@ -316,8 +339,19 @@ def run(args: argparse.Namespace) -> int:
     claude_cfg = settings["claude"]
     prompt_version = claude_cfg.get("prompt_version", "v1")
     problem_json = problem.model_dump_json(indent=2)
+    # Hard dailies get the stronger (pricier) solve model -- haiku kept
+    # regenerating the same disproven greedy strategy on problem #2472
+    # (2026-09-15, Hard) even with the verifier's issues fed back in (see
+    # config/settings.yaml's model_solve_hard comment). Easy/Medium stay on
+    # model_solve to keep the cost-cutting tradeoff for the problems it
+    # actually holds up for.
+    solve_model = (
+        claude_cfg.get("model_solve_hard", claude_cfg["model_solve"])
+        if problem.difficulty == "Hard"
+        else claude_cfg["model_solve"]
+    )
 
-    def _solve() -> dict:
+    def _solve(previous_attempt_feedback: str = "") -> dict:
         result = run_stage(
             stage="solve",
             # The CLI-facing schema is a simplified twin (no $ref/oneOf) --
@@ -325,12 +359,13 @@ def run(args: argparse.Namespace) -> int:
             # ARCHITECTURE.md "Why two schema files per stage". The full,
             # precise shape is still enforced below via validate_schema().
             schema_filename="generation/solve.gen-schema.json",
-            model=claude_cfg["model_solve"],
+            model=solve_model,
             max_turns=claude_cfg["max_turns"],
             allowed_tools=claude_cfg["allowed_tools"],
             timeout_seconds=claude_cfg["stage_timeout_seconds"],
             prompt_version=prompt_version,
             problem_json=problem_json,
+            previous_attempt_feedback=previous_attempt_feedback,
         )
         solve_schema = _load_schema("solve.schema.json")
         clamp_to_schema(result.structured_output, solve_schema)
@@ -364,7 +399,8 @@ def run(args: argparse.Namespace) -> int:
 
         if not verified["valid"]:
             log.warning("Verification failed, regenerating once: %s", verified["issues"])
-            solved = _solve()
+            feedback = _format_verification_feedback(solved, verified["issues"])
+            solved = _solve(previous_attempt_feedback=feedback)
             _write_json(stage_dir / "solve.json", solved)
             verified = _verify(solved)
             _write_json(stage_dir / "verify.json", verified)

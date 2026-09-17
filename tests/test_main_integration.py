@@ -112,6 +112,147 @@ class MainPipelineIntegrationTests(unittest.TestCase):
         # Dry run must not write the manifest.
         self.assertFalse((self.tmpdir / "state" / "manifest.json").exists())
 
+    def test_regeneration_feeds_verifier_issues_back_into_the_retry_solve_call(self):
+        # Regression: the one allowed "regenerate solution once" retry used
+        # to call `_solve()` with the exact same prompt and model as the
+        # first attempt -- a blind re-roll with zero knowledge of what
+        # verification had already disproven (see ARCHITECTURE.md
+        # "Regeneration feedback loop", problem #2472 2026-09-15). The
+        # retry's solve call must now carry the verifier's issues and the
+        # rejected code via `previous_attempt_feedback`, while the first
+        # attempt gets an empty string (prompt unchanged on the happy path).
+        from src.main import main
+
+        solve_calls: list[dict] = []
+        verify_call_count = 0
+
+        def fake_run_stage(*, stage, **kwargs):
+            nonlocal verify_call_count
+            if stage == "solve":
+                solve_calls.append(kwargs)
+                cheatsheet = load_sample_cheatsheet_json()
+                solve_payload = {
+                    "problem": cheatsheet["problem"],
+                    "key_insight": cheatsheet["key_insight"],
+                    "intuition": cheatsheet["intuition"],
+                    "naive_approach": cheatsheet["naive_approach"],
+                    "approach": cheatsheet["approach"],
+                    "example": cheatsheet["example"],
+                    "correctness": cheatsheet["correctness"],
+                    "complexity": cheatsheet["complexity"],
+                    "code": cheatsheet["code"],
+                    "diagrams": cheatsheet.get("diagrams", []),
+                    "reasoning_panel": cheatsheet.get("reasoning_panel"),
+                }
+                return ClaudeResult(
+                    structured_output=solve_payload, cost_usd=0.01, session_id="s1", raw={}
+                )
+            if stage == "verify":
+                verify_call_count += 1
+                is_first_call = verify_call_count == 1
+                return ClaudeResult(
+                    structured_output={
+                        "valid": not is_first_call,
+                        "issues": (
+                            ["The greedy never considers skipping the current position."]
+                            if is_first_call
+                            else []
+                        ),
+                        "corrected_code": None,
+                        "time_complexity": "O(n)",
+                        "space_complexity": "O(n)",
+                    },
+                    cost_usd=0.01,
+                    session_id="s2",
+                    raw={},
+                )
+            if stage == "compress":
+                cheatsheet = load_sample_cheatsheet_json()
+                return ClaudeResult(
+                    structured_output=cheatsheet, cost_usd=0.01, session_id="s3", raw={}
+                )
+            raise AssertionError(f"unexpected stage {stage}")
+
+        with mock.patch("src.main.run_stage", side_effect=fake_run_stage):
+            exit_code = main(["--problem-slug", "two-sum", "--dry-run"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(verify_call_count, 2, "verify must run once, then once more on retry")
+        self.assertEqual(len(solve_calls), 2, "solve must run once, then once more on retry")
+
+        first_feedback = solve_calls[0]["previous_attempt_feedback"]
+        retry_feedback = solve_calls[1]["previous_attempt_feedback"]
+        self.assertEqual(first_feedback, "", "the first attempt must see an unchanged prompt")
+        self.assertIn("never considers skipping the current position", retry_feedback)
+        self.assertIn("```python", retry_feedback)
+
+    def test_hard_daily_solves_on_the_stronger_override_model(self):
+        # Regression: haiku (the default model_solve) kept regenerating the
+        # same disproven greedy strategy on problem #2472 (2026-09-15,
+        # Hard), failing all 5 scheduled runs that day -- see
+        # config/settings.yaml's model_solve_hard comment. Hard dailies
+        # must solve on model_solve_hard; Easy/Medium keep model_solve.
+        from src.main import main
+
+        settings = load_settings()
+        expected_hard_model = settings["claude"]["model_solve_hard"]
+        expected_default_model = settings["claude"]["model_solve"]
+        self.assertNotEqual(
+            expected_hard_model,
+            expected_default_model,
+            "test is meaningless if the override doesn't differ from the default",
+        )
+
+        hard_raw = RawQuestion(
+            date="2026-08-13",
+            frontend_id="1",
+            title="Two Sum",
+            slug="two-sum",
+            difficulty="Hard",
+            content_html=(FIXTURES / "sample_problem_content.html").read_text(),
+            topics=["Array", "Hash Table"],
+            example_testcases="",
+            python_template="",
+            is_premium=False,
+        )
+
+        solve_models: list[str] = []
+
+        def fake_run_stage(*, stage, model, **kwargs):
+            if stage == "solve":
+                solve_models.append(model)
+            return _fake_run_stage(stage=stage, model=model, **kwargs)
+
+        with (
+            mock.patch("src.main.run_stage", side_effect=fake_run_stage),
+            mock.patch("src.main.LeetCodeClient") as mock_client_cls,
+        ):
+            mock_client_cls.return_value.fetch_daily.return_value = hard_raw
+            mock_client_cls.return_value.fetch_by_slug.return_value = hard_raw
+            exit_code = main(["--problem-slug", "two-sum", "--dry-run"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(solve_models, [expected_hard_model])
+
+    def test_non_hard_daily_solves_on_the_default_model(self):
+        from src.main import main
+
+        settings = load_settings()
+        expected_default_model = settings["claude"]["model_solve"]
+
+        solve_models: list[str] = []
+
+        def fake_run_stage(*, stage, model, **kwargs):
+            if stage == "solve":
+                solve_models.append(model)
+            return _fake_run_stage(stage=stage, model=model, **kwargs)
+
+        with mock.patch("src.main.run_stage", side_effect=fake_run_stage):
+            exit_code = main(["--problem-slug", "two-sum", "--dry-run"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(solve_models, [expected_default_model])
+
     def test_dry_run_alone_bypasses_the_schedule_gate(self):
         # Regression: docs/SETUP.md step 6 tells users to verify the
         # pipeline is wired correctly via Actions -> "Run workflow" ->

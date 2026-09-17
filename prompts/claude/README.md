@@ -14,6 +14,20 @@ bump `sys.setrecursionlimit(...)` or go iterative. Added after the
 adversarial verifier repeatedly (and correctly) failed an unguarded
 recursive solution to problem #2265.
 
+`v3` (2026-09-16) adds an optional `{{previous_attempt_feedback}}`
+placeholder to `solve.md`, right after the `## Input` section. On the
+first solve attempt `src/main.py` passes it as an empty string (no
+visible effect on the prompt). On the one allowed regeneration attempt
+after a failed verification, it's filled in with the verifier's `issues`
+plus the previous attempt's rejected code (see
+`_format_verification_feedback` in `src/main.py`), so the retry is an
+actually-informed second attempt rather than a blind re-run of the exact
+same prompt against the exact same model. Added after problem #2472 (the
+2026-09-15 daily, Hard) failed all 5 scheduled runs that day: `solve`
+runs on `model_solve` (haiku-tier by default), and every regeneration was
+silently repeating the same disproven greedy strategy with no knowledge
+of what verification had already found wrong.
+
 ## Pipeline order
 
 1. `solve.md` — solve the problem from first principles. Input: the
