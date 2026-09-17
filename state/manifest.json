@@ -1006,5 +1006,35 @@
       "Math",
       "Combinatorics"
     ]
+  },
+  "2026-09-17:1477": {
+    "content_hash": "152b04e04297582f",
+    "date": "2026-09-17",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "10Rm8LJiZVeRXGIyTBiA6rqByOdUG-vx5",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget to Check DP History for Pairs",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1mYABm-ViOAS0L3w8OxXOzG4MYw-IkoLq",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1477,
+    "problem_url": "https://leetcode.com/problems/find-two-non-overlapping-sub-arrays-each-with-target-sum/",
+    "prompt_version": "v3",
+    "slug": "find-two-non-overlapping-sub-arrays-each-with-target-sum",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 44,
+    "title": "Find Two Non-overlapping Sub-arrays Each With Target Sum",
+    "topics": [
+      "Array",
+      "Hash Table",
+      "Binary Search",
+      "Dynamic Programming",
+      "Sliding Window"
+    ]
   }
 }
