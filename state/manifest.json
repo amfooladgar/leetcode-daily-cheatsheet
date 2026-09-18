@@ -1038,27 +1038,32 @@
     ]
   },
   "2026-09-18:1520": {
-    "content_hash": "",
+    "content_hash": "fe12d000baa43e36",
     "date": "2026-09-18",
-    "difficulty": null,
-    "drive": false,
-    "drive_file_id": null,
-    "failure_reason": "example 2: expected ['d', 'bb', 'cc'], got ['bb', 'cc', 'd']",
-    "failure_stage": "tested",
-    "headline": null,
-    "image_filename": null,
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1gmkXTb0BgKwAkriZYzHoLNbGdMlEB_hc",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Greedy Closure Interval Trick",
+    "image_filename": "cheatsheet-openai-final.png",
     "linkedin": false,
-    "linkedin_draft_drive_file_id": null,
-    "linkedin_draft_saved": false,
+    "linkedin_draft_drive_file_id": "1f1SuqQXGq9avueYaO35iTROb5CxRcKxw",
+    "linkedin_draft_saved": true,
     "linkedin_post_urn": null,
     "problem_number": 1520,
-    "problem_url": null,
+    "problem_url": "https://leetcode.com/problems/maximum-number-of-non-overlapping-substrings/",
     "prompt_version": "v3",
     "slug": "maximum-number-of-non-overlapping-substrings",
-    "status": "failed",
-    "telegram": false,
-    "telegram_message_id": null,
-    "title": null,
-    "topics": []
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 45,
+    "title": "Maximum Number of Non-Overlapping Substrings",
+    "topics": [
+      "Hash Table",
+      "String",
+      "Greedy",
+      "Sorting"
+    ]
   }
 }
