@@ -1036,5 +1036,29 @@
       "Dynamic Programming",
       "Sliding Window"
     ]
+  },
+  "2026-09-18:1520": {
+    "content_hash": "",
+    "date": "2026-09-18",
+    "difficulty": null,
+    "drive": false,
+    "drive_file_id": null,
+    "failure_reason": "example 2: expected ['d', 'bb', 'cc'], got ['bb', 'cc', 'd']",
+    "failure_stage": "tested",
+    "headline": null,
+    "image_filename": null,
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 1520,
+    "problem_url": null,
+    "prompt_version": "v3",
+    "slug": "maximum-number-of-non-overlapping-substrings",
+    "status": "failed",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": null,
+    "topics": []
   }
 }
