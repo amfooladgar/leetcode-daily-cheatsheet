@@ -375,7 +375,28 @@ def _find_entry_method(solution_cls: type):
     return getattr(solution_cls, methods[0])
 
 
-def run_examples(code: str, examples: list[Example], timeout_seconds: int = 5) -> ExampleRunReport:
+_ANY_ORDER_RE = re.compile(r"\bin any order\b", re.IGNORECASE)
+
+
+def statement_allows_any_order(statement: str) -> bool:
+    """True when the problem says the returned list may be in any order."""
+    return bool(_ANY_ORDER_RE.search(statement))
+
+
+def _matches_expected(actual, expected, *, any_order: bool) -> bool:
+    if actual == expected:
+        return True
+    if any_order and isinstance(actual, list) and isinstance(expected, list):
+        return sorted(actual, key=repr) == sorted(expected, key=repr)
+    return False
+
+
+def run_examples(
+    code: str,
+    examples: list[Example],
+    timeout_seconds: int = 5,
+    any_order: bool = False,
+) -> ExampleRunReport:
     report = ExampleRunReport(total=len(examples))
 
     solution_cls, exec_namespace = _find_solution_class(code)
@@ -426,7 +447,7 @@ def run_examples(code: str, examples: list[Example], timeout_seconds: int = 5) -
             elif return_kind == "tree":
                 actual = _tree_to_values(actual)
 
-            if actual == expected:
+            if _matches_expected(actual, expected, any_order=any_order):
                 report.passed += 1
             else:
                 report.failures.append(f"{label}: expected {expected!r}, got {actual!r}")

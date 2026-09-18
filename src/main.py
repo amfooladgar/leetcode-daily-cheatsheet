@@ -26,6 +26,7 @@ from src.claude.validator import (
     ValidationError,
     clamp_to_schema,
     run_examples,
+    statement_allows_any_order,
     validate_schema,
 )
 from src.config import load_settings
@@ -433,7 +434,11 @@ def run(args: argparse.Namespace) -> int:
 
     # --- TESTED ----------------------------------------------------------
     try:
-        report = run_examples(solved["code"], problem.examples)
+        report = run_examples(
+            solved["code"],
+            problem.examples,
+            any_order=statement_allows_any_order(problem.statement),
+        )
     except ExampleExecutionError as exc:
         log.error("TESTED failed to execute: %s", exc)
         return 1

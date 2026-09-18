@@ -7,6 +7,7 @@ from src.claude.validator import (
     ValidationError,
     clamp_to_schema,
     run_examples,
+    statement_allows_any_order,
     validate_schema,
 )
 from src.leetcode.models import Example
@@ -109,6 +110,28 @@ class ClampToSchemaTests(unittest.TestCase):
 
 
 class RunExamplesTests(unittest.TestCase):
+    # Reproduces the 2026-09-18 #1520 prod failure: "return the answer in any
+    # order" problems returned the right list in a different order.
+    _REORDERED_CODE = "class Solution:\n    def f(self, s):\n        return ['bb', 'cc', 'd']\n"
+    _REORDERED_EXAMPLE = Example(input='s = "x"', output='["d","bb","cc"]')
+
+    def test_reordered_output_fails_by_default(self):
+        report = run_examples(self._REORDERED_CODE, [self._REORDERED_EXAMPLE])
+        self.assertFalse(report.ok)
+
+    def test_reordered_output_passes_when_any_order_allowed(self):
+        report = run_examples(self._REORDERED_CODE, [self._REORDERED_EXAMPLE], any_order=True)
+        self.assertTrue(report.ok, report.failures)
+
+    def test_any_order_still_catches_wrong_contents(self):
+        wrong = "class Solution:\n    def f(self, s):\n        return ['bb', 'cc', 'e']\n"
+        report = run_examples(wrong, [self._REORDERED_EXAMPLE], any_order=True)
+        self.assertFalse(report.ok)
+
+    def test_statement_allows_any_order_detection(self):
+        self.assertTrue(statement_allows_any_order("Return the answer In Any Order."))
+        self.assertFalse(statement_allows_any_order("Return the indices."))
+
     def test_correct_solution_passes_all_examples(self):
         cheatsheet = load_sample_cheatsheet_json()
         examples = [
