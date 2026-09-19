@@ -1065,5 +1065,32 @@
       "Greedy",
       "Sorting"
     ]
+  },
+  "2026-09-19:1401": {
+    "content_hash": "cd84d81ee928a37d",
+    "date": "2026-09-19",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1bWhYt-_ZlbxoCO3LewT7LNmiBaRxHEzJ",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Coordinate Clamping Trick",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1HQv0oxaN7a8jBxRd6cRpAMtkwXswpQ-Q",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1401,
+    "problem_url": "https://leetcode.com/problems/circle-and-rectangle-overlapping/",
+    "prompt_version": "v3",
+    "slug": "circle-and-rectangle-overlapping",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 46,
+    "title": "Circle and Rectangle Overlapping",
+    "topics": [
+      "Math",
+      "Geometry"
+    ]
   }
 }
