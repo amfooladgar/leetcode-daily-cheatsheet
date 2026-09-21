@@ -1119,5 +1119,33 @@
       "String",
       "Simulation"
     ]
+  },
+  "2026-09-21:3524": {
+    "content_hash": "c543481828072186",
+    "date": "2026-09-21",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1Uiy-umjDL8NzKV_iQN9H3nuC89avkQCl",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Compact DP Dictionary Trick",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1GAZq62NrQ_P6wIJ7hVk9tA_76ZGDq6FG",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3524,
+    "problem_url": "https://leetcode.com/problems/find-x-value-of-array-i/",
+    "prompt_version": "v3",
+    "slug": "find-x-value-of-array-i",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 48,
+    "title": "Find X Value of Array I",
+    "topics": [
+      "Array",
+      "Math",
+      "Dynamic Programming"
+    ]
   }
 }
