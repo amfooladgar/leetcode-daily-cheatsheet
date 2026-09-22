@@ -1147,5 +1147,33 @@
       "Math",
       "Dynamic Programming"
     ]
+  },
+  "2026-09-22:3525": {
+    "content_hash": "3a007a17862906b5",
+    "date": "2026-09-22",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1lPAQY25iAk4s1EtFhW2ag1AjshQNVQjO",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Segment Tree Residue Trick",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1Qy3ULWlJ_YTJmLYtLPGNb-0KgmFYXeNo",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3525,
+    "problem_url": "https://leetcode.com/problems/find-x-value-of-array-ii/",
+    "prompt_version": "v3",
+    "slug": "find-x-value-of-array-ii",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 49,
+    "title": "Find X Value of Array II",
+    "topics": [
+      "Array",
+      "Math",
+      "Segment Tree"
+    ]
   }
 }
