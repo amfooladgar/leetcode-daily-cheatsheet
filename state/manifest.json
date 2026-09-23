@@ -1175,5 +1175,35 @@
       "Math",
       "Segment Tree"
     ]
+  },
+  "2026-09-23:1658": {
+    "content_hash": "6d78c36e7d188953",
+    "date": "2026-09-23",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "116SoYZPuc_9kED06Efv7Jt7ZGeXz6p5y",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Middle Subarray Trick",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1KpqMPi78uky3WDPsTzybR-bSdU3s8DHr",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1658,
+    "problem_url": "https://leetcode.com/problems/minimum-operations-to-reduce-x-to-zero/",
+    "prompt_version": "v3",
+    "slug": "minimum-operations-to-reduce-x-to-zero",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 50,
+    "title": "Minimum Operations to Reduce X to Zero",
+    "topics": [
+      "Array",
+      "Hash Table",
+      "Binary Search",
+      "Sliding Window",
+      "Prefix Sum"
+    ]
   }
 }
