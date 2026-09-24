@@ -1205,5 +1205,32 @@
       "Sliding Window",
       "Prefix Sum"
     ]
+  },
+  "2026-09-24:3550": {
+    "content_hash": "0b5e2827fa095dba",
+    "date": "2026-09-24",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1M_Cm06HWqpdXGzrF4y9-5zuxR4-GiMA9",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget Why First Match Is Smallest",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1bCuXQzrF45aVHDf60girWGA0DWtirMS6",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3550,
+    "problem_url": "https://leetcode.com/problems/smallest-index-with-digit-sum-equal-to-index/",
+    "prompt_version": "v3",
+    "slug": "smallest-index-with-digit-sum-equal-to-index",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 51,
+    "title": "Smallest Index With Digit Sum Equal to Index",
+    "topics": [
+      "Array",
+      "Math"
+    ]
   }
 }
