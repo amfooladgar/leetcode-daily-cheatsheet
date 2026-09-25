@@ -1232,5 +1232,36 @@
       "Array",
       "Math"
     ]
+  },
+  "2026-09-25:1096": {
+    "content_hash": "56ae3dba35ac7294",
+    "date": "2026-09-25",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1K9IFVnvU_VpsqNpDsSEY8WSEbw8pBW2u",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Grammar Becomes Sum of Products",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1cLGBnXjxj7g1qNNaQ5-2sibCs2bYNao-",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1096,
+    "problem_url": "https://leetcode.com/problems/brace-expansion-ii/",
+    "prompt_version": "v3",
+    "slug": "brace-expansion-ii",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 52,
+    "title": "Brace Expansion II",
+    "topics": [
+      "Hash Table",
+      "String",
+      "Backtracking",
+      "Stack",
+      "Breadth-First Search",
+      "Sorting"
+    ]
   }
 }
