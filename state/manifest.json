@@ -1263,5 +1263,33 @@
       "Breadth-First Search",
       "Sorting"
     ]
+  },
+  "2026-09-26:1807": {
+    "content_hash": "e85ab83bba23273d",
+    "date": "2026-09-26",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1YBTrRmhXfvTKbpL9sprARiXhyTNN9Loj",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Hash Table Lookup Trick",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1nH4PElTAJxqDGNZNIy23HYtqkuq74Mai",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1807,
+    "problem_url": "https://leetcode.com/problems/evaluate-the-bracket-pairs-of-a-string/",
+    "prompt_version": "v3",
+    "slug": "evaluate-the-bracket-pairs-of-a-string",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 53,
+    "title": "Evaluate the Bracket Pairs of a String",
+    "topics": [
+      "Array",
+      "Hash Table",
+      "String"
+    ]
   }
 }
