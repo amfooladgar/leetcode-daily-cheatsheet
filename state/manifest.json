@@ -1291,5 +1291,33 @@
       "Hash Table",
       "String"
     ]
+  },
+  "2026-09-27:1190": {
+    "content_hash": "b720bca64d934ea7",
+    "date": "2026-09-27",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1z7QxApbdVfGIglTnmVwh0pIbBuvxUJ6S",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Stack-of-Lists Reversal Pattern",
+    "image_filename": "cheatsheet-openai-final.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1gwY2lBRsCPtXuWXQoj1UEZ3XFX6mBb-B",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1190,
+    "problem_url": "https://leetcode.com/problems/reverse-substrings-between-each-pair-of-parentheses/",
+    "prompt_version": "v3",
+    "slug": "reverse-substrings-between-each-pair-of-parentheses",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 55,
+    "title": "Reverse Substrings Between Each Pair of Parentheses",
+    "topics": [
+      "String",
+      "Stack",
+      "Bracket Sequences"
+    ]
   }
 }
