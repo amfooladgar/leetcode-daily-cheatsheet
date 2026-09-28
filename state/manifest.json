@@ -1319,5 +1319,33 @@
       "Stack",
       "Bracket Sequences"
     ]
+  },
+  "2026-09-28:1614": {
+    "content_hash": "8226153e43764633",
+    "date": "2026-09-28",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1GtYyra3vNN-aXq0_A61KjCXWtuf5AGry",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Nesting Depth Equals Peak Open Count",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1-9Gr8h00Jynjyuoki8Z9361KaV5Mg9Ua",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1614,
+    "problem_url": "https://leetcode.com/problems/maximum-nesting-depth-of-the-parentheses/",
+    "prompt_version": "v3",
+    "slug": "maximum-nesting-depth-of-the-parentheses",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 56,
+    "title": "Maximum Nesting Depth of the Parentheses",
+    "topics": [
+      "String",
+      "Stack",
+      "Bracket Sequences"
+    ]
   }
 }
