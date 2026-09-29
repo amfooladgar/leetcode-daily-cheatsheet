@@ -1347,5 +1347,34 @@
       "Stack",
       "Bracket Sequences"
     ]
+  },
+  "2026-09-29:2267": {
+    "content_hash": "4cb219ebc07111db",
+    "date": "2026-09-29",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1fknJbNut7FRh-uuf2AAgSb5QQZOGxRyI",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Balance Interval Trick",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1Kp7Ehc9ZOOfKMcfV1_a4Joef2FtTuOgA",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 2267,
+    "problem_url": "https://leetcode.com/problems/check-if-there-is-a-valid-parentheses-string-path/",
+    "prompt_version": "v3",
+    "slug": "check-if-there-is-a-valid-parentheses-string-path",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 57,
+    "title": " Check if There Is a Valid Parentheses String Path",
+    "topics": [
+      "Array",
+      "Dynamic Programming",
+      "Matrix",
+      "Bracket Sequences"
+    ]
   }
 }
