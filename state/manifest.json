@@ -1376,5 +1376,29 @@
       "Matrix",
       "Bracket Sequences"
     ]
+  },
+  "2026-09-30:1111": {
+    "content_hash": "",
+    "date": "2026-09-30",
+    "difficulty": null,
+    "drive": false,
+    "drive_file_id": null,
+    "failure_reason": "example 2: expected [0, 0, 0, 1, 1, 0, 1, 1], got [0, 0, 0, 1, 1, 0, 0, 0]",
+    "failure_stage": "tested",
+    "headline": null,
+    "image_filename": null,
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 1111,
+    "problem_url": null,
+    "prompt_version": "v3",
+    "slug": "maximum-nesting-depth-of-two-valid-parentheses-strings",
+    "status": "failed",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": null,
+    "topics": []
   }
 }
