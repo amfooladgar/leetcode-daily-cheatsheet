@@ -1400,5 +1400,33 @@
     "telegram_message_id": null,
     "title": null,
     "topics": []
+  },
+  "2026-10-01:20": {
+    "content_hash": "9622bf49060fbd95",
+    "date": "2026-10-01",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "17lZZRM0p-lEHrPvK_RbAy3rO3rjz3bsR",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget Stack LIFO Bracket Matching",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1B2B4RSNtB3v30AhRjVXyCd6-9Iu16tHI",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 20,
+    "problem_url": "https://leetcode.com/problems/valid-parentheses/",
+    "prompt_version": "v3",
+    "slug": "valid-parentheses",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 58,
+    "title": "Valid Parentheses",
+    "topics": [
+      "String",
+      "Stack",
+      "Bracket Sequences"
+    ]
   }
 }
