@@ -1428,5 +1428,34 @@
       "Stack",
       "Bracket Sequences"
     ]
+  },
+  "2026-10-02:22": {
+    "content_hash": "913a3908677becfc",
+    "date": "2026-10-02",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "16qy1pjzp3lumJ1Gysgl1lgChPSxn4tsr",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget Backtracking's Closing Paren Constraint",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1iGXGFyG-CQkXkBErtSJ3DRBFTVfq3O_M",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 22,
+    "problem_url": "https://leetcode.com/problems/generate-parentheses/",
+    "prompt_version": "v3",
+    "slug": "generate-parentheses",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 59,
+    "title": "Generate Parentheses",
+    "topics": [
+      "String",
+      "Dynamic Programming",
+      "Backtracking",
+      "Bracket Sequences"
+    ]
   }
 }
