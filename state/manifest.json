@@ -1457,5 +1457,34 @@
       "Backtracking",
       "Bracket Sequences"
     ]
+  },
+  "2026-10-03:32": {
+    "content_hash": "59b6d381b920e99c",
+    "date": "2026-10-03",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1BdCmy59lK5cIqw7yZFrQ3kbvyKI1FxpT",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Index Stack Boundary Trick",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1nspPLd_fmKVQn2yNdMryxjDh3Teoau62",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 32,
+    "problem_url": "https://leetcode.com/problems/longest-valid-parentheses/",
+    "prompt_version": "v3",
+    "slug": "longest-valid-parentheses",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 60,
+    "title": "Longest Valid Parentheses",
+    "topics": [
+      "String",
+      "Dynamic Programming",
+      "Stack",
+      "Bracket Sequences"
+    ]
   }
 }
