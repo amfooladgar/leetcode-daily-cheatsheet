@@ -376,11 +376,23 @@ def _find_entry_method(solution_cls: type):
 
 
 _ANY_ORDER_RE = re.compile(r"\bin any order\b", re.IGNORECASE)
+_MULTIPLE_ANSWERS_RE = re.compile(r"\breturn any\b", re.IGNORECASE)
 
 
 def statement_allows_any_order(statement: str) -> bool:
     """True when the problem says the returned list may be in any order."""
     return bool(_ANY_ORDER_RE.search(statement))
+
+
+def statement_allows_multiple_answers(statement: str) -> bool:
+    """True when the problem says more than one output can be correct, e.g.
+    "you may return any of them" (#1111) or "return any valid answer". This
+    is a different shape of ambiguity than `statement_allows_any_order`: the
+    values themselves can legitimately differ (not just their order), so a
+    mismatch here can't be resolved by sorting -- it needs a per-problem
+    correctness checker we don't have. We skip the comparison instead of
+    failing the run on a correct-but-different answer."""
+    return bool(_MULTIPLE_ANSWERS_RE.search(statement))
 
 
 def _matches_expected(actual, expected, *, any_order: bool) -> bool:
@@ -396,6 +408,7 @@ def run_examples(
     examples: list[Example],
     timeout_seconds: int = 5,
     any_order: bool = False,
+    multiple_valid_answers: bool = False,
 ) -> ExampleRunReport:
     report = ExampleRunReport(total=len(examples))
 
@@ -449,6 +462,13 @@ def run_examples(
 
             if _matches_expected(actual, expected, any_order=any_order):
                 report.passed += 1
+            elif multiple_valid_answers:
+                report.skipped.append(
+                    f"{label}: got {actual!r}, example shows {expected!r} -- problem "
+                    "statement allows multiple valid answers, so this may be a correct "
+                    "but different answer; skipping automated comparison (manual review "
+                    "recommended)"
+                )
             else:
                 report.failures.append(f"{label}: expected {expected!r}, got {actual!r}")
         except ExampleExecutionError as exc:

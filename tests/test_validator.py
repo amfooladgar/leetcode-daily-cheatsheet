@@ -8,6 +8,7 @@ from src.claude.validator import (
     clamp_to_schema,
     run_examples,
     statement_allows_any_order,
+    statement_allows_multiple_answers,
     validate_schema,
 )
 from src.leetcode.models import Example
@@ -131,6 +132,44 @@ class RunExamplesTests(unittest.TestCase):
     def test_statement_allows_any_order_detection(self):
         self.assertTrue(statement_allows_any_order("Return the answer In Any Order."))
         self.assertFalse(statement_allows_any_order("Return the indices."))
+
+    # Reproduces the 2026-09-30 #1111 prod failure: "you may return any of
+    # them" problems have multiple correct outputs that aren't just
+    # reorderings of each other, so any_order can't rescue them.
+    _ALT_SPLIT_CODE = (
+        "class Solution:\n"
+        "    def maxDepthAfterSplit(self, seq):\n"
+        "        result = []\n"
+        "        depth = 0\n"
+        "        for char in seq:\n"
+        "            if char == '(':\n"
+        "                result.append(depth % 2)\n"
+        "                depth += 1\n"
+        "            else:\n"
+        "                depth -= 1\n"
+        "                result.append(depth % 2)\n"
+        "        return result\n"
+    )
+    _ALT_SPLIT_EXAMPLE = Example(input='seq = "()(())()"', output="[0,0,0,1,1,0,1,1]")
+
+    def test_multiple_valid_answers_fails_by_default(self):
+        report = run_examples(self._ALT_SPLIT_CODE, [self._ALT_SPLIT_EXAMPLE])
+        self.assertFalse(report.ok)
+
+    def test_multiple_valid_answers_skips_when_allowed(self):
+        report = run_examples(
+            self._ALT_SPLIT_CODE, [self._ALT_SPLIT_EXAMPLE], multiple_valid_answers=True
+        )
+        self.assertTrue(report.ok, report.failures)
+        self.assertEqual(len(report.skipped), 1)
+
+    def test_statement_allows_multiple_answers_detection(self):
+        self.assertTrue(
+            statement_allows_multiple_answers(
+                "Note that even though multiple answers may exist, you may return any of them."
+            )
+        )
+        self.assertFalse(statement_allows_multiple_answers("Return the indices."))
 
     def test_correct_solution_passes_all_examples(self):
         cheatsheet = load_sample_cheatsheet_json()
