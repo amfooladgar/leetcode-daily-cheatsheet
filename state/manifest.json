@@ -1486,5 +1486,35 @@
       "Stack",
       "Bracket Sequences"
     ]
+  },
+  "2026-10-04:678": {
+    "content_hash": "eb4ad0d760232ee9",
+    "date": "2026-10-04",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "11TiADk_PrmxNgBg_7keGTfvuY3m_XK2c",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Min-Max Greedy Approach",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1wRHw7tIoAI3Djb8Yj3W26K_Rsb6hqAEb",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 678,
+    "problem_url": "https://leetcode.com/problems/valid-parenthesis-string/",
+    "prompt_version": "v3",
+    "slug": "valid-parenthesis-string",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 61,
+    "title": "Valid Parenthesis String",
+    "topics": [
+      "String",
+      "Dynamic Programming",
+      "Stack",
+      "Greedy",
+      "Bracket Sequences"
+    ]
   }
 }
