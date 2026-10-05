@@ -1520,5 +1520,33 @@
       "Greedy",
       "Bracket Sequences"
     ]
+  },
+  "2026-10-05:856": {
+    "content_hash": "65b46d5c27570e68",
+    "date": "2026-10-05",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1SQLe7sUUHnsKA8Q2qCg3rg58TSMyhBeW",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget How Nesting Doubles the Score",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "112T-GeTXliOpitBhmXYXGWW3w7KYV4Cc",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 856,
+    "problem_url": "https://leetcode.com/problems/score-of-parentheses/",
+    "prompt_version": "v3",
+    "slug": "score-of-parentheses",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 63,
+    "title": "Score of Parentheses",
+    "topics": [
+      "String",
+      "Stack",
+      "Bracket Sequences"
+    ]
   }
 }
