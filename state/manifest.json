@@ -1548,5 +1548,34 @@
       "Stack",
       "Bracket Sequences"
     ]
+  },
+  "2026-10-06:921": {
+    "content_hash": "9ba70e24103d6535",
+    "date": "2026-10-06",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1ePXb6l9-fDBJVKDoyKR29ww9Q3auTrZP",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget Greedy Bracket Matching",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "14956dmPILUmhSBPBj9oA9E-xQUiboKbx",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 921,
+    "problem_url": "https://leetcode.com/problems/minimum-add-to-make-parentheses-valid/",
+    "prompt_version": "v3",
+    "slug": "minimum-add-to-make-parentheses-valid",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 64,
+    "title": "Minimum Add to Make Parentheses Valid",
+    "topics": [
+      "String",
+      "Stack",
+      "Greedy",
+      "Bracket Sequences"
+    ]
   }
 }
