@@ -1577,5 +1577,33 @@
       "Greedy",
       "Bracket Sequences"
     ]
+  },
+  "2026-10-07:301": {
+    "content_hash": "cf09a051368d50b5",
+    "date": "2026-10-07",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1irbgq7lU6wVNjpxolgTj-wI0GXkCW3wx",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: BFS-by-Level Reaches Minimum Removals First",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "18Clk983UA69v_ZmIP37AajXAlw8xjI0e",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 301,
+    "problem_url": "https://leetcode.com/problems/remove-invalid-parentheses/",
+    "prompt_version": "v3",
+    "slug": "remove-invalid-parentheses",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 65,
+    "title": "Remove Invalid Parentheses",
+    "topics": [
+      "String",
+      "Backtracking",
+      "Breadth-First Search"
+    ]
   }
 }
