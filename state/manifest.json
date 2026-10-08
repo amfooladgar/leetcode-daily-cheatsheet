@@ -1605,5 +1605,33 @@
       "Backtracking",
       "Breadth-First Search"
     ]
+  },
+  "2026-10-08:1021": {
+    "content_hash": "c420cca06bd6cf74",
+    "date": "2026-10-08",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "12kmp3m648czHGCxUn0gsALAZMvc-Awrq",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget When Depth Returns to Zero",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1Yxe492JYhpTzsI0a8Fpnaj22pkmTQdwM",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1021,
+    "problem_url": "https://leetcode.com/problems/remove-outermost-parentheses/",
+    "prompt_version": "v3",
+    "slug": "remove-outermost-parentheses",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 66,
+    "title": "Remove Outermost Parentheses",
+    "topics": [
+      "String",
+      "Stack",
+      "Bracket Sequences"
+    ]
   }
 }
