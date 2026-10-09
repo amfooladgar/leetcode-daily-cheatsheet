@@ -1633,5 +1633,33 @@
       "Stack",
       "Bracket Sequences"
     ]
+  },
+  "2026-10-09:1541": {
+    "content_hash": "a123a539bb064bc3",
+    "date": "2026-10-09",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1I0GgkX-etumYwAD3Ph7dqoDCxn0kX1Rc",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Bracket Pair Trick",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1l4C7QHtlUedUpDpuXazfMl717yHuE8Ml",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1541,
+    "problem_url": "https://leetcode.com/problems/minimum-insertions-to-balance-a-parentheses-string/",
+    "prompt_version": "v3",
+    "slug": "minimum-insertions-to-balance-a-parentheses-string",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 67,
+    "title": "Minimum Insertions to Balance a Parentheses String",
+    "topics": [
+      "String",
+      "Stack",
+      "Greedy"
+    ]
   }
 }
