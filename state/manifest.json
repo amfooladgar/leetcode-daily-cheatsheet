@@ -1661,5 +1661,35 @@
       "Stack",
       "Greedy"
     ]
+  },
+  "2026-10-10:2333": {
+    "content_hash": "d2b05df8421b3303",
+    "date": "2026-10-10",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1baYy35gRWs-PpwAJ63NHTcksnhzdBlI5",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget Greedy Magnitude Reduction",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1rItyGPr29tahsbajElP6L4VS7N69TKlm",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 2333,
+    "problem_url": "https://leetcode.com/problems/minimum-sum-of-squared-difference/",
+    "prompt_version": "v3",
+    "slug": "minimum-sum-of-squared-difference",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 68,
+    "title": "Minimum Sum of Squared Difference",
+    "topics": [
+      "Array",
+      "Binary Search",
+      "Greedy",
+      "Sorting",
+      "Heap (Priority Queue)"
+    ]
   }
 }
