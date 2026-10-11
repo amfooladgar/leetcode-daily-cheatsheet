@@ -1691,5 +1691,32 @@
       "Sorting",
       "Heap (Priority Queue)"
     ]
+  },
+  "2026-10-11:2778": {
+    "content_hash": "e7339b22aed0f6da",
+    "date": "2026-10-11",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1LDJAuUnyRW3uRQhcuLxfA5QdJEvJeDQq",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Divisor Check Trick",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1yxDOmrZVOVZk5ILRnMheC3SmdEWuG6rF",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 2778,
+    "problem_url": "https://leetcode.com/problems/sum-of-squares-of-special-elements/",
+    "prompt_version": "v3",
+    "slug": "sum-of-squares-of-special-elements",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 69,
+    "title": "Sum of Squares of Special Elements ",
+    "topics": [
+      "Array",
+      "Enumeration"
+    ]
   }
 }
