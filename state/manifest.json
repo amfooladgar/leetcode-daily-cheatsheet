@@ -1718,5 +1718,34 @@
       "Array",
       "Enumeration"
     ]
+  },
+  "2026-10-12:2897": {
+    "content_hash": "d0501416429e5e08",
+    "date": "2026-10-12",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1HUNLn0MRrN6vmaJt0FD63hgqHlcsRc6d",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget The Bit Count Invariant",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "14Kh7Y8ovVJOlbWytrWAtT_9I2U1LC3EY",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 2897,
+    "problem_url": "https://leetcode.com/problems/apply-operations-on-array-to-maximize-sum-of-squares/",
+    "prompt_version": "v3",
+    "slug": "apply-operations-on-array-to-maximize-sum-of-squares",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 70,
+    "title": "Apply Operations on Array to Maximize Sum of Squares",
+    "topics": [
+      "Array",
+      "Hash Table",
+      "Greedy",
+      "Bit Manipulation"
+    ]
   }
 }
