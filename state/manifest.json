@@ -1747,5 +1747,33 @@
       "Greedy",
       "Bit Manipulation"
     ]
+  },
+  "2026-10-13:3727": {
+    "content_hash": "fa1babbe8bdba9d3",
+    "date": "2026-10-13",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1uJizB_FIgCOMWPiOt4m1rCrHsk0Coy3I",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Greedy Magnitude Placement Strategy",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1yRbEeUc5jShxfTYXsSmK2lnNjJX9hYTk",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3727,
+    "problem_url": "https://leetcode.com/problems/maximum-alternating-sum-of-squares/",
+    "prompt_version": "v3",
+    "slug": "maximum-alternating-sum-of-squares",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 71,
+    "title": "Maximum Alternating Sum of Squares",
+    "topics": [
+      "Array",
+      "Greedy",
+      "Sorting"
+    ]
   }
 }
