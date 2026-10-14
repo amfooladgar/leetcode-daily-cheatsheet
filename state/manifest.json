@@ -1775,5 +1775,32 @@
       "Greedy",
       "Sorting"
     ]
+  },
+  "2026-10-14:3723": {
+    "content_hash": "84ddfb29b8140966",
+    "date": "2026-10-14",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1ukHE7rRqGJ7M-RtheX1VCF9kJKtlw0b7",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Greedy Digit Placement Trick",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "12LJpk6TjQl5j_6pUFfJENNcwClzu-FeT",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3723,
+    "problem_url": "https://leetcode.com/problems/maximize-sum-of-squares-of-digits/",
+    "prompt_version": "v3",
+    "slug": "maximize-sum-of-squares-of-digits",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 72,
+    "title": "Maximize Sum of Squares of Digits",
+    "topics": [
+      "Math",
+      "Greedy"
+    ]
   }
 }
