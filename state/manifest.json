@@ -1802,5 +1802,32 @@
       "Math",
       "Greedy"
     ]
+  },
+  "2026-10-15:2913": {
+    "content_hash": "3d88121fda0e8a10",
+    "date": "2026-10-15",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1jLIXw7G1WAwnGoBsKUMepalBxG38P93M",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Frequency Map Trick",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "18ge1kB7nHI6sbDJX-MKfpEqLHwvtIG_d",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 2913,
+    "problem_url": "https://leetcode.com/problems/subarrays-distinct-element-sum-of-squares-i/",
+    "prompt_version": "v3",
+    "slug": "subarrays-distinct-element-sum-of-squares-i",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 73,
+    "title": "Subarrays Distinct Element Sum of Squares I",
+    "topics": [
+      "Array",
+      "Hash Table"
+    ]
   }
 }
