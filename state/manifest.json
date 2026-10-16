@@ -1829,5 +1829,34 @@
       "Array",
       "Hash Table"
     ]
+  },
+  "2026-10-16:2916": {
+    "content_hash": "63547c2bdc6baa14",
+    "date": "2026-10-16",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1yCEGMbaS2Osi0vROZhNOoVzWPoJmKtBN",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Fenwick Range-Update Trick",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1AVoLZHp0dC3_0ww8qQE9KdOk8x2zkM8H",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 2916,
+    "problem_url": "https://leetcode.com/problems/subarrays-distinct-element-sum-of-squares-ii/",
+    "prompt_version": "v3",
+    "slug": "subarrays-distinct-element-sum-of-squares-ii",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 74,
+    "title": "Subarrays Distinct Element Sum of Squares II",
+    "topics": [
+      "Array",
+      "Hash Table",
+      "Binary Indexed Tree",
+      "Segment Tree"
+    ]
   }
 }
