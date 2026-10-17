@@ -1858,5 +1858,33 @@
       "Binary Indexed Tree",
       "Segment Tree"
     ]
+  },
+  "2026-10-17:3551": {
+    "content_hash": "34903f7a16177de0",
+    "date": "2026-10-17",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1vrVKplQlCIVgNb5pR9N7r38qerxdVjnD",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Minimum Swaps = n - Cycles",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "13HfBztfuOIEeVBXM3O3_aiZSIGMsYJCc",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3551,
+    "problem_url": "https://leetcode.com/problems/minimum-swaps-to-sort-by-digit-sum/",
+    "prompt_version": "v3",
+    "slug": "minimum-swaps-to-sort-by-digit-sum",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 75,
+    "title": "Minimum Swaps to Sort by Digit Sum",
+    "topics": [
+      "Array",
+      "Hash Table",
+      "Sorting"
+    ]
   }
 }
