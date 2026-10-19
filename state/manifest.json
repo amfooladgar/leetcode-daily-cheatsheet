@@ -1922,5 +1922,33 @@
       "Binary Tree",
       "Fermat's Little Theorem"
     ]
+  },
+  "2026-10-19:2089": {
+    "content_hash": "88ca3dc8be73babd",
+    "date": "2026-10-19",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1dv_g4Y6thXbXMDh9rMZ405Oc9lDCeFFf",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: Sorting Groups All Equal Values",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1FJJXj648vKyAKttIMJbj17knMKHniYwZ",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 2089,
+    "problem_url": "https://leetcode.com/problems/find-target-indices-after-sorting-array/",
+    "prompt_version": "v3",
+    "slug": "find-target-indices-after-sorting-array",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 77,
+    "title": "Find Target Indices After Sorting Array",
+    "topics": [
+      "Array",
+      "Binary Search",
+      "Sorting"
+    ]
   }
 }
