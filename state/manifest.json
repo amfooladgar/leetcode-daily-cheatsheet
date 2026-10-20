@@ -1950,5 +1950,34 @@
       "Binary Search",
       "Sorting"
     ]
+  },
+  "2026-10-20:3886": {
+    "content_hash": "bc584cfc37f39741",
+    "date": "2026-10-20",
+    "difficulty": "Hard",
+    "drive": true,
+    "drive_file_id": "1UKxmq92xxAV3eB32Vp6f2oXEAYTBzUaJ",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Block Rotation Divisor Pattern",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1q_ZxV6sUYcmW-NB5xsnLdxDyipMikqk5",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3886,
+    "problem_url": "https://leetcode.com/problems/sum-of-sortable-integers/",
+    "prompt_version": "v3",
+    "slug": "sum-of-sortable-integers",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 78,
+    "title": "Sum of Sortable Integers",
+    "topics": [
+      "Array",
+      "Math",
+      "Sorting",
+      "Enumeration"
+    ]
   }
 }
