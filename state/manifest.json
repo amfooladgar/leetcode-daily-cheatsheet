@@ -1979,5 +1979,31 @@
       "Sorting",
       "Enumeration"
     ]
+  },
+  "2026-10-21:3863": {
+    "content_hash": "3dd1ba5cbd08fce7",
+    "date": "2026-10-21",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1t4sx6SSILn1KYVqsDpGNOioO9qaBt4uj",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Endpoint Deadlock Pattern",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1lbLgS5mx1J2LUzqtoVp4vzw9-eEg08d9",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3863,
+    "problem_url": "https://leetcode.com/problems/minimum-operations-to-sort-a-string/",
+    "prompt_version": "v3",
+    "slug": "minimum-operations-to-sort-a-string",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 79,
+    "title": "Minimum Operations to Sort a String",
+    "topics": [
+      "String"
+    ]
   }
 }
