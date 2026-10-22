@@ -2005,5 +2005,29 @@
     "topics": [
       "String"
     ]
+  },
+  "2026-10-22:3942": {
+    "content_hash": "",
+    "date": "2026-10-22",
+    "difficulty": null,
+    "drive": false,
+    "drive_file_id": null,
+    "failure_reason": "still invalid after regeneration: [\"Correctness logic itself is sound: the submitted solution correctly infers the two operations (rotate-left-by-one, reverse-whole-array) from the examples (the problem statement's operation list is truncated/missing in the input JSON), correctly derives the dihedral-group relation reverse(rotate_k(A)) = rotate_{(n-k)%n}(reverse(A)) (verified algebraically for all k, i), and the BFS over the 2n abstract (offset, flip) states produces the correct shortest-path answer for all three given examples (2, 2, -1) when hand-traced.\", \"Time complexity is the real problem. The claimed/implemented O(n^2) is accurate as a description of the code (BFS visits O(n) states and does O(n) array-slicing + O(n) list comparison per state), but it is not acceptable for the stated constraint 1 <= n <= 1e5: O(n^2) is up to ~2*10^10 element operations, and the per-state cost is dominated by Python list slicing/concatenation + list equality, which is far slower than raw array ops. This will time out on the actual judge for large n, even though it is logically correct on paper. Since the only state-space check needed is 'does this (offset,flip) state's array equal the sorted target', that can be decided analytically in O(n) total instead of O(n) per state: a candidate array rotate_k(source) equals the sorted identity iff `source` itself has the cyclic-successor property source[(i+1)%n] == (source[i]+1)%n for all i, in which case the unique matching offset is (n - source[0]) % n. Precomputing at most two such target (offset, flip) pairs (one for nums, one for reversed_nums) up front lets the BFS run over the same 2n-state graph but with O(1) work per transition (membership check against a precomputed set) instead of O(n) array construction, bringing total time down to O(n) while keeping the identical dihedral-group BFS approach and keeping space at O(n).\"]",
+    "failure_stage": "verify",
+    "headline": null,
+    "image_filename": null,
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 3942,
+    "problem_url": null,
+    "prompt_version": "v3",
+    "slug": "minimum-operations-to-sort-a-permutation",
+    "status": "failed",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": null,
+    "topics": []
   }
 }
