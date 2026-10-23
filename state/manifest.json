@@ -2029,5 +2029,29 @@
     "telegram_message_id": null,
     "title": null,
     "topics": []
+  },
+  "2026-10-23:3644": {
+    "content_hash": "",
+    "date": "2026-10-23",
+    "difficulty": null,
+    "drive": false,
+    "drive_file_id": null,
+    "failure_reason": "still invalid after regeneration: ['Time complexity is fatally inadequate for the stated constraint (1 <= n <= 1e5). can_sort() does an O(n^2) nested loop over all index pairs to build the union-find graph, and this is called ~17 times by the greedy bit loop, giving ~1.7x10^11 operations in the worst case -- this will not finish within any realistic time limit (guaranteed TLE), not just a theoretical complexity concern.', \"The claim in `complexity.explanation` that 'the pairwise loop cannot be avoided without losing the ability to detect AND relationships between specific position pairs' is incorrect. Because the array is a permutation of [0..n-1], any candidate v tested by the greedy loop is tested with all lower bits forced to 0 (i.e. v itself is always one of the actual array values whenever v <= n-1, since every integer in [0,n-1] appears exactly once). For such v, nums[i] & v == v for EVERY nums[i] that is a bitwise superset of v, regardless of nums[i]'s other bits (because v's own 0-bits force those AND positions to 0 automatically). That means the array value equal to v always acts as a universal hub connecting every superset-of-v position directly -- the full O(n) connected-component structure for candidate v can be computed in a single O(n) pass (union each superset-of-v position with that hub) instead of checking all O(n^2) pairs, with identical results. (I verified this reduction reproduces can_sort's exact answers on all three worked examples by hand.)\", \"The recursive find() (`parent[x] = find(parent[x]); return parent[x]`) has no bound on recursion depth. Because union() always does `parent[px] = py` with no union-by-rank/size, and the O(n^2) loop performs unions in index order, adversarial inputs for n up to 1e5 can build a parent chain whose recursive find() exceeds Python's default recursion limit (1000), raising RecursionError independent of the TLE issue above.\", \"The core algorithmic ideas (greedy bit-by-bit construction of k from high bit to low, and union-find connectivity as the sortability test) are logically correct -- I verified the hub-domination argument shows that if the trailing-zero candidate for a given bit-prefix fails, no refinement sharing that prefix can succeed either, which justifies the greedy's irrevocable bit decisions. All three official examples trace through correctly. Only the implementation's performance/robustness is broken, not the approach, so corrected_code preserves the same algorithm.\"]",
+    "failure_stage": "verify",
+    "headline": null,
+    "image_filename": null,
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 3644,
+    "problem_url": null,
+    "prompt_version": "v3",
+    "slug": "maximum-k-to-sort-a-permutation",
+    "status": "failed",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": null,
+    "topics": []
   }
 }
