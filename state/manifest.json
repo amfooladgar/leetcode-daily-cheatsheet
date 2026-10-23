@@ -2031,27 +2031,30 @@
     "topics": []
   },
   "2026-10-23:3644": {
-    "content_hash": "",
+    "content_hash": "dbed2146181f7e01",
     "date": "2026-10-23",
-    "difficulty": null,
-    "drive": false,
-    "drive_file_id": null,
-    "failure_reason": "still invalid after regeneration: [\"The proposed algorithm is logically sound (traced correctly against all three examples: returns 1, 2, 0) but has true O(n\u00b3) time complexity \u2014 for each of n candidate k values it scans all O(n\u00b2) position pairs. With n up to 1e5 per the stated constraints, that is on the order of 10^15 operations, which is computationally infeasible and would never finish / would TLE on any real judge, even though the complexity claim itself is internally consistent with what the code does. A medium-difficulty problem tagged 'Bit Manipulation' with n \u2264 1e5 requires a near-linear solution, not O(n\u00b3).\", \"The entire brute-force union-find approach should be replaced rather than patched, because the problem admits a much simpler closed-form answer. Key fact: the value k itself is always in range [0, n-1] (since k is bounded by an AND of two values from that range) and k's extra-bits-beyond-k is empty, so k trivially satisfies (k & v) == k for every v that contains k as a submask \u2014 meaning value k acts as a universal hub directly connecting ALL supersets-of-k values into a single connected component, while every value that is NOT a superset of k is a forced isolated singleton (it can never satisfy nums[i] & nums[j] == k with anything). Consequently k is feasible iff every 'bad' position p (where nums[p] != p) has k as a submask of p \u2014 i.e. k is a common submask of every bad position, so the maximum feasible k is exactly the bitwise AND of all bad positions (0, i.e. already sorted, if there are none). This was verified by hand against every example: ex1 bad={1,3}, 1&3=1; ex2 bad={2,3}, 2&3=2; ex3 bad={0,1,2,3}, AND=0. This gives an O(n) time, O(1)-extra-space solution with no union-find, recursion, or per-k rescans needed.\"]",
-    "failure_stage": "verify",
-    "headline": null,
-    "image_filename": null,
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1nfYYkfLCbpTBwcViFfBtMj8qy5jfvGO9",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget AND of Misplaced Index-Values",
+    "image_filename": "cheatsheet.png",
     "linkedin": false,
-    "linkedin_draft_drive_file_id": null,
-    "linkedin_draft_saved": false,
+    "linkedin_draft_drive_file_id": "1d84dV6IrUsbvrm80fe5PVqf4hkjlYTJt",
+    "linkedin_draft_saved": true,
     "linkedin_post_urn": null,
     "problem_number": 3644,
-    "problem_url": null,
+    "problem_url": "https://leetcode.com/problems/maximum-k-to-sort-a-permutation/",
     "prompt_version": "v3",
     "slug": "maximum-k-to-sort-a-permutation",
-    "status": "failed",
-    "telegram": false,
-    "telegram_message_id": null,
-    "title": null,
-    "topics": []
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 80,
+    "title": "Maximum K to Sort a Permutation",
+    "topics": [
+      "Array",
+      "Bit Manipulation"
+    ]
   }
 }
