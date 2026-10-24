@@ -2056,5 +2056,32 @@
       "Array",
       "Bit Manipulation"
     ]
+  },
+  "2026-10-24:2409": {
+    "content_hash": "b4b000f92968837a",
+    "date": "2026-10-24",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1VU7VFht_Gl6IveKizwV7lJibyF12D0pg",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Date Interval Overlap",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1TyOgKO2uRq1N-alfX6-1ZpqO7hOIo0n6",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 2409,
+    "problem_url": "https://leetcode.com/problems/count-days-spent-together/",
+    "prompt_version": "v3",
+    "slug": "count-days-spent-together",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 81,
+    "title": "Count Days Spent Together",
+    "topics": [
+      "Math",
+      "String"
+    ]
   }
 }
