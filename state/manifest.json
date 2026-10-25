@@ -2083,5 +2083,29 @@
       "Math",
       "String"
     ]
+  },
+  "2026-10-25:1254": {
+    "content_hash": "",
+    "date": "2026-10-25",
+    "difficulty": null,
+    "drive": false,
+    "drive_file_id": null,
+    "failure_reason": "example 3: Could not parse example input fragment 'grid = [[1,1,1,1,1,1,1],\n\u00a0              [1,0,0,0,0,0,1],\n\u00a0              [1,0,1,1,1,0,1],\n\u00a0              [1,0,1,0,1,0,1],\n\u00a0              [1,0,1,1,1,0,1],\n\u00a0              [1,0,0,0,0,0,1],\n               [1,1,1,1,1,1,1]]': invalid non-printable character U+00A0 (<unknown>, line 2)",
+    "failure_stage": "tested",
+    "headline": null,
+    "image_filename": null,
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 1254,
+    "problem_url": null,
+    "prompt_version": "v3",
+    "slug": "number-of-closed-islands",
+    "status": "failed",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": null,
+    "topics": []
   }
 }
