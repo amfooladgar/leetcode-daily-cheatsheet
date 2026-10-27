@@ -2137,5 +2137,29 @@
       "Union-Find",
       "Matrix"
     ]
+  },
+  "2026-10-27:3963": {
+    "content_hash": "c2c043657ededca5",
+    "date": "2026-10-27",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1pPHKpa06RoRu0fxlKpM5EIYtFBlRcpXR",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the L-Shaped Corridor Trick",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1itN6b6whXHBiJuBygMwYLoWZSzsTF_GZ",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3963,
+    "problem_url": "https://leetcode.com/problems/create-grid-with-exactly-one-path/",
+    "prompt_version": "v3",
+    "slug": "create-grid-with-exactly-one-path",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 83,
+    "title": "Create Grid With Exactly One Path",
+    "topics": []
   }
 }
