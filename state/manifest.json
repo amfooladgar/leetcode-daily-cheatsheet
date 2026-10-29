@@ -2190,5 +2190,29 @@
       "Bit Manipulation",
       "Matrix"
     ]
+  },
+  "2026-10-29:3841": {
+    "content_hash": "10196b2f59ed1bcb",
+    "date": "2026-10-29",
+    "difficulty": null,
+    "drive": false,
+    "drive_file_id": null,
+    "failure_reason": "QA gate failed: ['no_overflow']",
+    "failure_stage": "render_qa",
+    "headline": null,
+    "image_filename": null,
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 3841,
+    "problem_url": null,
+    "prompt_version": "v3",
+    "slug": "palindromic-path-queries-in-a-tree",
+    "status": "failed",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": null,
+    "topics": []
   }
 }
