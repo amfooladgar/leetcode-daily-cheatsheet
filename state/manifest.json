@@ -2214,5 +2214,34 @@
     "telegram_message_id": null,
     "title": null,
     "topics": []
+  },
+  "2026-10-30:3970": {
+    "content_hash": "92c0d5700780ef4b",
+    "date": "2026-10-30",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1YlvrOO5i0SLM8_aa4ekfxDS13ts9Enl1",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget Why Count Becomes Dijkstra State",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1SNC10Pdr0xecj6dKHwuZH1yyZaeO2z1_",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3970,
+    "problem_url": "https://leetcode.com/problems/shortest-path-with-at-most-k-consecutive-identical-characters/",
+    "prompt_version": "v3",
+    "slug": "shortest-path-with-at-most-k-consecutive-identical-characters",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 85,
+    "title": "Shortest Path With At Most K Consecutive Identical Characters",
+    "topics": [
+      "String",
+      "Graph Theory",
+      "Heap (Priority Queue)",
+      "Shortest Path"
+    ]
   }
 }
