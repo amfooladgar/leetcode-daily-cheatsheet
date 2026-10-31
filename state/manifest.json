@@ -2243,5 +2243,33 @@
       "Heap (Priority Queue)",
       "Shortest Path"
     ]
+  },
+  "2026-10-31:3665": {
+    "content_hash": "825c61cc2f073e72",
+    "date": "2026-10-31",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1nNz9Ih49BhaOS4faHhYQyG_rhgmxyDt9",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Reflection Decomposition Trick",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1ZcFKO1lJxryBqaX5PE5JTTA-3pkByLJw",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 3665,
+    "problem_url": "https://leetcode.com/problems/twisted-mirror-path-count/",
+    "prompt_version": "v3",
+    "slug": "twisted-mirror-path-count",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 86,
+    "title": "Twisted Mirror Path Count",
+    "topics": [
+      "Array",
+      "Dynamic Programming",
+      "Matrix"
+    ]
   }
 }
