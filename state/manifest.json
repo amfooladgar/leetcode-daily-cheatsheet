@@ -2271,5 +2271,32 @@
       "Dynamic Programming",
       "Matrix"
     ]
+  },
+  "2026-11-01:453": {
+    "content_hash": "ce742001f438d71e",
+    "date": "2026-11-01",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1F_lOWF5IbFYD1ZaHSbLYPj8_8ln49Age",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget the Excess Sum Trick",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1zW7OXkTxIJSsAdjz9TZBAtA_mbMGLBn_",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 453,
+    "problem_url": "https://leetcode.com/problems/minimum-moves-to-equal-array-elements/",
+    "prompt_version": "v3",
+    "slug": "minimum-moves-to-equal-array-elements",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 87,
+    "title": "Minimum Moves to Equal Array Elements",
+    "topics": [
+      "Array",
+      "Math"
+    ]
   }
 }
