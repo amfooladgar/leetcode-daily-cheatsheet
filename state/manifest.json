@@ -2298,5 +2298,33 @@
       "Array",
       "Math"
     ]
+  },
+  "2026-11-02:462": {
+    "content_hash": "452c0b1724f948bd",
+    "date": "2026-11-02",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1gvKSIYqohwWEASX32sCZ0BYxP6Kpbfje",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget: The Median Minimizes Cost",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1MCYeYJYZJ2k5UJ91kl5T3ldh-1LtKGmJ",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 462,
+    "problem_url": "https://leetcode.com/problems/minimum-moves-to-equal-array-elements-ii/",
+    "prompt_version": "v3",
+    "slug": "minimum-moves-to-equal-array-elements-ii",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 88,
+    "title": "Minimum Moves to Equal Array Elements II",
+    "topics": [
+      "Array",
+      "Math",
+      "Sorting"
+    ]
   }
 }
