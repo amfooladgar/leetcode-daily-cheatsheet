@@ -2353,5 +2353,29 @@
       "Array",
       "Math"
     ]
+  },
+  "2026-11-04:3505": {
+    "content_hash": "427421612ac4f2c4",
+    "date": "2026-11-04",
+    "difficulty": null,
+    "drive": false,
+    "drive_file_id": null,
+    "failure_reason": "QA gate failed: ['no_overflow']",
+    "failure_stage": "render_qa",
+    "headline": null,
+    "image_filename": null,
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": null,
+    "linkedin_draft_saved": false,
+    "linkedin_post_urn": null,
+    "problem_number": 3505,
+    "problem_url": null,
+    "prompt_version": "v3",
+    "slug": "minimum-operations-to-make-elements-within-k-subarrays-equal",
+    "status": "failed",
+    "telegram": false,
+    "telegram_message_id": null,
+    "title": null,
+    "topics": []
   }
 }
