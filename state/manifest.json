@@ -2384,5 +2384,34 @@
       "Sliding Window",
       "Heap (Priority Queue)"
     ]
+  },
+  "2026-11-05:1385": {
+    "content_hash": "b36b69bda026fac5",
+    "date": "2026-11-05",
+    "difficulty": "Easy",
+    "drive": true,
+    "drive_file_id": "1Tw6yiden73p2txd3iq6TN3t8_W_IgFfq",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget This Binary Search Neighbor Pattern",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1DonOpcjB-KFq92izwXm1fYfsEI-u9BBi",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 1385,
+    "problem_url": "https://leetcode.com/problems/find-the-distance-value-between-two-arrays/",
+    "prompt_version": "v3",
+    "slug": "find-the-distance-value-between-two-arrays",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 91,
+    "title": "Find the Distance Value Between Two Arrays",
+    "topics": [
+      "Array",
+      "Two Pointers",
+      "Binary Search",
+      "Sorting"
+    ]
   }
 }
