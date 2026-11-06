@@ -2413,5 +2413,34 @@
       "Binary Search",
       "Sorting"
     ]
+  },
+  "2026-11-06:2747": {
+    "content_hash": "6ec5f78f7b6e4701",
+    "date": "2026-11-06",
+    "difficulty": "Medium",
+    "drive": true,
+    "drive_file_id": "1Ox4ZcITahr9Wz5Rc1ww_jz21ONeriusH",
+    "failure_reason": null,
+    "failure_stage": null,
+    "headline": "Never Forget Monotonic Pointers on Sorted Data",
+    "image_filename": "cheatsheet.png",
+    "linkedin": false,
+    "linkedin_draft_drive_file_id": "1n37EzErKQYjMm5HzOncuzurYmKeJUZLc",
+    "linkedin_draft_saved": true,
+    "linkedin_post_urn": null,
+    "problem_number": 2747,
+    "problem_url": "https://leetcode.com/problems/count-zero-request-servers/",
+    "prompt_version": "v3",
+    "slug": "count-zero-request-servers",
+    "status": "success",
+    "telegram": true,
+    "telegram_message_id": 92,
+    "title": "Count Zero Request Servers",
+    "topics": [
+      "Array",
+      "Hash Table",
+      "Sliding Window",
+      "Sorting"
+    ]
   }
 }
